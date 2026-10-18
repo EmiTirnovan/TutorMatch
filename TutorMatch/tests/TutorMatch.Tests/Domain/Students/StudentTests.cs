@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Domain.Students;
@@ -135,5 +135,13 @@ public class StudentTests
         var act = () => student.CancelSession(Guid.NewGuid());
 
         act.Should().Throw<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public void Sessions_ShouldBeOfTypeIReadOnlyListOfSession()
+    {
+        var student = new Student(Guid.NewGuid(), "Alex", "alex@example.com");
+
+        student.Sessions.Should().BeAssignableTo<IReadOnlyList<Session>>();
     }
 }

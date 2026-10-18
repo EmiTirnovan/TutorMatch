@@ -1,0 +1,321 @@
+{
+	"info": {
+		"_postman_id": "f1a2b3c4-d5e6-7890-abcd-ef1234567890",
+		"name": "TutorMatch",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:5245" },
+		{ "key": "tutorId", "value": "" },
+		{ "key": "tutorToDeleteId", "value": "" }
+	],
+	"item": [
+		{
+			"name": "CreateTutor",
+			"item": [
+				{
+					"name": "Happy – Create valid tutor (201)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+									"var json = pm.response.json();",
+									"pm.collectionVariables.set('tutorId', json.id);",
+									"pm.collectionVariables.set('tutorToDeleteId', json.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ion Popescu\",\n  \"email\": \"ion@tutormatch.ro\",\n  \"bio\": \"Tutor experimentat la Algoritmi.\",\n  \"hourlyRate\": 80,\n  \"subjectIds\": [],\n  \"availability\": []\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/tutors", "host": ["{{baseUrl}}"], "path": ["api", "tutors"] }
+					}
+				},
+				{
+					"name": "Error – Create tutor with empty name (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 400', function () { pm.response.to.have.status(400); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"\",\n  \"email\": \"ion@tutormatch.ro\",\n  \"bio\": \"Bio.\",\n  \"hourlyRate\": 80\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/tutors", "host": ["{{baseUrl}}"], "path": ["api", "tutors"] }
+					}
+				},
+				{
+					"name": "Edge – Create tutor with zero hourlyRate (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 400', function () { pm.response.to.have.status(400); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Edge Case\",\n  \"email\": \"edge@tutormatch.ro\",\n  \"bio\": \"Test.\",\n  \"hourlyRate\": 0\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/tutors", "host": ["{{baseUrl}}"], "path": ["api", "tutors"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "GetTutors",
+			"item": [
+				{
+					"name": "Happy – Get all tutors (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Response is array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/api/tutors", "host": ["{{baseUrl}}"], "path": ["api", "tutors"] }
+					}
+				},
+				{
+					"name": "Error – GET tutors wrong route (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/api/tutorsXXX", "host": ["{{baseUrl}}"], "path": ["api", "tutorsXXX"] }
+					}
+				},
+				{
+					"name": "Edge – GET tutors with Accept header text/xml (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "text/xml" }],
+						"url": { "raw": "{{baseUrl}}/api/tutors", "host": ["{{baseUrl}}"], "path": ["api", "tutors"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "GetTutorById",
+			"item": [
+				{
+					"name": "Happy – Get tutor by ID (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Correct id', function () { pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('tutorId')); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/api/tutors/{{tutorId}}", "host": ["{{baseUrl}}"], "path": ["api", "tutors", "{{tutorId}}"] }
+					}
+				},
+				{
+					"name": "Error – Get non-existent tutor (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/api/tutors/99999999-9999-9999-9999-999999999999", "host": ["{{baseUrl}}"], "path": ["api", "tutors", "99999999-9999-9999-9999-999999999999"] }
+					}
+				},
+				{
+					"name": "Edge – Get tutor with Guid.Empty (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/api/tutors/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["api", "tutors", "00000000-0000-0000-0000-000000000000"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "UpdateTutor",
+			"item": [
+				{
+					"name": "Happy – Update tutor (204)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 204', function () { pm.response.to.have.status(204); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ion Popescu Updated\",\n  \"bio\": \"Tutor actualizat.\",\n  \"hourlyRate\": 100\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/tutors/{{tutorId}}", "host": ["{{baseUrl}}"], "path": ["api", "tutors", "{{tutorId}}"] }
+					}
+				},
+				{
+					"name": "Error – Update non-existent tutor (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ghost\",\n  \"bio\": \"Does not exist.\",\n  \"hourlyRate\": 50\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/tutors/99999999-9999-9999-9999-999999999999", "host": ["{{baseUrl}}"], "path": ["api", "tutors", "99999999-9999-9999-9999-999999999999"] }
+					}
+				},
+				{
+					"name": "Edge – Update tutor with empty name (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 400', function () { pm.response.to.have.status(400); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"\",\n  \"bio\": \"Test.\",\n  \"hourlyRate\": 50\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/tutors/{{tutorId}}", "host": ["{{baseUrl}}"], "path": ["api", "tutors", "{{tutorId}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "DeleteTutor",
+			"item": [
+				{
+					"name": "Happy – Delete tutor (204)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 204', function () { pm.response.to.have.status(204); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": { "raw": "{{baseUrl}}/api/tutors/{{tutorToDeleteId}}", "host": ["{{baseUrl}}"], "path": ["api", "tutors", "{{tutorToDeleteId}}"] }
+					}
+				},
+				{
+					"name": "Error – Delete non-existent tutor (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": { "raw": "{{baseUrl}}/api/tutors/99999999-9999-9999-9999-999999999999", "host": ["{{baseUrl}}"], "path": ["api", "tutors", "99999999-9999-9999-9999-999999999999"] }
+					}
+				},
+				{
+					"name": "Edge – Double delete same tutor (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": { "raw": "{{baseUrl}}/api/tutors/{{tutorToDeleteId}}", "host": ["{{baseUrl}}"], "path": ["api", "tutors", "{{tutorToDeleteId}}"] }
+					}
+				}
+			]
+		}
+	]
+}

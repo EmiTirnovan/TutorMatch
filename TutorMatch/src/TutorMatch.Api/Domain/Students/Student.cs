@@ -1,4 +1,4 @@
-﻿using TutorMatch.Api.Domain.Common;
+using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Sessions;
 
 namespace TutorMatch.Api.Domain.Students;
@@ -10,7 +10,7 @@ public class Student
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
-    public IReadOnlyCollection<Session> Sessions => _sessions.AsReadOnly();
+    public IReadOnlyList<Session> Sessions => _sessions.AsReadOnly();
 
     private Student()
     {

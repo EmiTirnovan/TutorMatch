@@ -1,5 +1,11 @@
 # TutorMatch – Descriere proiect și împărțirea pe module
 
+## Rulare rapidă și testare (Postman)
+
+1. Pornește aplicația din rădăcina repository-ului rulând comanda: `dotnet run --project TutorMatch/src/TutorMatch.Api` (API-ul pornește pe `http://localhost:5245`).
+2. Deschide Postman și importă colecția din `/postman/TutorMatch.postman_collection.json` folosind butonul **Import**.
+3. Rulează cererile direct din **Run collection** sau individual (variabila `{{baseUrl}}` este deja preconfigurată la `http://localhost:5245`).
+
 **Echipa:** Emi, Razvan, Cosmin, Valentin, Andrei
 **Stadiu document:** împărțirea pe module (sprint-urile se stabilesc ulterior)
 
