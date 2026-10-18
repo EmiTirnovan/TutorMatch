@@ -1,5 +1,6 @@
-﻿namespace TutorMatch.Api.Domain.Tutors;
+namespace TutorMatch.Api.Domain.Tutors;
 
+// Interfata pentru salvarea si interogarea tutorilor, independenta de baza de date
 public interface ITutorRepository
 {
     void Add(Tutor tutor);
