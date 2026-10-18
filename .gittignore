@@ -1,0 +1,38 @@
+## User-specific Rider settings (.idea folder)
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf/
+.idea/**/contentModel.xml
+
+## Rider sensitive and data sources
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.xml
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+
+## Rider Android / NuGet build artifacts
+.idea/**/*.iml
+.idea/**/modules.xml
+
+## Note: Do NOT ignore the entire .idea folder if you want to share 
+## your team run configurations (.idea/runConfigurations/) with others.
+
+## .NET and C# build outputs
+bin/
+obj/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Visual Studio cache / temporary files
+.vs/
+
+## Operating System files
+.DS_Store
+Thumbs.db
+Desktop.ini
