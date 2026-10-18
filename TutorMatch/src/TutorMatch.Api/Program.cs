@@ -1,7 +1,6 @@
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Tutors;
-using TutorMatch.Api.Features.Tutors.CreateTutor;
-using TutorMatch.Api.Features.Tutors.GetTutorById;
+using TutorMatch.Api.Features.Tutors;
 using TutorMatch.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,13 +22,10 @@ if (app.Environment.IsDevelopment())
 
 app.MapGet("/", () => "TutorMatch API is running.");
 
-// Inregistram endpoint-urile de tutori din Features
-var tutorsGroup = app.MapGroup("/api/tutors").WithTags("Tutors");
-tutorsGroup.MapGet("/", (ITutorRepository repository) => Results.Ok(repository.GetAll()));
-tutorsGroup.MapCreateTutor();
-tutorsGroup.MapGetTutorById();
+// Rutele tale grupate (Issue #11)
+app.MapTutorEndpoints();
 
-// Seed cu un tutore demo ca sa avem date vizibile imediat la testare
+// Seed cu un tutore demo ca sa avem date vizibile imediat la testare (de la colegul tau)
 var tutorRepo = app.Services.GetRequiredService<ITutorRepository>();
 if (tutorRepo.GetAll().Count == 0)
 {
