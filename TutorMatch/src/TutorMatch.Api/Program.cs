@@ -5,7 +5,6 @@ using TutorMatch.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Adaugam documentatia Swagger si infrastructura
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSessionInfrastructure();
@@ -13,7 +12,6 @@ builder.Services.AddTutorInfrastructure();
 
 var app = builder.Build();
 
-// Swagger activat pentru testare interactiva in browser
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -22,10 +20,8 @@ if (app.Environment.IsDevelopment())
 
 app.MapGet("/", () => "TutorMatch API is running.");
 
-// Rutele tale grupate (Issue #11)
 app.MapTutorEndpoints();
 
-// Seed cu un tutore demo ca sa avem date vizibile imediat la testare (de la colegul tau)
 var tutorRepo = app.Services.GetRequiredService<ITutorRepository>();
 if (tutorRepo.GetAll().Count == 0)
 {
