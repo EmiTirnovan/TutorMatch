@@ -1,5 +1,6 @@
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Features.Sessions;
 using TutorMatch.Api.Features.Tutors;
 using TutorMatch.Api.Infrastructure;
 
@@ -21,6 +22,7 @@ if (app.Environment.IsDevelopment())
 app.MapGet("/", () => "TutorMatch API is running.");
 
 app.MapTutorEndpoints();
+app.MapSessionEndpoints();
 
 var tutorRepo = app.Services.GetRequiredService<ITutorRepository>();
 if (tutorRepo.GetAll().Count == 0)
