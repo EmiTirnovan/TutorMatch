@@ -7,7 +7,9 @@
 	"variable": [
 		{ "key": "baseUrl", "value": "http://localhost:5245" },
 		{ "key": "tutorId", "value": "" },
-		{ "key": "tutorToDeleteId", "value": "" }
+		{ "key": "tutorToDeleteId", "value": "" },
+		{ "key": "sessionId", "value": "" },
+		{ "key": "studentId", "value": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" }
 	],
 	"item": [
 		{
@@ -313,6 +315,330 @@
 					"request": {
 						"method": "DELETE",
 						"url": { "raw": "{{baseUrl}}/api/tutors/{{tutorToDeleteId}}", "host": ["{{baseUrl}}"], "path": ["api", "tutors", "{{tutorToDeleteId}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "BookSession",
+			"item": [
+				{
+					"name": "Happy – Book a session (201)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var baseUrl = pm.collectionVariables.get('baseUrl');",
+									"pm.sendRequest({",
+									"    url: baseUrl + '/api/tutors',",
+									"    method: 'POST',",
+									"    header: { 'Content-Type': 'application/json' },",
+									"    body: { mode: 'raw', raw: JSON.stringify({ name: 'Session Tutor', email: 'session.tutor@test.ro', bio: 'For session tests', hourlyRate: 60 }) }",
+									"}, function (err, res) {",
+									"    var json = res.json();",
+									"    pm.collectionVariables.set('tutorId', json.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+									"var json = pm.response.json();",
+									"pm.collectionVariables.set('sessionId', json.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tutorId\": \"{{tutorId}}\",\n  \"studentId\": \"{{studentId}}\",\n  \"startTime\": \"2026-12-01T10:00:00Z\",\n  \"endTime\": \"2026-12-01T11:00:00Z\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/sessions", "host": ["{{baseUrl}}"], "path": ["api", "sessions"] }
+					}
+				},
+				{
+					"name": "Error – Book session with invalid DateRange start >= end (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 400', function () { pm.response.to.have.status(400); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tutorId\": \"{{tutorId}}\",\n  \"studentId\": \"{{studentId}}\",\n  \"startTime\": \"2026-12-01T14:00:00Z\",\n  \"endTime\": \"2026-12-01T13:00:00Z\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/sessions", "host": ["{{baseUrl}}"], "path": ["api", "sessions"] }
+					}
+				},
+				{
+					"name": "Edge – Book session with Guid.Empty tutorId (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 400', function () { pm.response.to.have.status(400); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tutorId\": \"00000000-0000-0000-0000-000000000000\",\n  \"studentId\": \"{{studentId}}\",\n  \"startTime\": \"2026-12-02T10:00:00Z\",\n  \"endTime\": \"2026-12-02T11:00:00Z\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/sessions", "host": ["{{baseUrl}}"], "path": ["api", "sessions"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "GetAllSessions",
+			"item": [
+				{
+					"name": "Happy – Get all sessions (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Response is array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/api/sessions", "host": ["{{baseUrl}}"], "path": ["api", "sessions"] }
+					}
+				},
+				{
+					"name": "Error – GET sessions wrong route (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/api/sessionsXXX", "host": ["{{baseUrl}}"], "path": ["api", "sessionsXXX"] }
+					}
+				},
+				{
+					"name": "Edge – GET sessions with Accept header text/xml (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "text/xml" }],
+						"url": { "raw": "{{baseUrl}}/api/sessions", "host": ["{{baseUrl}}"], "path": ["api", "sessions"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "GetSessionById",
+			"item": [
+				{
+					"name": "Happy – Get session by ID (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Correct id', function () { pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('sessionId')); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/api/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "{{sessionId}}"] }
+					}
+				},
+				{
+					"name": "Error – Get non-existent session (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/api/sessions/99999999-9999-9999-9999-999999999999", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "99999999-9999-9999-9999-999999999999"] }
+					}
+				},
+				{
+					"name": "Edge – Get session with Guid.Empty (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/api/sessions/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "00000000-0000-0000-0000-000000000000"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "RescheduleSession",
+			"item": [
+				{
+					"name": "Happy – Reschedule session (204)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 204', function () { pm.response.to.have.status(204); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"startTime\": \"2026-12-01T15:00:00Z\",\n  \"endTime\": \"2026-12-01T16:00:00Z\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "{{sessionId}}"] }
+					}
+				},
+				{
+					"name": "Error – Reschedule non-existent session (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"startTime\": \"2026-12-01T15:00:00Z\",\n  \"endTime\": \"2026-12-01T16:00:00Z\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/sessions/99999999-9999-9999-9999-999999999999", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "99999999-9999-9999-9999-999999999999"] }
+					}
+				},
+				{
+					"name": "Edge – Reschedule with invalid DateRange start >= end (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 400', function () { pm.response.to.have.status(400); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"startTime\": \"2026-12-01T18:00:00Z\",\n  \"endTime\": \"2026-12-01T17:00:00Z\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "{{sessionId}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "CancelBooking",
+			"item": [
+				{
+					"name": "Happy – Cancel/delete session (204)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 204', function () { pm.response.to.have.status(204); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": { "raw": "{{baseUrl}}/api/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "{{sessionId}}"] }
+					}
+				},
+				{
+					"name": "Error – Cancel non-existent session (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": { "raw": "{{baseUrl}}/api/sessions/99999999-9999-9999-9999-999999999999", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "99999999-9999-9999-9999-999999999999"] }
+					}
+				},
+				{
+					"name": "Edge – Double cancel/delete same session (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status is 404', function () { pm.response.to.have.status(404); });"],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": { "raw": "{{baseUrl}}/api/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["api", "sessions", "{{sessionId}}"] }
 					}
 				}
 			]
