@@ -1,6 +1,7 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using TutorMatch.Api.Domain.Common;
-using TutorMatch.Api.Domain.Sessions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Results;
 
 namespace TutorMatch.Api.Features.Sessions.CreateSession;
 
@@ -8,40 +9,23 @@ public static class CreateSessionEndpoint
 {
     public static IEndpointRouteBuilder MapCreateSession(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", Handle);
+        group.MapPost("/", HandleAsync);
         return group;
     }
 
-    private static Results<Created<CreateSessionResponse>, BadRequest<string>> Handle(
+    private static async Task<IResult> HandleAsync(
         CreateSessionRequest request,
-        ISessionRepository repository)
+        ICommandHandler<CreateSessionCommand, Result<CreateSessionResponse>> handler,
+        CancellationToken cancellationToken)
     {
-        if (request.TutorId == Guid.Empty || request.StudentId == Guid.Empty)
-        {
-            return TypedResults.BadRequest("TutorId and StudentId must be valid GUIDs.");
-        }
+        var command = new CreateSessionCommand(
+            request.TutorId,
+            request.StudentId,
+            request.StartTime,
+            request.EndTime);
 
-        try
-        {
-            var interval = new DateRange(request.StartTime, request.EndTime);
-            var session = Session.Create(request.TutorId, request.StudentId, interval);
+        var result = await handler.HandleAsync(command, cancellationToken);
 
-            repository.Add(session);
-
-            var response = new CreateSessionResponse(
-                session.Id,
-                session.TutorId,
-                session.StudentId,
-                session.StartTime,
-                session.EndTime,
-                session.Status,
-                session.Version);
-
-            return TypedResults.Created($"/api/sessions/{session.Id}", response);
-        }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-        {
-            return TypedResults.BadRequest(ex.Message);
-        }
+        return result.ToHttpResult(response => TypedResults.Created($"/api/sessions/{response.Id}", response));
     }
 }

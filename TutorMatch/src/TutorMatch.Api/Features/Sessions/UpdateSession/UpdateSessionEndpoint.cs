@@ -1,6 +1,7 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using TutorMatch.Api.Domain.Common;
-using TutorMatch.Api.Domain.Sessions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Results;
 
 namespace TutorMatch.Api.Features.Sessions.UpdateSession;
 
@@ -8,31 +9,18 @@ public static class UpdateSessionEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateSession(this IEndpointRouteBuilder group)
     {
-        group.MapPut("/{id:guid}", Handle);
+        group.MapPut("/{id:guid}", HandleAsync);
         return group;
     }
 
-    private static Results<NoContent, NotFound, BadRequest<string>> Handle(
+    private static async Task<IResult> HandleAsync(
         Guid id,
         UpdateSessionRequest request,
-        ISessionRepository repository)
+        ICommandHandler<UpdateSessionCommand> handler,
+        CancellationToken cancellationToken)
     {
-        var session = repository.GetById(id);
-
-        if (session is null)
-        {
-            return TypedResults.NotFound();
-        }
-
-        try
-        {
-            session.Reschedule(new DateRange(request.StartTime, request.EndTime));
-            repository.Update(session);
-            return TypedResults.NoContent();
-        }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-        {
-            return TypedResults.BadRequest(ex.Message);
-        }
+        var command = new UpdateSessionCommand(id, request.StartTime, request.EndTime);
+        var result = await handler.HandleAsync(command, cancellationToken);
+        return result.ToHttpResult();
     }
 }

@@ -1,5 +1,7 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using TutorMatch.Api.Domain.Sessions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Results;
 
 namespace TutorMatch.Api.Features.Sessions.DeleteSession;
 
@@ -7,19 +9,17 @@ public static class DeleteSessionEndpoint
 {
     public static IEndpointRouteBuilder MapDeleteSession(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{id:guid}", Handle);
+        group.MapDelete("/{id:guid}", HandleAsync);
         return group;
     }
 
-    private static Results<NoContent, NotFound> Handle(
+    private static async Task<IResult> HandleAsync(
         Guid id,
-        ISessionRepository repository)
+        ICommandHandler<DeleteSessionCommand> handler,
+        CancellationToken cancellationToken)
     {
-        if (!repository.Delete(id))
-        {
-            return TypedResults.NotFound();
-        }
-
-        return TypedResults.NoContent();
+        var command = new DeleteSessionCommand(id);
+        var result = await handler.HandleAsync(command, cancellationToken);
+        return result.ToHttpResult();
     }
 }

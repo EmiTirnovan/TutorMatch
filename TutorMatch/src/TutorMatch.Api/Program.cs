@@ -1,5 +1,6 @@
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Features;
 using TutorMatch.Api.Features.Sessions;
 using TutorMatch.Api.Features.Tutors;
 using TutorMatch.Api.Infrastructure;
@@ -10,6 +11,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSessionInfrastructure();
 builder.Services.AddTutorInfrastructure();
+builder.Services.AddCqrs();
 
 var app = builder.Build();
 

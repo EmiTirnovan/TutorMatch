@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using TutorMatch.Api.Domain.Tutors;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Results;
 
 namespace TutorMatch.Api.Features.Tutors.GetTutors;
 
@@ -7,17 +9,16 @@ public static class GetTutorsEndpoint
 {
     public static IEndpointRouteBuilder MapGetTutors(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", Handle);
+        group.MapGet("/", HandleAsync);
         return group;
     }
 
-    private static Ok<List<TutorSummaryResponse>> Handle(ITutorRepository repository)
+    private static async Task<IResult> HandleAsync(
+        IQueryHandler<GetTutorsQuery, Result<List<TutorSummaryResponse>>> handler,
+        CancellationToken cancellationToken)
     {
-        var tutors = repository.GetAll();
-        
-        var response = tutors.Select(t => new TutorSummaryResponse(
-            t.Id, t.Name, t.Email, t.HourlyRate)).ToList();
-
-        return TypedResults.Ok(response);
+        var query = new GetTutorsQuery();
+        var result = await handler.HandleAsync(query, cancellationToken);
+        return result.ToHttpResult();
     }
 }

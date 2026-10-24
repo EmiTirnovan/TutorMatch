@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using TutorMatch.Api.Domain.Tutors;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Results;
 
 namespace TutorMatch.Api.Features.Tutors.DeleteTutor;
 
@@ -7,19 +9,17 @@ public static class DeleteTutorEndpoint
 {
     public static IEndpointRouteBuilder MapDeleteTutor(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{id:guid}", Handle);
+        group.MapDelete("/{id:guid}", HandleAsync);
         return group;
     }
 
-    private static Results<NoContent, NotFound> Handle(
+    private static async Task<IResult> HandleAsync(
         Guid id,
-        ITutorRepository repository)
+        ICommandHandler<DeleteTutorCommand> handler,
+        CancellationToken cancellationToken)
     {
-        if (!repository.Delete(id))
-        {
-            return TypedResults.NotFound();
-        }
-
-        return TypedResults.NoContent();
+        var command = new DeleteTutorCommand(id);
+        var result = await handler.HandleAsync(command, cancellationToken);
+        return result.ToHttpResult();
     }
 }
