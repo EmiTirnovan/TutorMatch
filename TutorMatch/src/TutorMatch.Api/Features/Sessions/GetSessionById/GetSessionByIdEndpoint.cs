@@ -1,5 +1,7 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using TutorMatch.Api.Domain.Sessions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Results;
 
 namespace TutorMatch.Api.Features.Sessions.GetSessionById;
 
@@ -7,30 +9,17 @@ public static class GetSessionByIdEndpoint
 {
     public static IEndpointRouteBuilder MapGetSessionById(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/{id:guid}", Handle);
+        group.MapGet("/{id:guid}", HandleAsync);
         return group;
     }
 
-    private static Results<Ok<GetSessionByIdResponse>, NotFound> Handle(
+    private static async Task<IResult> HandleAsync(
         Guid id,
-        ISessionRepository repository)
+        IQueryHandler<GetSessionByIdQuery, Result<GetSessionByIdResponse>> handler,
+        CancellationToken cancellationToken)
     {
-        var session = repository.GetById(id);
-
-        if (session is null)
-        {
-            return TypedResults.NotFound();
-        }
-
-        var response = new GetSessionByIdResponse(
-            session.Id,
-            session.TutorId,
-            session.StudentId,
-            session.StartTime,
-            session.EndTime,
-            session.Status,
-            session.Version);
-
-        return TypedResults.Ok(response);
+        var query = new GetSessionByIdQuery(id);
+        var result = await handler.HandleAsync(query, cancellationToken);
+        return result.ToHttpResult();
     }
 }
