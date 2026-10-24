@@ -1,12 +1,44 @@
 # TutorMatch – Descriere proiect și împărțirea pe module
 
-## Rulare rapidă și testare (Postman)
+## Rulare rapidă și testare
+
+### Testare manuală (Postman)
 
 1. Pornește aplicația din rădăcina repository-ului rulând comanda: `dotnet run --project TutorMatch/src/TutorMatch.Api` (API-ul pornește pe `http://localhost:5245`).
 2. Deschide Postman și importă colecția din `/postman/TutorMatch.postman_collection.json` folosind butonul **Import**.
 3. Rulează cererile direct din **Run collection** sau individual (variabila `{{baseUrl}}` este deja preconfigurată la `http://localhost:5245`).
 
-**Echipa:** Emi, Razvan, Cosmin, Valentin, Andrei
+### Comenzi CLI pentru Build, Testare și Raport de Acoperire (DoD)
+
+Toate comenzile de mai jos se execută din rădăcina repository-ului:
+
+a. **Restaurare dependințe și build:**
+```bash
+dotnet build TutorMatch/TutorMatch.sln
+```
+
+b. **Rulare teste unitare (fără cele de integrare):**
+```bash
+dotnet test TutorMatch/TutorMatch.sln --filter "Category!=Integration"
+```
+
+c. **Rulare teste de integrare:**
+```bash
+dotnet test TutorMatch/TutorMatch.sln --filter "Category=Integration"
+```
+
+d. **Generare raport de acoperire a codului cu Coverlet:**
+```bash
+dotnet test TutorMatch/TutorMatch.sln --collect:"XPlat Code Coverage"
+```
+
+e. **Generare și vizualizare raport HTML cu ReportGenerator:**
+```bash
+reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coveragereport" -reporttypes:Html
+```
+*Cale de vizualizare raport:* Deschide fișierul `coveragereport/index.html` în orice browser web.
+
+**Echipa:** Emi, Razvan, Cosmin, Valentin, Andrei  
 **Stadiu document:** împărțirea pe module (sprint-urile se stabilesc ulterior)
 
 ---
