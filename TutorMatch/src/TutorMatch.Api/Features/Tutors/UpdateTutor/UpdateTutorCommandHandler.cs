@@ -34,5 +34,10 @@ public class UpdateTutorCommandHandler : ICommandHandler<UpdateTutorCommand>
             return Task.FromResult(Result.Failure(
                 Error.Validation("Tutor.Validation", ex.Message)));
         }
+        catch (InvalidOperationException ex)
+        {
+            return Task.FromResult(Result.Failure(
+                Error.Conflict("Tutor.Conflict", ex.Message)));
+        }
     }
 }

@@ -30,7 +30,7 @@ Acest document înregistrează toate interacțiunile, prompt-urile executate, sk
 ### Probleme identificate în `SKILL.md` vs codul real (Before v1.1)
 - **Problema 4 (Discrepanță constrângeri generice):** În codul real, `ICommandHandler` și `IQueryHandler` aveau constrângeri explicite pe interfețe marker (`where TCommand : ICommand<TResponse>`, `where TCommand : ICommand`, `where TQuery : IQuery<TResponse>`). În snippet-ul din `SKILL.md`, comenzile erau definite fără marker interfaces (`public record CreateTutorCommand(...)`), ceea ce genera erori de compilare la aplicarea skill-ului pe noi agregate.
 - **Problema 5 (Boilerplate în Endpoints):** Exemplul de endpoint din `SKILL.md` continua să folosească blocul manual `result.Match(...)` cu switch inline în loc de apelul mult mai compact `result.ToHttpResult(...)`.
-- **Problema 6 (Standardizare erori & structură DI):** În `SKILL.md` lipseau exemple pentru `ICommand` fără payload (delete/update), maparea structurată `{ error.Code, error.Description }` și exemplul de configurare DI centralizată în `DependencyInjection.cs`.
+- **Problema 6 (Standardizare erori & structură DI):** În `SKILL.md` lipseau exemple pentru `ICommand` fără payload (delete/update), maparea structurată `{ error.Code, error.Description }` și exemplul de configurare DI centralizată în `DependencyInjection.cs`.\n- **Problema 7 (Tratare completă excepții de domeniu în Handlers):** În `UpdateTutorCommandHandler`, era prinsă doar `ArgumentException`, nu și `InvalidOperationException` (pentru conflicte de stare), generând potențial excepții nearuncate prin Result.
 
 ### Modificări aduse în skill (`SKILL.md`) (After v1.1)
 - Actualizate toate semnăturile și constrângerile generice în `SKILL.md` pentru a include interfețele marker `ICommand`, `ICommand<TResponse>` și `IQuery<TResponse>`.
@@ -43,3 +43,11 @@ Acest document înregistrează toate interacțiunile, prompt-urile executate, sk
 - Adăugată regula de propagare a parametrului `CancellationToken cancellationToken = default`.
 
 ---
+
+### Prompt Iterativ 2 (Regenerare cod conform noilor specificații din Skill v1.1)
+> "Reciteste skill-ul si regenereaza codul, conform specificatiilor noi din skill"
+
+### Verificare și regenerare (After v1.1)
+- Verificat întregul arbore de clase din `Features/Tutors` și `Features/Sessions` față de regulile actualizate din `SKILL.md`.
+- Regenerat și completat `UpdateTutorCommandHandler` pentru tratarea exhaustivă atât a `ArgumentException` (Validation) cât și a `InvalidOperationException` (Conflict).
+- Confirmat că toate comenzile și interogările respectă marker interfaces (`ICommand`, `ICommand<TResponse>`, `IQuery<TResponse>`), că toți handlerii propagă `CancellationToken cancellationToken = default` și că toate endpoint-urile folosesc extensia fluentă `result.ToHttpResult(...)`.
