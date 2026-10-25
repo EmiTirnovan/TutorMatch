@@ -1,4 +1,4 @@
-﻿# TutorMatch – Claude Skills & Prompts Log (PROMPTS.md)
+# TutorMatch – Claude Skills & Prompts Log (PROMPTS.md)
 
 Acest document înregistrează toate interacțiunile, prompt-urile executate, skill-urile rulate, problemele identificate în codul generat și ajustările aduse fișierelor `SKILL.md` pentru obținerea unui cod conform specificațiilor.
 
@@ -51,3 +51,25 @@ Acest document înregistrează toate interacțiunile, prompt-urile executate, sk
 - Verificat întregul arbore de clase din `Features/Tutors` și `Features/Sessions` față de regulile actualizate din `SKILL.md`.
 - Regenerat și completat `UpdateTutorCommandHandler` pentru tratarea exhaustivă atât a `ArgumentException` (Validation) cât și a `InvalidOperationException` (Conflict).
 - Confirmat că toate comenzile și interogările respectă marker interfaces (`ICommand`, `ICommand<TResponse>`, `IQuery<TResponse>`), că toți handlerii propagă `CancellationToken cancellationToken = default` și că toate endpoint-urile folosesc extensia fluentă `result.ToHttpResult(...)`.
+
+---
+
+## 2. Skill `efcore-sqlite-repositories`: Persistență SQLite prin EF Core fără modificarea contractelor
+
+### Prompt inițial
+> "Creează skill-ul Claude `.claude/skills/efcore-sqlite-repositories/SKILL.md` pentru a înlocui implementările repository-urilor in-memory (`InMemoryTutorRepository`, `InMemorySessionRepository`) cu implementări reale bazate pe EF Core și SQLite, păstrând neschimbate interfețele existente și izolarea completă a folderului `Features/`. Configurează DbContext-ul `TutorMatchDbContext`, mapările fluente pentru Value Objects (`DateRange`), colecții complexe, optimistic concurrency (`Version`), relațiile dintre entități, înregistrarea în DI cu suport pentru SQLite in-memory, și generează codul conform DoD."
+
+### Skill rulat
+- `.claude/skills/efcore-sqlite-repositories/SKILL.md` (v1.0)
+
+### Ce a fost generat inițial & Probleme observate (Before)
+- **Problema 1 (Cartesian Explosion la interogări multiple collections):** La interogarea tutorilor cu colecțiile `Availability` și `TutorSubjects`, EF Core genera un warning (`MultipleCollectionIncludeWarning`) cauzat de evaluarea într-un singur query SQL.
+- **Problema 2 (Compatibilitate teste de regresie in-memory):** Testele unitare existente din `InMemoryTutorRepositoryTests` și `InMemorySessionRepositoryTests` apelau direct metodele de extensie `AddTutorInfrastructure()` și `AddSessionInfrastructure()` verificând înregistrarea implementărilor Singleton in-memory. Înlocuirea brutală a metodelor ar fi dus la eșecul testelor de regresie.
+- **Problema 3 (Rularea migrărilor la startup fără eroare de Scoped Service):** Apelul direct din `Program.cs` către `app.Services.GetRequiredService<TutorMatchDbContext>()` ar fi eșuat în mediul de dezvoltare din cauza rezolvării unui serviciu `Scoped` din rădăcina DI container-ului (`ValidateScopes`).
+
+### Modificări aduse în skill (`SKILL.md`) și cod (After v1.0)
+- **Rezolvare Problema 1:** Adăugat `.AsSplitQuery()` în `SqliteTutorRepository.GetById()` și `SqliteTutorRepository.GetAll()` pentru a preveni explozia carteziană și avertismentele EF Core.
+- **Rezolvare Problema 2:** În `DependencyInjection.cs`, s-au păstrat metodele `AddTutorInfrastructure()` și `AddSessionInfrastructure()` marcate ca `[Obsolete]` pentru compatibilitate cu testele de regresie in-memory, în timp ce persistența principală a fost expusă prin `AddSqliteRepositories()` și `AddSqliteInMemoryRepositories()`.
+- **Rezolvare Problema 3:** În `Program.cs`, migrările și inițializarea datelor demo au fost plasate într-un `using (var scope = app.Services.CreateScope())`, asigurând aplicarea automată la startup fără conflicte de scope.
+- **Izolare strictă respectată:** Niciun fișier din `Features/` nu a fost modificat; interfețele `ITutorRepository` și `ISessionRepository` au rămas identice.
+- **Toate testele trecute:** 119 teste rulate cu succes (`dotnet test`).
