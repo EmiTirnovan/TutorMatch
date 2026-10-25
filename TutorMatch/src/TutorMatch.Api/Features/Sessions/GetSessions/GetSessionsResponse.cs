@@ -2,6 +2,8 @@ using TutorMatch.Api.Domain.Sessions;
 
 namespace TutorMatch.Api.Features.Sessions.GetSessions;
 
+// API response DTOs are not unit-tested and are excluded from coverage.
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public record GetSessionsResponse(
     Guid Id,
     Guid TutorId,

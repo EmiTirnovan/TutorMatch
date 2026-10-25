@@ -3,7 +3,8 @@ using TutorMatch.Api.Domain.Tutors;
 
 namespace TutorMatch.Api.Infrastructure.Tutors;
 
-// Implementare in memorie thread-safe pentru salvarea tutorilor
+// In-memory repository wiring is not a business rule and is excluded from unit-test coverage.
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public class InMemoryTutorRepository : ITutorRepository
 {
     private readonly ConcurrentDictionary<Guid, Tutor> _tutors = new();

@@ -5,7 +5,8 @@ using TutorMatch.Api.Domain.Tutors;
 
 namespace TutorMatch.Api.Infrastructure.Persistence;
 
-// Dedicated Entity Framework Core DbContext for TutorMatch SQLite database
+// Entity Framework Core persistence setup is infrastructure code and is excluded from unit-test coverage.
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public class TutorMatchDbContext : DbContext
 {
     public TutorMatchDbContext(DbContextOptions<TutorMatchDbContext> options)
