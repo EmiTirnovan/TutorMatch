@@ -87,6 +87,32 @@ Acest document înregistrează toate interacțiunile, prompt-urile executate, sk
 - **Izolare strictă respectată:** Niciun fișier din `Features/` nu a fost modificat; interfețele `ITutorRepository` și `ISessionRepository` au rămas identice.
 - **Toate testele trecute:** 119 teste rulate cu succes (`dotnet test`).
 
+## 3. Skill `integration-testing`: End-to-End Testing cu SQLite In-Memory și WebApplicationFactory
+
+### Prompt inițial
+
+> "Folosește skill-ul `integration-testing` pentru a genera testele de integrare pentru slice-ul `CreateTutor` din folderul `Features/Tutors/CreateTutor`."
+
+### Skill rulat
+
+- `.claude/skills/integration-testing/SKILL.md` (v1.0)
+
+### Ce a fost generat inițial & Probleme observate (Before)
+
+- **Problema 1 (Halucinații în DTO-uri și erori):** AI-ul a inventat proprietăți pentru `CreateTutorRequest` (`new List<Guid>()`) și a ghicit că erorile de domeniu sunt returnate ca simplu text (ex: `body.Should().Contain("Tutor.Validation")`), fără să cunoască mapping-ul real din endpoint-uri.
+- **Problema 2 (Eroare 500 - Foreign Key Constraint):** La testul de succes pentru `CreateTutor`, salvarea în SQLite a crăpat cu `SQLite Error 19: 'FOREIGN KEY constraint failed'` deoarece request-ul folosea un `SubjectId` care nu exista fizic în tabelul `Subjects`.
+- **Problema 3 (Eroare de compilare CS8604 / DDD Encapsulation):** La încercarea de a verifica salvările în baza de date, Claude a folosit `.Include("_subjects")`. EF Core a aruncat `InvalidIncludePathError` pentru că `_subjects` este un câmp privat, protejat de încapsularea Domain-Driven Design.
+- **Problema 4 (Leak de date între teste - Numărătoare incorectă):** Testul de failure (400) verifica `tutorsCount.Should().Be(0)`, dar eșua găsind 1 tutore, deoarece testul rula pe aceeași conexiune deschisă în care primul test inserase deja date. Similar pentru `GetTutors`, unde datele globale de seed din `Program.cs` stricau aserțiunile de tip `HaveCount(1)` sau `BeEmpty()`.
+- **Problema 5 (Enum Hallucination):** La `CreateSession`, a apărut eroarea de compilare `CS0117: 'SessionStatus' does not contain a definition for 'Scheduled'` pentru că AI-ul a ghicit o valoare în loc să folosească enum-ul real.
+
+### Modificări aduse în skill (`SKILL.md`) (After v1.0, v1.1, v1.2)
+
+- **Anti-Hallucination & Context Rules:** S-a introdus o secțiune strictă care interzice ghicirea DTO-urilor, a rutelor, a proprietăților și a membrilor de Enum.
+- **Database Seeding (Foreign Keys):** Adăugată regula obligatorie ca orice ID din Request (ex: `SubjectId`, `TutorId`) să fie salvat explicit în baza de date în faza de `Arrange`, prevenind erorile de constrângere SQLite.
+- **DDD Encapsulation & EF Core Includes:** Interzicerea strictă a folosirii metodei `.Include()` pe proprietăți private. Verificarea relațiilor se face interogând direct tabelele de legătură (ex: `db.Set<TutorSubject>()`).
+- **Failure Assertions & Error Parsing:** S-a forțat citirea erorilor din răspuns cu `ReadAsStringAsync()` în loc de o deserializare oarbă în `ProblemDetails`, pentru a acomoda formatul custom din CQRS.
+- **State Verification & Seed Independence:** În testele de eșec sau de listare, aserțiunile nu mai verifică un număr absolut de elemente (evitând interferențele cu seed-ul global sau leak-urile între teste), ci folosesc `Contains` pentru datele specifice testului.
+
 ## 4. Skill `unit-testing`: Unit Tests pentru Domenii si Handlere
 
 ### Prompt Initial:
@@ -143,3 +169,5 @@ Am dat din nou prompt-ul. AI-ul a aplicat regula de 1:1 mapping, însă pentru f
   - _Step 1 (The Exclusion Sweep):_ Am instruit agentul să excludă din start fișierele fără logică de business (DTO-uri, infrastructură, configurări) pentru a nu distorsiona calculul matematic al coverage-ului.
   - _Step 3 (Self-Verification):_ Am impus o regulă strictă de validare. Agentul nu mai are voie să considere testarea completă doar pentru că nu există erori în consolă. Trebuie să verifice efectiv raportul generat și l-am instruit explicit să scrie teste și pentru operațiunile secvențiale (Line-Coverage Blindspot), forțându-l să acopere întregul fișier, nu doar ramurile condiționale.
 - **Rezultat Final:** Fiind ghidat să lucreze organizat și să se auto-verifice strict pe baza raportului HTML/XML, agentul a acoperit manual ultimele rânduri lipsă și a ajuns la 100% coverage absolut.
+
+---
