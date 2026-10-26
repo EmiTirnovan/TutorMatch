@@ -14,6 +14,8 @@ using TutorMatch.Api.Features.Tutors.UpdateTutor;
 
 namespace TutorMatch.Api.Features;
 
+// Bootstrapping registration code is excluded from unit testing.
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public static class DependencyInjection
 {
     public static IServiceCollection AddCqrs(this IServiceCollection services)

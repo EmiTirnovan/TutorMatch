@@ -10,6 +10,8 @@ using TutorMatch.Api.Infrastructure.Persistence;
 namespace TutorMatch.Api.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TutorMatchDbContext))]
+    // Generated snapshot code is infrastructure and is excluded from unit-test coverage.
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     partial class TutorMatchDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

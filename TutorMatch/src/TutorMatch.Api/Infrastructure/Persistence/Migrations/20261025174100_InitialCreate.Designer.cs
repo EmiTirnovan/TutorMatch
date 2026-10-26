@@ -12,6 +12,8 @@ namespace TutorMatch.Api.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TutorMatchDbContext))]
     [Migration("20261025174100_InitialCreate")]
+    // Generated migration code is infrastructure and is excluded from unit-test coverage.
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     partial class InitialCreate
     {
         /// <inheritdoc />

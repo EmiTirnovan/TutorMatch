@@ -6,6 +6,8 @@ using TutorMatch.Api.Domain.Tutors;
 
 namespace TutorMatch.Api.Infrastructure.Persistence.Configurations;
 
+// EF Core configuration is infrastructure glue and is excluded from unit-test coverage.
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public class SessionConfiguration : IEntityTypeConfiguration<Session>
 {
     public void Configure(EntityTypeBuilder<Session> builder)

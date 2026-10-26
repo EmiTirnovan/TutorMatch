@@ -11,6 +11,8 @@ using TutorMatch.Api.Infrastructure.Tutors;
 
 namespace TutorMatch.Api.Infrastructure;
 
+// Dependency injection registration is infrastructure glue and is excluded from unit-test coverage.
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public static class DependencyInjection
 {
     // Production SQLite persistence registration

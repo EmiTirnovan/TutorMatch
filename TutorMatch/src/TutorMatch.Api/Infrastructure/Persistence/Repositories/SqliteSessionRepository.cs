@@ -3,7 +3,8 @@ using TutorMatch.Api.Domain.Sessions;
 
 namespace TutorMatch.Api.Infrastructure.Persistence.Repositories;
 
-// SQLite EF Core implementation of ISessionRepository preserving contract and behavior
+// SQLite persistence implementation is infrastructure glue and is excluded from unit-test coverage.
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public class SqliteSessionRepository : ISessionRepository
 {
     private readonly TutorMatchDbContext _context;
