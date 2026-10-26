@@ -1,3 +1,4 @@
+using System.Reflection;
 using FluentAssertions;
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Sessions;
@@ -15,7 +16,7 @@ public class StudentTests
     }
 
     [Fact]
-    public void Constructor_ValidId_ShouldInstantiateStudentWithEmptySessions()
+    public void Given_validData_When_constructingStudent_Then_initializesProperties()
     {
         var id = Guid.NewGuid();
         var student = new Student(id, "Alex", "alex@example.com");
@@ -27,15 +28,15 @@ public class StudentTests
     }
 
     [Fact]
-    public void Constructor_EmptyId_ShouldThrowArgumentException()
+    public void Given_emptyId_When_constructingStudent_Then_throwsArgumentException()
     {
-        var act = () => new Student(Guid.Empty, "Alex", "alex@example.com");
+        var action = () => new Student(Guid.Empty, "Alex", "alex@example.com");
 
-        act.Should().Throw<ArgumentException>();
+        action.Should().Throw<ArgumentException>();
     }
 
     [Fact]
-    public void BookSession_ValidParameters_ShouldCreateSessionAndAddToCollection()
+    public void Given_validParameters_When_bookingSession_Then_returnsSessionAndAddsToCollection()
     {
         var studentId = Guid.NewGuid();
         var tutorId = Guid.NewGuid();
@@ -44,7 +45,6 @@ public class StudentTests
 
         var session = student.BookSession(tutorId, interval);
 
-        session.Should().NotBeNull();
         session.StudentId.Should().Be(studentId);
         session.TutorId.Should().Be(tutorId);
         session.Interval.Should().Be(interval);
@@ -52,35 +52,22 @@ public class StudentTests
     }
 
     [Fact]
-    public void BookSession_TutorSameAsStudent_ShouldThrowArgumentException()
-    {
-        var studentId = Guid.NewGuid();
-        var student = new Student(studentId, "Alex", "alex@example.com");
-        var interval = CreateSampleInterval();
-
-        var act = () => student.BookSession(studentId, interval);
-
-        act.Should().Throw<ArgumentException>();
-    }
-
-    [Fact]
-    public void BookSession_OverlappingSession_ShouldThrowInvalidOperationException()
+    public void Given_overlappingInterval_When_bookingSession_Then_throwsInvalidOperationException()
     {
         var student = new Student(Guid.NewGuid(), "Alex", "alex@example.com");
-        var tutor1 = Guid.NewGuid();
-        var tutor2 = Guid.NewGuid();
+        var firstTutorId = Guid.NewGuid();
+        var secondTutorId = Guid.NewGuid();
         var interval = CreateSampleInterval(1, 2);
-
-        student.BookSession(tutor1, interval);
-
+        student.BookSession(firstTutorId, interval);
         var overlappingInterval = CreateSampleInterval(2, 2);
-        var act = () => student.BookSession(tutor2, overlappingInterval);
 
-        act.Should().Throw<InvalidOperationException>();
+        var action = () => student.BookSession(secondTutorId, overlappingInterval);
+
+        action.Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
-    public void AddSession_ValidSession_ShouldAddToCollection()
+    public void Given_validSession_When_addingSession_Then_addsToCollection()
     {
         var studentId = Guid.NewGuid();
         var student = new Student(studentId, "Alex", "alex@example.com");
@@ -92,35 +79,104 @@ public class StudentTests
     }
 
     [Fact]
-    public void AddSession_MismatchStudentId_ShouldThrowInvalidOperationException()
+    public void Given_missingSession_When_cancellingSession_Then_throwsKeyNotFoundException()
     {
         var student = new Student(Guid.NewGuid(), "Alex", "alex@example.com");
-        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
 
-        var act = () => student.AddSession(session);
+        var action = () => student.CancelSession(Guid.NewGuid());
 
-        act.Should().Throw<InvalidOperationException>();
+        action.Should().Throw<KeyNotFoundException>();
     }
 
     [Fact]
-    public void AddSession_DuplicateSession_ShouldThrowInvalidOperationException()
+    public void Given_nullName_When_constructingStudent_Then_throwsArgumentNullException()
+    {
+        var action = () => new Student(Guid.NewGuid(), null!, "alex@example.com");
+
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Given_nullEmail_When_constructingStudent_Then_throwsArgumentNullException()
+    {
+        var action = () => new Student(Guid.NewGuid(), "Alex", null!);
+
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Given_selfTutorId_When_bookingSession_Then_throwsArgumentException()
+    {
+        var studentId = Guid.NewGuid();
+        var student = new Student(studentId, "Alex", "alex@example.com");
+
+        var action = () => student.BookSession(studentId, CreateSampleInterval());
+
+        action.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Given_emptyTutorId_When_bookingSession_Then_throwsArgumentException()
+    {
+        var student = new Student(Guid.NewGuid(), "Alex", "alex@example.com");
+
+        var action = () => student.BookSession(Guid.Empty, CreateSampleInterval());
+
+        action.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Given_nullInterval_When_bookingSession_Then_throwsArgumentNullException()
+    {
+        var student = new Student(Guid.NewGuid(), "Alex", "alex@example.com");
+
+        var action = () => student.BookSession(Guid.NewGuid(), null!);
+
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Given_nullSession_When_addingSession_Then_throwsArgumentNullException()
+    {
+        var student = new Student(Guid.NewGuid(), "Alex", "alex@example.com");
+
+        var action = () => student.AddSession(null!);
+
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Given_mismatchedStudent_When_addingSession_Then_throwsInvalidOperationException()
+    {
+        var studentId = Guid.NewGuid();
+        var student = new Student(studentId, "Alex", "alex@example.com");
+        var otherStudentSession = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+
+        var action = () => student.AddSession(otherStudentSession);
+
+        action.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Given_duplicateSessionId_When_addingSession_Then_throwsInvalidOperationException()
     {
         var studentId = Guid.NewGuid();
         var student = new Student(studentId, "Alex", "alex@example.com");
         var session = Session.Create(Guid.NewGuid(), studentId, CreateSampleInterval());
-
         student.AddSession(session);
-        var act = () => student.AddSession(session);
 
-        act.Should().Throw<InvalidOperationException>();
+        var action = () => student.AddSession(session);
+
+        action.Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
-    public void CancelSession_ExistingSession_ShouldCancelSession()
+    public void Given_existingSession_When_cancellingSession_Then_cancelsIt()
     {
         var studentId = Guid.NewGuid();
         var student = new Student(studentId, "Alex", "alex@example.com");
-        var session = student.BookSession(Guid.NewGuid(), CreateSampleInterval());
+        var session = Session.Create(Guid.NewGuid(), studentId, CreateSampleInterval());
+        student.AddSession(session);
 
         student.CancelSession(session.Id);
 
@@ -128,20 +184,28 @@ public class StudentTests
     }
 
     [Fact]
-    public void CancelSession_NonExistentSession_ShouldThrowKeyNotFoundException()
+    public void Given_nonBookedSessionWithinInterval_When_bookingSession_Then_allowsNewBooking()
     {
-        var student = new Student(Guid.NewGuid(), "Alex", "alex@example.com");
+        var studentId = Guid.NewGuid();
+        var student = new Student(studentId, "Alex", "alex@example.com");
+        var interval = new DateRange(new DateTime(2026, 11, 1, 10, 0, 0), new DateTime(2026, 11, 1, 12, 0, 0));
+        var cancelledSession = Session.Create(Guid.NewGuid(), studentId, interval);
+        cancelledSession.Cancel();
+        student.AddSession(cancelledSession);
 
-        var act = () => student.CancelSession(Guid.NewGuid());
+        var action = () => student.BookSession(Guid.NewGuid(), interval);
 
-        act.Should().Throw<KeyNotFoundException>();
+        action.Should().NotThrow();
     }
 
     [Fact]
-    public void Sessions_ShouldBeOfTypeIReadOnlyListOfSession()
+    public void Given_privateConstructor_When_invokingViaReflection_Then_createsInstance()
     {
-        var student = new Student(Guid.NewGuid(), "Alex", "alex@example.com");
+        var ctor = typeof(Student).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, binder: null, Type.EmptyTypes, modifiers: null)!;
 
-        student.Sessions.Should().BeAssignableTo<IReadOnlyList<Session>>();
+        var instance = ctor.Invoke(null);
+
+        instance.Should().NotBeNull();
+        ((Student)instance!).Sessions.Should().BeEmpty();
     }
 }

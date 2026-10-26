@@ -1,0 +1,257 @@
+---
+name: efcore-sqlite-repositories
+description: Replaces in-memory repositories with real EF Core SQLite persistence while strictly preserving existing repository interfaces, entity invariants, and vertical slice isolation without modifying any CQRS handlers or endpoints.
+---
+
+# EF Core SQLite Repositories Skill
+
+This skill guides the design, configuration, and generation of a production-ready SQLite persistence layer using Entity Framework Core, replacing in-memory repositories while maintaining zero-breakage isolation.
+
+## Core Rules
+
+1. **Strict Isolation & Zero Feature Changes**:
+   - **DO NOT MODIFY** any files inside `Features/` (handlers, commands, queries, endpoints, requests, responses).
+   - **DO NOT MODIFY** domain interfaces: `ITutorRepository` and `ISessionRepository` must remain strictly identical.
+   - All repository implementations must adhere to the exact synchronous signatures expected by callers (`Add`, `GetById`, `GetAll`, `Update`, `Delete`).
+
+2. **Dedicated DbContext**:
+   - Create `TutorMatchDbContext` extending `DbContext`.
+   - Expose `DbSet<Tutor> Tutors => Set<Tutor>();`
+   - Expose `DbSet<Session> Sessions => Set<Session>();`
+   - Expose `DbSet<Student> Students => Set<Student>();`
+   - Expose `DbSet<Subject> Subjects => Set<Subject>();`
+   - Expose `DbSet<TutorSubject> TutorSubjects => Set<TutorSubject>();`
+   - Apply separate configuration classes using `modelBuilder.ApplyConfigurationsFromAssembly(typeof(TutorMatchDbContext).Assembly)`.
+
+3. **Fluent Mapping & Modeling**:
+   - **Value Objects (`DateRange`)**:
+     - Single owned value object on `Session.Interval`: configured via `builder.OwnsOne(s => s.Interval, interval => { interval.Property(d => d.Start).HasColumnName("StartTime").IsRequired(); interval.Property(d => d.End).HasColumnName("EndTime").IsRequired(); });`.
+     - Calculated properties (`Session.DateRange`, `Session.StartTime`, `Session.EndTime`) must be explicitly ignored (`builder.Ignore(...)`) to avoid schema conflicts.
+     - Collections of value objects on `Tutor.Availability`: mapped via `builder.OwnsMany(t => t.Availability, a => { a.ToTable("TutorAvailabilities"); a.WithOwner().HasForeignKey("TutorId"); a.Property<Guid>("Id").ValueGeneratedOnAdd(); a.HasKey("Id"); a.Property(d => d.Start).IsRequired(); a.Property(d => d.End).IsRequired(); });`.
+   - **Optimistic Concurrency (`Version`)**:
+     - Map `Session.Version` with `builder.Property(s => s.Version).IsConcurrencyToken().IsRequired();`.
+     - Repository updates must translate `DbUpdateConcurrencyException` into appropriate conflict exceptions (`InvalidOperationException`) expected by CQRS handlers.
+   - **Entity Relationships**:
+     - `Tutor` to `Subject`: Many-to-Many via `TutorSubject` join entity with composite key `(TutorId, SubjectId)` and cascade deletes.
+     - `Student` to `Session`: One-to-Many via `builder.HasMany(s => s.Sessions).WithOne().HasForeignKey(s => s.StudentId).OnDelete(DeleteBehavior.Restrict);`.
+     - `Session` to `Tutor`: Foreign key on `Session.TutorId` pointing to `Tutor.Id`.
+
+4. **Repository Implementation Rules**:
+   - `Add(entity)`: Validate not null, ensure non-empty ID, check for duplicate ID throwing `InvalidOperationException` to match contract behavior, then persist with `SaveChanges()`.
+   - `GetById(id)`: Include relevant owned value objects and navigations (`Availability`, `TutorSubjects`), returning entity or `null`.
+   - `GetAll()`: Query with eager loading and return an isolated snapshot as `IReadOnlyList<T>`.
+   - `Update(entity)`: Ensure entity existence (throw `KeyNotFoundException` if missing), handle both tracked and detached instances, and commit changes with `SaveChanges()`.
+   - `Delete(id)`: Find entity by ID, remove from DbSet, commit with `SaveChanges()`, and return `true` if removed, or `false` if not found.
+
+5. **Dependency Injection & In-Memory Support**:
+   - Register SQLite persistence using `AddSqliteRepositories(this IServiceCollection services, string connectionString = "Data Source=tutormatch.db")`.
+   - Provide support for integration tests with `AddSqliteInMemoryRepositories(this IServiceCollection services, DbConnection? connection = null)` utilizing an open `SqliteConnection("Data Source=:memory:")`.
+   - In `Program.cs`, replace `AddSessionInfrastructure()` and `AddTutorInfrastructure()` with `AddSqliteRepositories(...)`.
+   - Run database migrations automatically during application startup inside an `IServiceScope`.
+   - Maintain legacy DI registration methods as backward-compatible wrappers if needed by existing test suites.
+
+---
+
+## Architecture & File Layout
+
+Place persistence classes under `Infrastructure/Persistence/`:
+
+```text
+Infrastructure/
+  Persistence/
+    Configurations/
+      TutorConfiguration.cs
+      SessionConfiguration.cs
+      StudentConfiguration.cs
+      SubjectConfiguration.cs
+      TutorSubjectConfiguration.cs
+    Migrations/
+      ... (Generated by dotnet-ef)
+    Repositories/
+      SqliteTutorRepository.cs
+      SqliteSessionRepository.cs
+    TutorMatchDbContext.cs
+  DependencyInjection.cs
+```
+
+---
+
+## Entity Configurations
+
+### TutorConfiguration
+```csharp
+public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
+{
+    public void Configure(EntityTypeBuilder<Tutor> builder)
+    {
+        builder.ToTable("Tutors");
+        builder.HasKey(t => t.Id);
+        builder.Property(t => t.Id).ValueGeneratedNever();
+
+        builder.Property(t => t.Name).IsRequired().HasMaxLength(200);
+        builder.Property(t => t.Email).IsRequired().HasMaxLength(200);
+        builder.Property(t => t.Bio).IsRequired().HasMaxLength(2000);
+        builder.Property(t => t.HourlyRate).HasPrecision(18, 2);
+
+        builder.OwnsMany(t => t.Availability, a =>
+        {
+            a.ToTable("TutorAvailabilities");
+            a.WithOwner().HasForeignKey("TutorId");
+            a.Property<Guid>("Id").ValueGeneratedOnAdd();
+            a.HasKey("Id");
+            a.Property(d => d.Start).IsRequired();
+            a.Property(d => d.End).IsRequired();
+        });
+
+        builder.HasMany(t => t.TutorSubjects)
+            .WithOne(ts => ts.Tutor)
+            .HasForeignKey(ts => ts.TutorId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+```
+
+### SessionConfiguration
+```csharp
+public class SessionConfiguration : IEntityTypeConfiguration<Session>
+{
+    public void Configure(EntityTypeBuilder<Session> builder)
+    {
+        builder.ToTable("Sessions");
+        builder.HasKey(s => s.Id);
+        builder.Property(s => s.Id).ValueGeneratedNever();
+
+        builder.Property(s => s.TutorId).IsRequired();
+        builder.Property(s => s.StudentId).IsRequired();
+
+        builder.OwnsOne(s => s.Interval, interval =>
+        {
+            interval.Property(d => d.Start)
+                .HasColumnName("StartTime")
+                .IsRequired();
+            interval.Property(d => d.End)
+                .HasColumnName("EndTime")
+                .IsRequired();
+        });
+
+        builder.Ignore(s => s.DateRange);
+        builder.Ignore(s => s.StartTime);
+        builder.Ignore(s => s.EndTime);
+
+        builder.Property(s => s.Status)
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.Property(s => s.Version)
+            .IsConcurrencyToken()
+            .IsRequired();
+
+        builder.HasOne<Tutor>()
+            .WithMany()
+            .HasForeignKey(s => s.TutorId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+```
+
+---
+
+## Repository Implementation Example
+
+```csharp
+public class SqliteSessionRepository : ISessionRepository
+{
+    private readonly TutorMatchDbContext _context;
+
+    public SqliteSessionRepository(TutorMatchDbContext context)
+    {
+        _context = context;
+    }
+
+    public void Add(Session session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+
+        if (session.Id == Guid.Empty)
+        {
+            throw new ArgumentException("Session ID cannot be empty.", nameof(session));
+        }
+
+        if (_context.Sessions.Any(s => s.Id == session.Id))
+        {
+            throw new InvalidOperationException($"A session with ID '{session.Id}' already exists.");
+        }
+
+        _context.Sessions.Add(session);
+        _context.SaveChanges();
+    }
+
+    public Session? GetById(Guid id)
+    {
+        return _context.Sessions.FirstOrDefault(s => s.Id == id);
+    }
+
+    public IReadOnlyList<Session> GetAll()
+    {
+        return _context.Sessions.ToList().AsReadOnly();
+    }
+
+    public void Update(Session session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+
+        var entry = _context.Entry(session);
+        if (entry.State == EntityState.Detached)
+        {
+            var existing = _context.Sessions.Find(session.Id);
+            if (existing is null)
+            {
+                throw new KeyNotFoundException($"Session with ID '{session.Id}' was not found.");
+            }
+
+            _context.Entry(existing).CurrentValues.SetValues(session);
+        }
+
+        try
+        {
+            _context.SaveChanges();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new InvalidOperationException("The session was modified concurrently by another process.", ex);
+        }
+    }
+
+    public bool Delete(Guid id)
+    {
+        var session = _context.Sessions.Find(id);
+        if (session is null)
+        {
+            return false;
+        }
+
+        _context.Sessions.Remove(session);
+        _context.SaveChanges();
+        return true;
+    }
+}
+```
+
+---
+
+## Integration Testing with SQLite In-Memory
+
+When testing with SQLite in-memory, keep an open `SqliteConnection` alive for the lifetime of the test fixture:
+
+```csharp
+var connection = new SqliteConnection("Data Source=:memory:");
+connection.Open();
+
+var options = new DbContextOptionsBuilder<TutorMatchDbContext>()
+    .UseSqlite(connection)
+    .Options;
+
+using var context = new TutorMatchDbContext(options);
+context.Database.EnsureCreated();
+```

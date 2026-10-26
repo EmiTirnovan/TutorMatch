@@ -21,3 +21,8 @@ obj/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+## SQLite database files
+*.db
+*.db-shm
+*.db-wal

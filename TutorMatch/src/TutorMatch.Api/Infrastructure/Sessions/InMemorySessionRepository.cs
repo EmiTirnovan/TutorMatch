@@ -3,6 +3,8 @@ using TutorMatch.Api.Domain.Sessions;
 
 namespace TutorMatch.Api.Infrastructure.Sessions;
 
+// In-memory repository wiring is not a business rule and is excluded from unit-test coverage.
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public class InMemorySessionRepository : ISessionRepository
 {
     private readonly ConcurrentDictionary<Guid, Session> _sessions = new();

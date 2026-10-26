@@ -5,6 +5,8 @@ using TutorMatch.Api.Common.Results;
 
 namespace TutorMatch.Api.Features.Tutors.GetTutors;
 
+// Minimal API endpoint wiring is not unit-testable and is excluded from coverage.
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public static class GetTutorsEndpoint
 {
     public static IEndpointRouteBuilder MapGetTutors(this IEndpointRouteBuilder group)
