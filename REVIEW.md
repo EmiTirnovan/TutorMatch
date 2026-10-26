@@ -7,10 +7,10 @@ Acest document centralizează rezultatele evaluării statice automate a codului,
 ## 1. Review pe repository-ul propriu (`TutorMatch`)
 
 > [!NOTE]
-> Această analiză inițială a fost rulată pe starea curentă a repository-ului `TutorMatch` (implementarea `in-memory` a vertical slices). 
-> O re-evaluare completă va fi executată automat după finalizarea și fuziunea PR-urilor pentru Issue #22 (Persistență SQLite / EF Core), Issue #23 (Teste unitare) și Issue #24 (Teste de integrare).
+> Această analiză a fost actualizată automat în urma integrării (merge cu `main`) a PR-urilor pentru Issue #22 (Persistență SQLite / EF Core), Issue #23 (Teste unitare) și Issue #24 (Teste de integrare).
+> În urma integrării, lipsa testelor unitare pe handlere și convențiile de denumire a metodelor din `DateRangeTests` au fost rezolvate cu succes de către colegi.
 
-Summary: 8 issues found (3 Critical, 3 Major, 2 Minor)
+Summary: 6 issues found (3 Critical, 2 Major, 1 Minor)
 
 | # | File:Line | Severity | Category | Problem | Proposed fix |
 |---|-----------|----------|----------|---------|--------------|
@@ -19,9 +19,11 @@ Summary: 8 issues found (3 Critical, 3 Major, 2 Minor)
 | 3 | `TutorMatch/src/TutorMatch.Api/Domain/Students/Student.cs:19` | Critical | domain invariants | Constructorul entității `Student` acceptă parametri impliciți `name = ""` și `email = ""` și nu validează prezența caracterelor non-whitespace, permițând crearea unui student invalid cu nume și email vide. | Se elimină valorile implicite vide și se adaugă validările `if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException(...)` și `if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException(...)`, similar cu verificările din agregatul `Tutor`. |
 | 4 | `TutorMatch/src/TutorMatch.Api/Features/Tutors/CreateTutor/CreateTutorRequest.cs:3` | Major | slice boundaries | DTO-ul `DateRangeDto` este declarat în `CreateTutorRequest.cs` (în interiorul slice-ului `CreateTutor`), dar este importat și folosit direct în alt vertical slice (`GetTutorByIdQueryHandler.cs:4` și `GetTutorByIdResponse.cs:1`), cuplând două slice-uri independente. | Se mută `DateRangeDto` într-o zonă comună de contracte/DTO-uri (`Common/Dtos/DateRangeDto.cs` sau `Features/Tutors/Contracts/`) ori se declară un DTO specific fiecărui slice pentru a asigura izolarea verticală completă. |
 | 5 | `TutorMatch/src/TutorMatch.Api/Features/Sessions/UpdateSession/UpdateSessionCommandHandler.cs:29` | Major | error handling | Apelul `_repository.Update(session)` poate arunca `KeyNotFoundException` în caz de ștergere concurentă între citire și scriere (vezi `InMemorySessionRepository.cs:43`), însă handlerul prinde doar `ArgumentException` și `InvalidOperationException`. O excepție concurentă ar duce la un crash HTTP 500 necontrolat în loc de Result funcțional. Același defect apare și în `UpdateTutorCommandHandler.cs:28`. | Se adaugă un bloc `catch (KeyNotFoundException ex)` în handler care să returneze `Result.Failure(Error.NotFound("Session.NotFound", ex.Message))` conform cerințelor din `cqrs/SKILL.md`. |
-| 6 | `TutorMatch/tests/TutorMatch.Tests/Features/Sessions/.gitkeep:1` | Major | test quality | Absența completă a testelor unitare pentru CQRS Command și Query Handlers (directorul `Features/` conține doar fișierul `.gitkeep`), lăsând logica de orchestrare a slice-urilor și maparea erorilor către `Result` neacoperite la nivel de handler. | Implementarea suitei de teste unitare pentru handlere (izolând repository-ul prin mock/stub) pentru validarea fluxurilor de succes și eroare (NotFound, Validation, Conflict). *(Notă: sarcină alocată colegilor în Issue #23 și #24)*. |
-| 7 | `TutorMatch/src/TutorMatch.Api/Features/Tutors/GetTutors/GetTutorsResponse.cs:3` | Minor | naming | Numele fișierului este `GetTutorsResponse.cs`, dar tipul record declarat în fișier este `TutorSummaryResponse`, creând o neconcordanță între numele fișierului și al tipului, precum și o deviație față de convenția `<UseCase>Response` utilizată în `GetSessionsResponse.cs`. | Se redenumește tipul în `GetTutorsResponse` (sau se declară un record `GetTutorsResponse` ce împachetează colecția) și se actualizează referințele din `GetTutorsQuery`, `GetTutorsQueryHandler`, `GetTutorsEndpoint` și `DependencyInjection.cs`. |
-| 8 | `TutorMatch/tests/TutorMatch.Tests/Domain/Common/DateRangeTests.cs:55` | Minor | test quality | Metoda de test `Overlaps_ShouldReturnExpectedResult` nu respectă convenția standardizată `UnitOfWork_StateUnderTest_ExpectedBehavior` adoptată în restul suitei de teste unitare (`SessionTests.cs`, `StudentTests.cs`). | Se redenumește metoda conform convenției, de exemplu: `Overlaps_GivenDifferentDateRangeConfigurations_ShouldReturnExpectedResult`. |
+| 6 | `TutorMatch/src/TutorMatch.Api/Features/Tutors/GetTutors/GetTutorsResponse.cs:3` | Minor | naming | Numele fișierului este `GetTutorsResponse.cs`, dar tipul record declarat în fișier este `TutorSummaryResponse`, creând o neconcordanță între numele fișierului și al tipului, precum și o deviație față de convenția `<UseCase>Response` utilizată în `GetSessionsResponse.cs`. | Se redenumește tipul în `GetTutorsResponse` (sau se declară un record `GetTutorsResponse` ce împachetează colecția) și se actualizează referințele din `GetTutorsQuery`, `GetTutorsQueryHandler`, `GetTutorsEndpoint` și `DependencyInjection.cs`. |
+
+### Probleme remediate prin PR-urile colegilor (#22, #23, #24)
+- **`test quality` (fost #6):** Lipsa testelor unitare pentru handlerele CQRS a fost complet rezolvată prin adăugarea suitei complete de teste în `TutorMatch.Tests/Features/` (acoperire de 100% obținută pe handlere).
+- **`test quality` (fost #8):** Convenția de denumire a metodelor de testare din `DateRangeTests.cs` a fost refactorizată conform standardului BDD / FluentAssertions (`Given_..._When_..._Then_...`).
 
 ---
 
@@ -35,4 +37,3 @@ Summary: 0 issues found (0 Critical, 0 Major, 0 Minor) *(Pending execution on pe
 | # | File:Line | Severity | Category | Problem | Proposed fix |
 |---|-----------|----------|----------|---------|--------------|
 | - | *TBD* | *TBD* | *TBD* | *Secțiune pregătită pentru analiza statică a codului din repository-ul colegului* | *Urmează a fi completat conform formatului skill-ului `code-review`* |
-
