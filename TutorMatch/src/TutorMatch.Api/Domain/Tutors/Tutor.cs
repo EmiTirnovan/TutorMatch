@@ -132,7 +132,8 @@ public class Tutor
 
         return _tutorSubjects.Remove(item);
     }
-
+    
+    
     private static void ValidateProfile(string name, string email, string bio, decimal hourlyRate)
     {
         if (string.IsNullOrWhiteSpace(name))

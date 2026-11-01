@@ -11,6 +11,8 @@ using TutorMatch.Api.Features.Tutors.CreateTutor;
 using TutorMatch.Api.Features.Tutors.DeleteTutor;
 using TutorMatch.Api.Features.Tutors.GetTutorById;
 using TutorMatch.Api.Features.Tutors.GetTutors;
+using TutorMatch.Api.Features.Discovery.SearchTutors;
+using TutorMatch.Api.Features.Discovery.RateSession;
 using TutorMatch.Api.Features.Tutors.UpdateTutor;
 
 namespace TutorMatch.Api.Features;
@@ -36,6 +38,10 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetSessionByIdQuery, Result<GetSessionByIdResponse>>, GetSessionByIdQueryHandler>();
         services.AddScoped<IQueryHandler<GetSessionsQuery, Result<List<GetSessionsResponse>>>, GetSessionsQueryHandler>();
 
+        // Discovery CQRS Handlers
+        services.AddScoped<IQueryHandler<SearchTutorsQuery, Result<SearchTutorsResponse>>, SearchTutorsQueryHandler>();
+        services.AddScoped<ICommandHandler<RateSessionCommand, Result>, RateSessionCommandHandler>();
+        
         return services;
     }
 }

@@ -7,6 +7,7 @@ using TutorMatch.Api.Features.Sessions;
 using TutorMatch.Api.Features.Tutors;
 using TutorMatch.Api.Infrastructure;
 using TutorMatch.Api.Infrastructure.Persistence;
+using TutorMatch.Api.Features.Discovery;
 
 // Bootstrapping logic cannot be effectively unit-tested.
 [ExcludeFromCodeCoverage]
@@ -37,6 +38,7 @@ public class Program
 
         app.MapTutorEndpoints();
         app.MapSessionEndpoints();
+        app.MapDiscoveryEndpoints();    
 
         // Migrate SQLite database and seed initial demo tutor inside a scoped container
         using (var scope = app.Services.CreateScope())
