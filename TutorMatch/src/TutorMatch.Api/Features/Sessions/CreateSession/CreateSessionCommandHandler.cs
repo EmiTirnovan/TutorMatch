@@ -25,6 +25,14 @@ public class CreateSessionCommandHandler : ICommandHandler<CreateSessionCommand,
         try
         {
             var interval = new DateRange(command.StartTime, command.EndTime);
+
+            var tutorSessions = _repository.GetAll().Where(s => s.TutorId == command.TutorId && s.Status == SessionStatus.Booked);
+            if (tutorSessions.Any(s => s.Interval.Overlaps(interval)))
+            {
+                return Task.FromResult(Result<CreateSessionResponse>.Failure(
+                    Error.Conflict("Session.Conflict", "Slotul selectat se suprapune cu o altă sesiune a tutorelui.")));
+            }
+
             var session = Session.Create(command.TutorId, command.StudentId, interval);
 
             _repository.Add(session);

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
+using TutorMatch.Api.Features.Sessions.BookSession;
 using TutorMatch.Api.Features.Sessions.CreateSession;
 using TutorMatch.Api.Features.Sessions.DeleteSession;
 using TutorMatch.Api.Features.Sessions.GetSessionById;
@@ -28,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetTutorsQuery, Result<List<TutorSummaryResponse>>>, GetTutorsQueryHandler>();
 
         // Sessions CQRS Handlers
+        services.AddScoped<ICommandHandler<BookSessionCommand, Result<BookSessionResponse>>, BookSessionCommandHandler>();
         services.AddScoped<ICommandHandler<CreateSessionCommand, Result<CreateSessionResponse>>, CreateSessionCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateSessionCommand>, UpdateSessionCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteSessionCommand>, DeleteSessionCommandHandler>();

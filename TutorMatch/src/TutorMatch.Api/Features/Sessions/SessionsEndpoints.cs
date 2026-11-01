@@ -1,3 +1,4 @@
+using TutorMatch.Api.Features.Sessions.BookSession;
 using TutorMatch.Api.Features.Sessions.CreateSession;
 using TutorMatch.Api.Features.Sessions.DeleteSession;
 using TutorMatch.Api.Features.Sessions.GetSessionById;
@@ -14,6 +15,7 @@ public static class SessionsEndpoints
     {
         var group = app.MapGroup("/api/sessions");
 
+        group.MapBookSession();
         group.MapCreateSession();
         group.MapGetSessionById();
         group.MapGetSessions();

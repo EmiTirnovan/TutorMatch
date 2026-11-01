@@ -173,4 +173,35 @@ public class SessionTests
 
         action.Should().Throw<InvalidOperationException>();
     }
+
+    [Fact]
+    public void Given_validSession_When_incrementingVersion_Then_versionIncreasesByOne()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+
+        session.IncrementVersion();
+
+        session.Version.Should().Be(2);
+    }
+
+    [Fact]
+    public void Given_matchingVersion_When_verifyingVersion_Then_doesNotThrow()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+
+        var action = () => session.VerifyVersion(1);
+
+        action.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Given_mismatchedVersion_When_verifyingVersion_Then_throwsInvalidOperationException()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+
+        var action = () => session.VerifyVersion(2);
+
+        action.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Concurrency conflict*");
+    }
 }
