@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Features.Sessions.BookSession;
@@ -13,6 +13,7 @@ using TutorMatch.Api.Features.Tutors.GetTutorById;
 using TutorMatch.Api.Features.Tutors.GetTutors;
 using TutorMatch.Api.Features.Discovery.SearchTutors;
 using TutorMatch.Api.Features.Discovery.RateSession;
+using TutorMatch.Api.Features.Tutors.UpdateAvailability;
 using TutorMatch.Api.Features.Tutors.UpdateTutor;
 
 namespace TutorMatch.Api.Features;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         // Tutors CQRS Handlers
         services.AddScoped<ICommandHandler<CreateTutorCommand, Result<CreateTutorResponse>>, CreateTutorCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateTutorCommand>, UpdateTutorCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdateAvailabilityCommand>, UpdateAvailabilityCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteTutorCommand>, DeleteTutorCommandHandler>();
         services.AddScoped<IQueryHandler<GetTutorByIdQuery, Result<GetTutorByIdResponse>>, GetTutorByIdQueryHandler>();
         services.AddScoped<IQueryHandler<GetTutorsQuery, Result<List<TutorSummaryResponse>>>, GetTutorsQueryHandler>();

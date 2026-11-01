@@ -1,7 +1,8 @@
-﻿using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Domain.Tutors.Events;
 
 namespace TutorMatch.Api.Features.Tutors.CreateTutor;
 
@@ -41,6 +42,11 @@ public class CreateTutorCommandHandler : ICommandHandler<CreateTutorCommand, Res
             }
 
             _repository.Add(tutor);
+
+            // Publish TutorSavedNotification for in-process subscribers like AI embedding generation
+            var notification = tutor.CreateTutorSavedNotification();
+            tutor.AddDomainEvent(notification);
+            TutorSavedNotification.Publish(notification);
 
             var response = new CreateTutorResponse(
                 tutor.Id,

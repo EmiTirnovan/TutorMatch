@@ -1,10 +1,8 @@
-﻿namespace TutorMatch.Api.Features.Tutors.CreateTutor;
+using TutorMatch.Api.Common.Dtos;
 
-// API request DTOs are not unit-tested and are excluded from coverage.
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-public record DateRangeDto(DateTime Start, DateTime End);
+namespace TutorMatch.Api.Features.Tutors.CreateTutor;
 
-// API request DTOs are not unit-tested and are excluded from coverage.
+// DTOs and messages contain no business logic and are excluded from unit testing.
 [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public record CreateTutorRequest(
     string Name,

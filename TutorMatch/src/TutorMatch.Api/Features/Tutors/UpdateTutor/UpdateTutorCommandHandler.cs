@@ -1,6 +1,7 @@
-﻿using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Domain.Tutors.Events;
 
 namespace TutorMatch.Api.Features.Tutors.UpdateTutor;
 
@@ -27,12 +28,22 @@ public class UpdateTutorCommandHandler : ICommandHandler<UpdateTutorCommand>
             tutor.UpdateProfile(command.Name, command.Bio, command.HourlyRate);
             _repository.Update(tutor);
 
+            // Publish TutorSavedNotification for in-process subscribers like AI embedding generation
+            var notification = tutor.CreateTutorSavedNotification();
+            tutor.AddDomainEvent(notification);
+            TutorSavedNotification.Publish(notification);
+
             return Task.FromResult(Result.Success());
         }
         catch (ArgumentException ex)
         {
             return Task.FromResult(Result.Failure(
                 Error.Validation("Tutor.Validation", ex.Message)));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Task.FromResult(Result.Failure(
+                Error.NotFound("Tutor.NotFound", ex.Message)));
         }
         catch (InvalidOperationException ex)
         {

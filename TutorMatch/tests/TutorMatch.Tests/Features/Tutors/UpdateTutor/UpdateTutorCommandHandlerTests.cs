@@ -1,6 +1,7 @@
 using FluentAssertions;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Domain.Tutors.Events;
 using TutorMatch.Api.Features.Tutors.UpdateTutor;
 using Xunit;
 
@@ -99,6 +100,39 @@ public class UpdateTutorCommandHandlerTests
     }
 
     [Fact]
+    public async Task Given_repositoryKeyNotFoundException_When_handlingUpdateTutor_Then_returnsNotFoundError()
+    {
+        var tutor = new Tutor("Old", "old@test.com", "Old bio", 50m);
+        var repository = new ThrowingKeyNotFoundOnUpdateTutorRepository(tutor);
+        var handler = new UpdateTutorCommandHandler(repository);
+
+        var result = await handler.HandleAsync(new UpdateTutorCommand(tutor.Id, "New", "New bio", 75m));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Type.Should().Be(ErrorType.NotFound);
+    }
+
+    [Fact]
+    public async Task Given_validTutor_When_handlingUpdateTutor_Then_publishesTutorSavedNotification()
+    {
+        var tutor = new Tutor("Old", "old@test.com", "Old bio", 50m);
+        var repository = new FakeTutorRepository();
+        repository.Add(tutor);
+        var handler = new UpdateTutorCommandHandler(repository);
+        TutorSavedNotification? published = null;
+        Action<TutorSavedNotification> onPublished = n => published = n;
+        TutorSavedNotification.Handler += onPublished;
+
+        var result = await handler.HandleAsync(new UpdateTutorCommand(tutor.Id, "New", "New bio", 75m));
+
+        TutorSavedNotification.Handler -= onPublished;
+        result.IsSuccess.Should().BeTrue();
+        published.Should().NotBeNull();
+        published!.TutorId.Should().Be(tutor.Id);
+        published.Bio.Should().Be("New bio");
+    }
+
+    [Fact]
     public async Task Given_invalidProfile_When_handlingUpdateTutor_Then_returnsValidationError()
     {
         var tutor = new Tutor("Old", "old@test.com", "Old bio", 50m);
@@ -138,6 +172,40 @@ public class UpdateTutorCommandHandlerTests
         public void Update(Tutor tutor)
         {
             throw new InvalidOperationException("update failed");
+        }
+
+        public bool Delete(Guid id)
+        {
+            return false;
+        }
+    }
+
+    private sealed class ThrowingKeyNotFoundOnUpdateTutorRepository : ITutorRepository
+    {
+        private readonly Tutor _tutor;
+
+        public ThrowingKeyNotFoundOnUpdateTutorRepository(Tutor tutor)
+        {
+            _tutor = tutor;
+        }
+
+        public void Add(Tutor tutor)
+        {
+        }
+
+        public Tutor? GetById(Guid id)
+        {
+            return _tutor.Id == id ? _tutor : null;
+        }
+
+        public IReadOnlyList<Tutor> GetAll()
+        {
+            return new[] { _tutor };
+        }
+
+        public void Update(Tutor tutor)
+        {
+            throw new KeyNotFoundException("Tutor not found during concurrent update");
         }
 
         public bool Delete(Guid id)
