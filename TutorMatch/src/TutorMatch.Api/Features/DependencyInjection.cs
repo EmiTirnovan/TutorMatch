@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
+using TutorMatch.Api.Features.SemanticSearch.Notifications;
+using TutorMatch.Api.Features.SemanticSearch.Services;
 using TutorMatch.Api.Features.Sessions.BookSession;
 using TutorMatch.Api.Features.Sessions.CreateSession;
 using TutorMatch.Api.Features.Sessions.DeleteSession;
@@ -37,6 +39,12 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<DeleteSessionCommand>, DeleteSessionCommandHandler>();
         services.AddScoped<IQueryHandler<GetSessionByIdQuery, Result<GetSessionByIdResponse>>, GetSessionByIdQueryHandler>();
         services.AddScoped<IQueryHandler<GetSessionsQuery, Result<List<GetSessionsResponse>>>, GetSessionsQueryHandler>();
+
+        // Semantic Search Services & Handlers
+        services.AddHttpClient(OllamaClient.HttpClientName);
+        services.AddScoped<IOllamaClient, OllamaClient>();
+        services.AddScoped<ISearchTutorsFallback, DefaultSearchTutorsFallback>();
+        services.AddScoped<TutorSavedNotificationHandler>();
 
         return services;
     }
