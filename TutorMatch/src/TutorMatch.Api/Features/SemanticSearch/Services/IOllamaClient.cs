@@ -12,5 +12,10 @@ public interface IOllamaClient
     /// <param name="cancellationToken">Token de anulare.</param>
     /// <returns>Vectorul float[] corespunzator sau null daca operatiunea nu a reusit.</returns>
     Task<float[]?> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default);
-}
 
+    /// <summary>
+    /// Obtine vectorul de embedding pentru textul furnizat.
+    /// </summary>
+    Task<float[]?> GetEmbeddingAsync(string text, CancellationToken cancellationToken = default) =>
+        GenerateEmbeddingAsync(text, cancellationToken);
+}
