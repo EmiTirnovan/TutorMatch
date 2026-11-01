@@ -132,4 +132,17 @@ public class Session
     {
         Reschedule(new DateRange(newStartTime, newEndTime));
     }
+
+    public void IncrementVersion()
+    {
+        Version++;
+    }
+
+    public void VerifyVersion(int expectedVersion)
+    {
+        if (Version != expectedVersion)
+        {
+            throw new InvalidOperationException($"Concurrency conflict: expected version {expectedVersion}, but found {Version}.");
+        }
+    }
 }

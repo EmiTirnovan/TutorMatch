@@ -3,10 +3,12 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TutorMatch.Api.Domain.Sessions;
+using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Infrastructure.Persistence;
 using TutorMatch.Api.Infrastructure.Persistence.Repositories;
 using TutorMatch.Api.Infrastructure.Sessions;
+using TutorMatch.Api.Infrastructure.Students;
 using TutorMatch.Api.Infrastructure.Tutors;
 
 namespace TutorMatch.Api.Infrastructure;
@@ -27,6 +29,7 @@ public static class DependencyInjection
 
         services.AddScoped<ITutorRepository, SqliteTutorRepository>();
         services.AddScoped<ISessionRepository, SqliteSessionRepository>();
+        services.AddScoped<IStudentRepository, SqliteStudentRepository>();
 
         return services;
     }
@@ -58,6 +61,7 @@ public static class DependencyInjection
 
         services.AddScoped<ITutorRepository, SqliteTutorRepository>();
         services.AddScoped<ISessionRepository, SqliteSessionRepository>();
+        services.AddScoped<IStudentRepository, SqliteStudentRepository>();
 
         return services;
     }
@@ -67,6 +71,7 @@ public static class DependencyInjection
     public static IServiceCollection AddSessionInfrastructure(this IServiceCollection services)
     {
         services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
+        services.AddSingleton<IStudentRepository, InMemoryStudentRepository>();
         return services;
     }
 
