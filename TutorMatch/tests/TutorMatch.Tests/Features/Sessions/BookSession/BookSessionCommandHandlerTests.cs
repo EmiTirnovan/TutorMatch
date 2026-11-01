@@ -268,8 +268,8 @@ public class BookSessionCommandHandlerTests
         var result = await handler.HandleAsync(command);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Type.Should().Be(ErrorType.Validation);
-        result.Error.Description.Should().Contain("maxim de 2 sesiuni");
+        result.Error.Type.Should().Be(ErrorType.Conflict);
+        result.Error.Description.Should().Contain("Student already has 2 booked sessions today");
     }
 
     [Fact]

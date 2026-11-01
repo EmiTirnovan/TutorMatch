@@ -58,7 +58,7 @@ public class StudentBookingTests
         var action = () => student.BookSession(tutor3, session3Interval);
 
         action.Should().Throw<InvalidOperationException>()
-            .WithMessage("*maxim de 2 sesiuni*");
+            .WithMessage("*Student already has 2 booked sessions today*");
     }
 
     [Fact]
