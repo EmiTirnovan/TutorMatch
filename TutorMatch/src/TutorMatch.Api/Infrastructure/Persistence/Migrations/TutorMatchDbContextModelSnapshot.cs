@@ -10,8 +10,6 @@ using TutorMatch.Api.Infrastructure.Persistence;
 namespace TutorMatch.Api.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TutorMatchDbContext))]
-    // Generated snapshot code is infrastructure and is excluded from unit-test coverage.
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     partial class TutorMatchDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
@@ -66,6 +64,41 @@ namespace TutorMatch.Api.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Students", (string)null);
+                });
+
+            modelBuilder.Entity("TutorMatch.Api.Domain.Tutors.Rating", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TutorId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("TutorId");
+
+                    b.ToTable("Ratings", (string)null);
                 });
 
             modelBuilder.Entity("TutorMatch.Api.Domain.Tutors.Subject", b =>
@@ -184,6 +217,27 @@ namespace TutorMatch.Api.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Interval")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TutorMatch.Api.Domain.Tutors.Rating", b =>
+                {
+                    b.HasOne("TutorMatch.Api.Domain.Sessions.Session", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TutorMatch.Api.Domain.Students.Student", null)
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TutorMatch.Api.Domain.Tutors.Tutor", null)
+                        .WithMany()
+                        .HasForeignKey("TutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

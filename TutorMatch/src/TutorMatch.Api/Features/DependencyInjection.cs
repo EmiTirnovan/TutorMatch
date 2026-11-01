@@ -13,6 +13,8 @@ using TutorMatch.Api.Features.Tutors.CreateTutor;
 using TutorMatch.Api.Features.Tutors.DeleteTutor;
 using TutorMatch.Api.Features.Tutors.GetTutorById;
 using TutorMatch.Api.Features.Tutors.GetTutors;
+using TutorMatch.Api.Features.Discovery.SearchTutors;
+using TutorMatch.Api.Features.Discovery.RateSession;
 using TutorMatch.Api.Features.Tutors.UpdateAvailability;
 using TutorMatch.Api.Features.Tutors.UpdateTutor;
 
@@ -40,12 +42,19 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetSessionByIdQuery, Result<GetSessionByIdResponse>>, GetSessionByIdQueryHandler>();
         services.AddScoped<IQueryHandler<GetSessionsQuery, Result<List<GetSessionsResponse>>>, GetSessionsQueryHandler>();
 
+<<<<<<< HEAD
         // Semantic Search Services & Handlers
         services.AddHttpClient(OllamaClient.HttpClientName);
         services.AddScoped<IOllamaClient, OllamaClient>();
         services.AddScoped<ISearchTutorsFallback, DefaultSearchTutorsFallback>();
         services.AddScoped<TutorSavedNotificationHandler>();
 
+=======
+        // Discovery CQRS Handlers
+        services.AddScoped<IQueryHandler<SearchTutorsQuery, Result<SearchTutorsResponse>>, SearchTutorsQueryHandler>();
+        services.AddScoped<ICommandHandler<RateSessionCommand, Result>, RateSessionCommandHandler>();
+        
+>>>>>>> main
         return services;
     }
 }
