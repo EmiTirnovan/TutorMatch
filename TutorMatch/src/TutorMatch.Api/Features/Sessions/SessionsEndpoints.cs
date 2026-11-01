@@ -1,6 +1,9 @@
 using TutorMatch.Api.Features.Sessions.BookSession;
+using TutorMatch.Api.Features.Sessions.CancelSession;
+using TutorMatch.Api.Features.Sessions.CompleteSession;
 using TutorMatch.Api.Features.Sessions.CreateSession;
 using TutorMatch.Api.Features.Sessions.DeleteSession;
+using TutorMatch.Api.Features.Sessions.GetMySessions;
 using TutorMatch.Api.Features.Sessions.GetSessionById;
 using TutorMatch.Api.Features.Sessions.GetSessions;
 using TutorMatch.Api.Features.Sessions.UpdateSession;
@@ -17,10 +20,13 @@ public static class SessionsEndpoints
 
         group.MapBookSession();
         group.MapCreateSession();
+        group.MapGetMySessions();
         group.MapGetSessionById();
         group.MapGetSessions();
         group.MapUpdateSession();
         group.MapDeleteSession();
+        group.MapCancelSession();
+        group.MapCompleteSession();
 
         return app;
     }

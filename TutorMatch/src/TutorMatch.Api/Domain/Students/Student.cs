@@ -53,7 +53,7 @@ public class Student
 
         if (_sessions.Count(s => s.Status == SessionStatus.Booked && s.Interval.Start.Date == interval.Start.Date) >= 2)
         {
-            throw new InvalidOperationException("Studentul are deja numarul maxim de 2 sesiuni permise in aceasta zi.");
+            throw new InvalidOperationException("Student already has 2 booked sessions today, which is the max.");
         }
 
         var session = Session.Create(tutorId, Id, interval);
@@ -87,5 +87,18 @@ public class Student
         }
 
         session.Cancel();
+    }
+
+    public void CancelSession(Guid sessionId, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var session = _sessions.FirstOrDefault(s => s.Id == sessionId);
+        if (session == null)
+        {
+            throw new KeyNotFoundException($"Session with ID '{sessionId}' was not found for this student.");
+        }
+
+        session.Cancel(timeProvider);
     }
 }

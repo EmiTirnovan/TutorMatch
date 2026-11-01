@@ -93,6 +93,32 @@ public class Session
         Version++;
     }
 
+    public void Cancel(DateTime utcNow)
+    {
+        if (Status != SessionStatus.Booked)
+        {
+            throw new InvalidOperationException($"Cannot cancel a session with status '{Status}'. Only booked sessions can be cancelled.");
+        }
+
+        var deadline = Interval.Start.AddHours(-12);
+        if (utcNow <= deadline)
+        {
+            Status = SessionStatus.Cancelled;
+        }
+        else
+        {
+            Status = SessionStatus.LateCancelled;
+        }
+
+        Version++;
+    }
+
+    public void Cancel(TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        Cancel(timeProvider.GetUtcNow().UtcDateTime);
+    }
+
     public void LateCancel()
     {
         if (Status != SessionStatus.Booked)
@@ -113,6 +139,28 @@ public class Session
 
         Status = SessionStatus.Completed;
         Version++;
+    }
+
+    public void Complete(DateTime utcNow)
+    {
+        if (Status != SessionStatus.Booked)
+        {
+            throw new InvalidOperationException($"Cannot complete a session with status '{Status}'. Only booked sessions can be completed.");
+        }
+
+        if (utcNow < Interval.Start)
+        {
+            throw new InvalidOperationException("Cannot complete a session before its start time.");
+        }
+
+        Status = SessionStatus.Completed;
+        Version++;
+    }
+
+    public void Complete(TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        Complete(timeProvider.GetUtcNow().UtcDateTime);
     }
 
     public void Reschedule(DateRange newInterval)
