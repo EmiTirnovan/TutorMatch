@@ -21,6 +21,7 @@ public class Tutor
     public IReadOnlyList<DateRange> Availability => _availability.AsReadOnly();
     public IReadOnlyList<TutorSubject> TutorSubjects => _tutorSubjects.AsReadOnly();
     public IReadOnlyList<object> DomainEvents => _domainEvents.AsReadOnly();
+    public TutorEmbedding? Embedding { get; private set; }
 
     private Tutor() { } // Required for EF Core
 

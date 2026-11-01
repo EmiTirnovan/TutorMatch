@@ -19,7 +19,7 @@ public class TutorMatchDbContext : DbContext
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<TutorSubject> TutorSubjects => Set<TutorSubject>();
-    
+    public DbSet<TutorEmbedding> TutorEmbeddings => Set<TutorEmbedding>();
     public DbSet<Rating> Ratings => Set<Rating>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -1,3 +1,4 @@
+using TutorMatch.Api.Features.SemanticSearch;
 using TutorMatch.Api.Features.Tutors.CreateTutor;
 using TutorMatch.Api.Features.Tutors.DeleteTutor;
 using TutorMatch.Api.Features.Tutors.GetTutorById;
@@ -21,6 +22,7 @@ public static class TutorsEndpoints
         group.MapUpdateTutor();
         group.MapUpdateAvailability();
         group.MapDeleteTutor();
+        group.MapSemanticSearch();
 
         return app;
     }

@@ -1,6 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
+using TutorMatch.Api.Features.SemanticSearch;
+using TutorMatch.Api.Features.SemanticSearch.Notifications;
+using TutorMatch.Api.Features.SemanticSearch.Services;
 using TutorMatch.Api.Features.Sessions.BookSession;
 using TutorMatch.Api.Features.Sessions.CancelSession;
 using TutorMatch.Api.Features.Sessions.CompleteSession;
@@ -45,6 +48,13 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetSessionByIdQuery, Result<GetSessionByIdResponse>>, GetSessionByIdQueryHandler>();
         services.AddScoped<IQueryHandler<GetSessionsQuery, Result<List<GetSessionsResponse>>>, GetSessionsQueryHandler>();
         services.AddScoped<IQueryHandler<GetMySessionsQuery, Result<GetMySessionsResponse>>, GetMySessionsQueryHandler>();
+
+        // Semantic Search Services & Handlers
+        services.AddHttpClient(OllamaClient.HttpClientName);
+        services.AddScoped<IOllamaClient, OllamaClient>();
+        services.AddScoped<ISearchTutorsFallback, DefaultSearchTutorsFallback>();
+        services.AddScoped<TutorSavedNotificationHandler>();
+        services.AddScoped<IQueryHandler<SemanticSearchQuery, Result<SemanticSearchResponse>>, SemanticSearchQueryHandler>();
 
         // Discovery CQRS Handlers
         services.AddScoped<IQueryHandler<SearchTutorsQuery, Result<SearchTutorsResponse>>, SearchTutorsQueryHandler>();

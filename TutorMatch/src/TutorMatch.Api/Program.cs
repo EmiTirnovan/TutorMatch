@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features;
+using TutorMatch.Api.Features.SemanticSearch.Notifications;
 using TutorMatch.Api.Features.Sessions;
 using TutorMatch.Api.Features.Tutors;
 using TutorMatch.Api.Infrastructure;
@@ -82,6 +83,9 @@ public class Program
                 tutorRepo.Add(demoTutor);
             }
         }
+
+        // Register in-process subscriber for AI embedding generation
+        TutorSavedNotificationHandler.RegisterSubscriber(app.Services.GetRequiredService<IServiceScopeFactory>());
 
         app.Run();
 
