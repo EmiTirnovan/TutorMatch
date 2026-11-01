@@ -1,4 +1,4 @@
-﻿using TutorMatch.Api.Features.Tutors.CreateTutor;
+using TutorMatch.Api.Common.Dtos;
 
 namespace TutorMatch.Api.Features.Tutors.GetTutorById;
 

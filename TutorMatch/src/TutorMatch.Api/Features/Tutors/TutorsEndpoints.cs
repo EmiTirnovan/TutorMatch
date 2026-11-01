@@ -1,7 +1,8 @@
-﻿using TutorMatch.Api.Features.Tutors.CreateTutor;
+using TutorMatch.Api.Features.Tutors.CreateTutor;
 using TutorMatch.Api.Features.Tutors.DeleteTutor;
 using TutorMatch.Api.Features.Tutors.GetTutorById;
 using TutorMatch.Api.Features.Tutors.GetTutors;
+using TutorMatch.Api.Features.Tutors.UpdateAvailability;
 using TutorMatch.Api.Features.Tutors.UpdateTutor;
 
 namespace TutorMatch.Api.Features.Tutors;
@@ -18,6 +19,7 @@ public static class TutorsEndpoints
         group.MapGetTutorById();
         group.MapGetTutors();
         group.MapUpdateTutor();
+        group.MapUpdateAvailability();
         group.MapDeleteTutor();
 
         return app;

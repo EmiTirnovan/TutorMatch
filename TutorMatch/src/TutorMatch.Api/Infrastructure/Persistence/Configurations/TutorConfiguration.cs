@@ -57,5 +57,8 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
             .WithOne(ts => ts.Tutor)
             .HasForeignKey(ts => ts.TutorId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Ignore domain events from EF Core mapping
+        builder.Ignore(t => t.DomainEvents);
     }
 }

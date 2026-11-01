@@ -1,7 +1,7 @@
-﻿using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Dtos;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Tutors;
-using TutorMatch.Api.Features.Tutors.CreateTutor;
 
 namespace TutorMatch.Api.Features.Tutors.GetTutorById;
 

@@ -1,4 +1,4 @@
-﻿using System.Data.Common;
+using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TutorMatch.Api.Common.Dtos;
 using TutorMatch.Api.Features.Tutors.CreateTutor;
 using TutorMatch.Api.Infrastructure.Persistence;
 

@@ -1,13 +1,15 @@
 namespace TutorMatch.Api.Domain.Tutors;
 
 using TutorMatch.Api.Domain.Common;
+using TutorMatch.Api.Domain.Tutors.Events;
 
-// Agregatul radacina pentru Tutor
+// Aggregate root for Tutor
 public class Tutor
 {
-    // Colectiile interne sunt private pentru a proteja invariantele
+    // Internal collections are private to protect domain invariants
     private readonly List<DateRange> _availability = new();
     private readonly List<TutorSubject> _tutorSubjects = new();
+    private readonly List<object> _domainEvents = new();
 
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
@@ -15,11 +17,12 @@ public class Tutor
     public string Bio { get; private set; } = string.Empty;
     public decimal HourlyRate { get; private set; }
 
-    // Expuse ca IReadOnlyList ca sa nu poata fi alterate din afara agregatului
+    // Exposed as IReadOnlyList so state cannot be mutated outside the aggregate
     public IReadOnlyList<DateRange> Availability => _availability.AsReadOnly();
     public IReadOnlyList<TutorSubject> TutorSubjects => _tutorSubjects.AsReadOnly();
+    public IReadOnlyList<object> DomainEvents => _domainEvents.AsReadOnly();
 
-    private Tutor() { } // pt EF Core
+    private Tutor() { } // Required for EF Core
 
     public Tutor(
         string name,
@@ -46,7 +49,7 @@ public class Tutor
         HourlyRate = hourlyRate;
     }
 
-    // Adaugam un slot nou doar daca nu se suprapune cu cele existente
+    // Adds a new availability slot if it does not overlap with existing slots
     public void AddAvailability(DateRange range)
     {
         ArgumentNullException.ThrowIfNull(range);
@@ -65,7 +68,7 @@ public class Tutor
         return _availability.Remove(range);
     }
 
-    // Inlocuim toata disponibilitatea, dar verificam inainte sa nu existe suprapuneri in noua lista
+    // Replaces all availability slots after validating that no two slots in the new list overlap
     public void UpdateAvailability(IEnumerable<DateRange> newAvailability)
     {
         ArgumentNullException.ThrowIfNull(newAvailability);
@@ -88,7 +91,7 @@ public class Tutor
         _availability.AddRange(rangesList);
     }
 
-    // Folosit la rezervare ca sa vedem daca intervalul cerut pica intr-un slot disponibil
+    // Checks whether the requested range fits entirely within any available slot
     public bool IsAvailableDuring(DateRange requestedRange)
     {
         ArgumentNullException.ThrowIfNull(requestedRange);
@@ -131,6 +134,31 @@ public class Tutor
         }
 
         return _tutorSubjects.Remove(item);
+    }
+
+    // Appends a domain event to the internal collection
+    public void AddDomainEvent(object domainEvent)
+    {
+        ArgumentNullException.ThrowIfNull(domainEvent);
+        _domainEvents.Add(domainEvent);
+    }
+
+    // Clears all recorded domain events
+    public void ClearDomainEvents()
+    {
+        _domainEvents.Clear();
+    }
+
+    // Creates a TutorSavedNotification for in-process consumers such as AI embedding generation
+    public TutorSavedNotification CreateTutorSavedNotification(IEnumerable<string>? subjectNames = null)
+    {
+        var subjects = subjectNames?.ToList() ?? _tutorSubjects
+            .Select(ts => ts.Subject?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
+            .ToList();
+
+        return new TutorSavedNotification(Id, Bio, subjects);
     }
 
     private static void ValidateProfile(string name, string email, string bio, decimal hourlyRate)
