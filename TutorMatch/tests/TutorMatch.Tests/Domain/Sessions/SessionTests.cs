@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Sessions;
 using Xunit;
@@ -203,5 +203,183 @@ public class SessionTests
 
         action.Should().Throw<InvalidOperationException>()
             .WithMessage("*Concurrency conflict*");
+    }
+
+    [Fact]
+    public void Given_timeIs12HoursAnd1MinuteBeforeStart_When_cancelling_Then_sessionBecomesCancelled()
+    {
+        var start = new DateTime(2026, 11, 2, 20, 0, 0, DateTimeKind.Utc);
+        var interval = new DateRange(start, start.AddHours(2));
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), interval);
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(start.AddHours(-12).AddMinutes(-1));
+
+        session.Cancel(fakeClock);
+
+        session.Status.Should().Be(SessionStatus.Cancelled);
+        session.Version.Should().Be(2);
+    }
+
+    [Fact]
+    public void Given_timeIsExactly12HoursBeforeStart_When_cancelling_Then_sessionBecomesCancelled()
+    {
+        var start = new DateTime(2026, 11, 2, 20, 0, 0, DateTimeKind.Utc);
+        var interval = new DateRange(start, start.AddHours(2));
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), interval);
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(start.AddHours(-12));
+
+        session.Cancel(fakeClock);
+
+        session.Status.Should().Be(SessionStatus.Cancelled);
+        session.Version.Should().Be(2);
+    }
+
+    [Fact]
+    public void Given_timeIs11HoursAnd59MinutesBeforeStart_When_cancelling_Then_sessionBecomesLateCancelled()
+    {
+        var start = new DateTime(2026, 11, 2, 20, 0, 0, DateTimeKind.Utc);
+        var interval = new DateRange(start, start.AddHours(2));
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), interval);
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(start.AddHours(-11).AddMinutes(-59));
+
+        session.Cancel(fakeClock);
+
+        session.Status.Should().Be(SessionStatus.LateCancelled);
+        session.Version.Should().Be(2);
+    }
+
+    [Fact]
+    public void Given_nullTimeProvider_When_cancelling_Then_throwsArgumentNullException()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+
+        var action = () => session.Cancel((TimeProvider)null!);
+
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Given_lateCancelledSession_When_cancellingWithTimeProvider_Then_throwsInvalidOperationException()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+        session.LateCancel();
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UtcNow);
+
+        var action = () => session.Cancel(fakeClock);
+
+        action.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Given_completedSession_When_cancellingWithTimeProvider_Then_throwsInvalidOperationException()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+        session.Complete();
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UtcNow);
+
+        var action = () => session.Cancel(fakeClock);
+
+        action.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Given_timeBeforeStart_When_completingWithTimeProvider_Then_throwsInvalidOperationException()
+    {
+        var start = new DateTime(2026, 11, 2, 20, 0, 0, DateTimeKind.Utc);
+        var interval = new DateRange(start, start.AddHours(2));
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), interval);
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(start.AddMinutes(-5));
+
+        var action = () => session.Complete(fakeClock);
+
+        action.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Cannot complete a session before its start time.*");
+    }
+
+    [Fact]
+    public void Given_timeAtStart_When_completingWithTimeProvider_Then_sessionBecomesCompleted()
+    {
+        var start = new DateTime(2026, 11, 2, 20, 0, 0, DateTimeKind.Utc);
+        var interval = new DateRange(start, start.AddHours(2));
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), interval);
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(start);
+
+        session.Complete(fakeClock);
+
+        session.Status.Should().Be(SessionStatus.Completed);
+        session.Version.Should().Be(2);
+    }
+
+    [Fact]
+    public void Given_timeDuringSession_When_completingWithTimeProvider_Then_sessionBecomesCompleted()
+    {
+        var start = new DateTime(2026, 11, 2, 20, 0, 0, DateTimeKind.Utc);
+        var interval = new DateRange(start, start.AddHours(2));
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), interval);
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(start.AddHours(1));
+
+        session.Complete(fakeClock);
+
+        session.Status.Should().Be(SessionStatus.Completed);
+        session.Version.Should().Be(2);
+    }
+
+    [Fact]
+    public void Given_timeAfterEnd_When_completingWithTimeProvider_Then_sessionBecomesCompleted()
+    {
+        var start = new DateTime(2026, 11, 2, 20, 0, 0, DateTimeKind.Utc);
+        var interval = new DateRange(start, start.AddHours(2));
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), interval);
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(start.AddHours(3));
+
+        session.Complete(fakeClock);
+
+        session.Status.Should().Be(SessionStatus.Completed);
+        session.Version.Should().Be(2);
+    }
+
+    [Fact]
+    public void Given_nullTimeProvider_When_completing_Then_throwsArgumentNullException()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+
+        var action = () => session.Complete((TimeProvider)null!);
+
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Given_cancelledSession_When_completingWithTimeProvider_Then_throwsInvalidOperationException()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+        session.Cancel();
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UtcNow.AddHours(2));
+
+        var action = () => session.Complete(fakeClock);
+
+        action.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Given_lateCancelledSession_When_completingWithTimeProvider_Then_throwsInvalidOperationException()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+        session.LateCancel();
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UtcNow.AddHours(2));
+
+        var action = () => session.Complete(fakeClock);
+
+        action.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Given_completedSession_When_completingAgainWithTimeProvider_Then_throwsInvalidOperationException()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval());
+        session.Complete();
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UtcNow.AddHours(2));
+
+        var action = () => session.Complete(fakeClock);
+
+        action.Should().Throw<InvalidOperationException>();
     }
 }

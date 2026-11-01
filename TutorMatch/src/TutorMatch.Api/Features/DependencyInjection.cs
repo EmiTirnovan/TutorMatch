@@ -5,8 +5,11 @@ using TutorMatch.Api.Features.SemanticSearch;
 using TutorMatch.Api.Features.SemanticSearch.Notifications;
 using TutorMatch.Api.Features.SemanticSearch.Services;
 using TutorMatch.Api.Features.Sessions.BookSession;
+using TutorMatch.Api.Features.Sessions.CancelSession;
+using TutorMatch.Api.Features.Sessions.CompleteSession;
 using TutorMatch.Api.Features.Sessions.CreateSession;
 using TutorMatch.Api.Features.Sessions.DeleteSession;
+using TutorMatch.Api.Features.Sessions.GetMySessions;
 using TutorMatch.Api.Features.Sessions.GetSessionById;
 using TutorMatch.Api.Features.Sessions.GetSessions;
 using TutorMatch.Api.Features.Sessions.UpdateSession;
@@ -40,8 +43,11 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<CreateSessionCommand, Result<CreateSessionResponse>>, CreateSessionCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateSessionCommand>, UpdateSessionCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteSessionCommand>, DeleteSessionCommandHandler>();
+        services.AddScoped<ICommandHandler<CancelSessionCommand>, CancelSessionCommandHandler>();
+        services.AddScoped<ICommandHandler<CompleteSessionCommand>, CompleteSessionCommandHandler>();
         services.AddScoped<IQueryHandler<GetSessionByIdQuery, Result<GetSessionByIdResponse>>, GetSessionByIdQueryHandler>();
         services.AddScoped<IQueryHandler<GetSessionsQuery, Result<List<GetSessionsResponse>>>, GetSessionsQueryHandler>();
+        services.AddScoped<IQueryHandler<GetMySessionsQuery, Result<GetMySessionsResponse>>, GetMySessionsQueryHandler>();
 
         // Semantic Search Services & Handlers
         services.AddHttpClient(OllamaClient.HttpClientName);

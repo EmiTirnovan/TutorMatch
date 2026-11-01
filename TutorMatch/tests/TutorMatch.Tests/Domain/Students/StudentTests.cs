@@ -184,6 +184,45 @@ public class StudentTests
     }
 
     [Fact]
+    public void Given_existingSession_When_cancellingSessionWithTimeProvider_Then_cancelsIt()
+    {
+        var studentId = Guid.NewGuid();
+        var student = new Student(studentId, "Alex", "alex@example.com");
+        var start = DateTime.UtcNow.AddDays(2);
+        var session = Session.Create(Guid.NewGuid(), studentId, new DateRange(start, start.AddHours(1)));
+        student.AddSession(session);
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(start.AddDays(-1));
+
+        student.CancelSession(session.Id, fakeClock);
+
+        session.Status.Should().Be(SessionStatus.Cancelled);
+    }
+
+    [Fact]
+    public void Given_nullTimeProvider_When_cancellingSessionWithTimeProvider_Then_throwsArgumentNullException()
+    {
+        var studentId = Guid.NewGuid();
+        var student = new Student(studentId, "Alex", "alex@example.com");
+        var session = Session.Create(Guid.NewGuid(), studentId, CreateSampleInterval());
+        student.AddSession(session);
+
+        var action = () => student.CancelSession(session.Id, (TimeProvider)null!);
+
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Given_missingSession_When_cancellingSessionWithTimeProvider_Then_throwsKeyNotFoundException()
+    {
+        var student = new Student(Guid.NewGuid(), "Alex", "alex@example.com");
+        var fakeClock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UtcNow);
+
+        var action = () => student.CancelSession(Guid.NewGuid(), fakeClock);
+
+        action.Should().Throw<KeyNotFoundException>();
+    }
+
+    [Fact]
     public void Given_nonBookedSessionWithinInterval_When_bookingSession_Then_allowsNewBooking()
     {
         var studentId = Guid.NewGuid();

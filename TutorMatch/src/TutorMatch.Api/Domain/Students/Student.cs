@@ -88,4 +88,17 @@ public class Student
 
         session.Cancel();
     }
+
+    public void CancelSession(Guid sessionId, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var session = _sessions.FirstOrDefault(s => s.Id == sessionId);
+        if (session == null)
+        {
+            throw new KeyNotFoundException($"Session with ID '{sessionId}' was not found for this student.");
+        }
+
+        session.Cancel(timeProvider);
+    }
 }
