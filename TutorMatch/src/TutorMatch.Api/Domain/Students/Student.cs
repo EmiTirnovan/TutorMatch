@@ -16,19 +16,19 @@ public class Student
     {
     }
 
-    public Student(Guid id, string name = "", string email = "")
+    public Student(Guid id, string name, string email)
     {
         if (id == Guid.Empty)
         {
             throw new ArgumentException("Student ID cannot be empty.", nameof(id));
         }
 
-        ArgumentNullException.ThrowIfNull(name);
-        ArgumentNullException.ThrowIfNull(email);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
+        ArgumentException.ThrowIfNullOrWhiteSpace(email, nameof(email));
 
         Id = id;
-        Name = name;
-        Email = email;
+        Name = name.Trim();
+        Email = email.Trim();
     }
 
     public Session BookSession(Guid tutorId, DateRange interval)
@@ -49,6 +49,11 @@ public class Student
         if (hasOverlap)
         {
             throw new InvalidOperationException("Student already has a booked session in this time interval.");
+        }
+
+        if (_sessions.Count(s => s.Status == SessionStatus.Booked && s.Interval.Start.Date == interval.Start.Date) >= 2)
+        {
+            throw new InvalidOperationException("Student already has 2 booked sessions today, which is the max.");
         }
 
         var session = Session.Create(tutorId, Id, interval);

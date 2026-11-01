@@ -12,6 +12,9 @@ obj/
 *.user
 *.userosscache
 *.sln.docstates
+TestResults/
+**/TestResults/
+coveragereport/
 
 ## Visual Studio cache / temporary files
 .vs/

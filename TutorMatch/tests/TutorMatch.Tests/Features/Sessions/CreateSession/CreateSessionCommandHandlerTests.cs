@@ -1,5 +1,6 @@
 using FluentAssertions;
 using TutorMatch.Api.Common.Results;
+using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Features.Sessions.CreateSession;
 using Xunit;
@@ -104,5 +105,22 @@ public class CreateSessionCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Type.Should().Be(ErrorType.Conflict);
         result.Error.Description.Should().Contain("duplicate");
+    }
+
+    [Fact]
+    public async Task Given_overlappingTutorSession_When_handlingCreateSession_Then_returnsConflictError()
+    {
+        var repository = new FakeSessionRepository();
+        var tutorId = Guid.NewGuid();
+        var existingSession = Session.Create(tutorId, Guid.NewGuid(), new DateRange(new DateTime(2026, 10, 20, 10, 0, 0), new DateTime(2026, 10, 20, 11, 0, 0)));
+        repository.Add(existingSession);
+        var handler = new CreateSessionCommandHandler(repository);
+        var command = new CreateSessionCommand(tutorId, Guid.NewGuid(), new DateTime(2026, 10, 20, 10, 30, 0), new DateTime(2026, 10, 20, 11, 30, 0));
+
+        var result = await handler.HandleAsync(command);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Type.Should().Be(ErrorType.Conflict);
+        result.Error.Description.Should().Contain("se suprapune");
     }
 }
