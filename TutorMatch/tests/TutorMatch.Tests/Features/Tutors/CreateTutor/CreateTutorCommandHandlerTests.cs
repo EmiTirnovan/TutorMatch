@@ -1,6 +1,8 @@
 using FluentAssertions;
+using TutorMatch.Api.Common.Dtos;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Domain.Tutors.Events;
 using TutorMatch.Api.Features.Tutors.CreateTutor;
 using Xunit;
 
@@ -59,6 +61,25 @@ public class CreateTutorCommandHandlerTests
         result.Value.Email.Should().Be("emi@test.com");
         result.Value.HourlyRate.Should().Be(90m);
         result.Value.Id.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task Given_validCommand_When_handlingCreateTutor_Then_publishesTutorSavedNotification()
+    {
+        var repository = new FakeTutorRepository();
+        var handler = new CreateTutorCommandHandler(repository);
+        TutorSavedNotification? published = null;
+        Action<TutorSavedNotification> onPublished = n => published = n;
+        TutorSavedNotification.Handler += onPublished;
+        var command = new CreateTutorCommand("Emi", "emi@test.com", "Bio", 90m);
+
+        var result = await handler.HandleAsync(command);
+
+        TutorSavedNotification.Handler -= onPublished;
+        result.IsSuccess.Should().BeTrue();
+        published.Should().NotBeNull();
+        published!.TutorId.Should().Be(result.Value.Id);
+        published.Bio.Should().Be("Bio");
     }
 
     [Fact]
