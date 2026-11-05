@@ -107,11 +107,11 @@ public class BookSessionCommandHandler : ICommandHandler<BookSessionCommand, Res
             }
             catch (InvalidOperationException ex)
             {
-                if (ex.Message.Contains("maxim", StringComparison.OrdinalIgnoreCase) ||
-                    ex.Message.Contains("2 sesiuni", StringComparison.OrdinalIgnoreCase))
+                // R4 is a 400 with its own code so the UI can tell it apart from a slot conflict.
+                if (ex.Message.Contains("2 booked sessions", StringComparison.OrdinalIgnoreCase))
                 {
                     return Result<BookSessionResponse>.Failure(
-                        Error.Validation("Session.Validation", ex.Message));
+                        Error.Validation("Session.DailyLimit", ex.Message));
                 }
 
                 return Result<BookSessionResponse>.Failure(

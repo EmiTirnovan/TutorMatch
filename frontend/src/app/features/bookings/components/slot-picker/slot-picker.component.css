@@ -1,0 +1,48 @@
+.slot-day + .slot-day {
+  margin-top: 1.25rem;
+}
+
+.slot-day-title {
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.5rem;
+}
+
+.slot-button {
+  min-height: 44px;
+  padding: 0.5rem;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--primary-800);
+  background-color: var(--surface);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.slot-button:hover {
+  border-color: var(--accent-500);
+}
+
+.slot-button:focus-visible {
+  outline: 2px solid var(--accent-600);
+  outline-offset: 2px;
+}
+
+.slot-button.selected {
+  color: #ffffff;
+  font-weight: 600;
+  background-color: var(--accent-600);
+  border-color: var(--accent-600);
+}
+
+.no-slots {
+  text-align: center;
+  padding: 2rem 1rem;
+}

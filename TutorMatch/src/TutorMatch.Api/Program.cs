@@ -3,6 +3,7 @@ using System.IO.Pipelines;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using TutorMatch.Api.Domain.Common;
+using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features;
 using TutorMatch.Api.Features.SemanticSearch.Notifications;
@@ -91,6 +92,14 @@ public class Program
                 var tomorrow = DateTime.UtcNow.Date.AddDays(1);
                 demoTutor.AddAvailability(new DateRange(tomorrow.AddHours(10), tomorrow.AddHours(14)));
                 tutorRepo.Add(demoTutor);
+            }
+
+            // shortcut: no auth yet, the frontend books as this student (DEMO_STUDENT_ID); replace when identity lands.
+            var demoStudentId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            var studentRepo = scope.ServiceProvider.GetRequiredService<IStudentRepository>();
+            if (studentRepo.GetById(demoStudentId) is null)
+            {
+                studentRepo.Add(new Student(demoStudentId, "Demo Student", "demo.student@tutormatch.ro"));
             }
         }
 

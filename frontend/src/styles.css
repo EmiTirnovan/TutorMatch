@@ -256,3 +256,55 @@ label {
   color: var(--warning-600);
   border: 1px solid var(--warning-border);
 }
+
+/* Modal dialogs (native <dialog>) */
+dialog.modal {
+  /* The global reset removes the UA margin that centers a dialog. */
+  margin: auto;
+  width: min(460px, calc(100vw - 2rem));
+  padding: 1.75rem;
+  color: var(--primary-900);
+  background: var(--surface);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+dialog.modal::backdrop {
+  background-color: rgba(15, 23, 42, 0.5);
+}
+
+.modal-text {
+  margin-top: 0.5rem;
+}
+
+.modal-summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  margin: 1.25rem 0;
+  font-size: 0.9375rem;
+}
+
+.modal-summary dt {
+  color: var(--slate-500);
+}
+
+.modal-summary dd {
+  font-weight: 500;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* Skeleton loading */
+.skeleton {
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background-color: var(--slate-100);
+}

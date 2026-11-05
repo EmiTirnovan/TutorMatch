@@ -1,23 +1,47 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TutorService } from '../../../../core/services/tutor.service';
+import { SessionService } from '../../../../core/services/session.service';
 import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
+import { DateRangeDto } from '../../../../core/models/date-range.dto';
+import { SessionResponse } from '../../../../core/models/session.models';
+import { SlotPickerComponent } from '../../../bookings/components/slot-picker/slot-picker.component';
+import { BookSessionModalComponent } from '../../../bookings/components/book-session-modal/book-session-modal.component';
+import { ConcurrencyConflictDialogComponent } from '../../../bookings/components/concurrency-conflict-dialog/concurrency-conflict-dialog.component';
+
+const DEMO_TUTOR_ID = 'demo-tutor-001';
 
 @Component({
   selector: 'app-tutor-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [
+    CommonModule,
+    RouterLink,
+    SlotPickerComponent,
+    BookSessionModalComponent,
+    ConcurrencyConflictDialogComponent
+  ],
   templateUrl: './tutor-profile.component.html',
   styleUrl: './tutor-profile.component.css'
 })
 export class TutorProfileComponent implements OnInit {
   private readonly tutorService = inject(TutorService);
+  private readonly sessionService = inject(SessionService);
   private readonly route = inject(ActivatedRoute);
 
   readonly tutor = signal<TutorDetailsResponse | null>(null);
   readonly isLoading = signal(true);
   readonly errorMessage = signal<string | null>(null);
+
+  readonly isDemoTutor = computed(() => this.tutor()?.id === DEMO_TUTOR_ID);
+  readonly bookedSessions = signal<SessionResponse[]>([]);
+  readonly slotsLoading = signal(false);
+  readonly slotsError = signal(false);
+  readonly selectedSlot = signal<DateRangeDto | null>(null);
+  readonly isBookingOpen = signal(false);
+  readonly hasConflict = signal(false);
+  readonly successMessage = signal<string | null>(null);
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -37,12 +61,55 @@ export class TutorProfileComponent implements OnInit {
       next: (data: TutorDetailsResponse) => {
         this.tutor.set(data);
         this.isLoading.set(false);
+        this.loadBookedSessions(data.id);
       },
       error: () => {
         // Fallback to demo profile with notification if backend has no matching ID
         this.loadDemoTutor();
       }
     });
+  }
+
+  loadBookedSessions(tutorId: string): void {
+    this.slotsLoading.set(true);
+    this.slotsError.set(false);
+
+    this.sessionService.getBookedSessionsForTutor(tutorId).subscribe({
+      next: sessions => {
+        this.bookedSessions.set(sessions);
+        this.slotsLoading.set(false);
+      },
+      error: () => {
+        this.slotsError.set(true);
+        this.slotsLoading.set(false);
+      }
+    });
+  }
+
+  onBooked(tutorId: string): void {
+    const slot = this.selectedSlot();
+    this.resetBooking();
+    this.successMessage.set(
+      slot ? `Your session on ${new Date(slot.start).toLocaleString()} is booked.` : 'Your session is booked.'
+    );
+    this.loadBookedSessions(tutorId);
+  }
+
+  onConflict(): void {
+    this.isBookingOpen.set(false);
+    this.hasConflict.set(true);
+  }
+
+  onRefreshAfterConflict(tutorId: string): void {
+    this.hasConflict.set(false);
+    this.resetBooking();
+    this.loadBookedSessions(tutorId);
+  }
+
+  private resetBooking(): void {
+    this.isBookingOpen.set(false);
+    this.selectedSlot.set(null);
+    this.successMessage.set(null);
   }
 
   loadDemoTutor(): void {
@@ -61,7 +128,7 @@ export class TutorProfileComponent implements OnInit {
     afterTomorrow16.setHours(16, 0, 0, 0);
 
     this.tutor.set({
-      id: 'demo-tutor-001',
+      id: DEMO_TUTOR_ID,
       name: 'Radu Ionescu',
       email: 'radu.ionescu@student.upt.ro',
       bio: 'Student în anul 3 la Calculatoare. Am fost asistent voluntar la laboratorul de Structuri de Date și Teoria Grafurilor. Te pot ajuta cu pointeri în C, arbori echilibrați, algoritmi pe grafuri și pregătire pentru restanțe sau examene.',
@@ -84,25 +151,5 @@ export class TutorProfileComponent implements OnInit {
       .map(part => part.charAt(0).toUpperCase())
       .slice(0, 2)
       .join('');
-  }
-
-  formatReadableRange(startStr: string, endStr: string): string {
-    const s = new Date(startStr);
-    const e = new Date(endStr);
-    const dateFormatted = s.toLocaleDateString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
-    const startTime = s.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-    const endTime = e.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-
-    return `${dateFormatted}, ${startTime} – ${endTime}`;
-  }
-
-  calculateDurationHours(startStr: string, endStr: string): string {
-    const diffMs = new Date(endStr).getTime() - new Date(startStr).getTime();
-    const hours = diffMs / (1000 * 60 * 60);
-    return hours === 1 ? '1 hr' : `${hours.toFixed(1)} hrs`;
   }
 }

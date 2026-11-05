@@ -142,6 +142,13 @@ Modulele au dificultate echilibrată și fiecare conține câte un subiect „gr
 
 **Ce învață:** concurență, optimistic locking, invariante de domeniu, teste cu task-uri paralele.
 
+**Flux de rezervare (Angular):** `SlotPickerComponent` afișează pe profilul tutorelui sloturi de 60 de minute din disponibilitate, fără cele deja rezervate. `BookSessionModalComponent` trimite `POST /api/sessions/book`:
+- **409** → `ConcurrencyConflictDialogComponent`, cu reîmprospătarea sloturilor;
+- **400 cu codul `Session.DailyLimit`** (R4) → avertisment în modal;
+- orice altă eroare → mesaj în modal.
+
+Până la stabilirea identității, rezervările se fac în numele studentului demo creat la pornire (`DEMO_STUDENT_ID`).
+
 ---
 
 ### ⏱️ Cosmin – Modulul **Ciclul de viață al sesiunii**
