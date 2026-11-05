@@ -23,6 +23,14 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
+        builder.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+            {
+                policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+            });
+        });
+
         // Configure SQLite persistence replacing in-memory repositories
         builder.Services.AddSqliteRepositories(
             builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=tutormatch.db");
@@ -31,6 +39,8 @@ public class Program
         builder.Services.AddCqrs();
 
         var app = builder.Build();
+
+        app.UseCors();
 
         app.Use(async (context, next) =>
         {
@@ -109,41 +119,41 @@ internal sealed class CompatibilityResponseBodyFeature : IHttpResponseBodyFeatur
 
     public Task CompleteAsync() => _inner.CompleteAsync();
     public void DisableBuffering() => _inner.DisableBuffering();
-    public Task SendFileAsync(string path, long offset, long? count, CancellationToken cancellationToken = default) =>
+    public Task SendFileAsync(String path, Int64 offset, Int64? count, CancellationToken cancellationToken = default) =>
         _inner.SendFileAsync(path, offset, count, cancellationToken);
-    public Task StartAsync(CancellationToken cancellationToken = default) =>
-        _inner.StartAsync(cancellationToken);
+    public Task StartAsync(CancellationToken cancellationToken = default) => _inner.StartAsync(cancellationToken);
 }
 
 [ExcludeFromCodeCoverage]
 internal sealed class CompatibilityPipeWriter : PipeWriter
 {
     private readonly PipeWriter _inner;
-    private long _unflushedBytes;
 
     public CompatibilityPipeWriter(PipeWriter inner)
     {
         _inner = inner;
     }
 
-    public override bool CanGetUnflushedBytes => true;
-    public override long UnflushedBytes => _unflushedBytes;
-
-    public override void Advance(int bytes)
+    public override Int64 UnflushedBytes
     {
-        _unflushedBytes += bytes;
-        _inner.Advance(bytes);
+        get
+        {
+            try
+            {
+                return _inner.UnflushedBytes;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
     }
 
-    public override Memory<byte> GetMemory(int sizeHint = 0) => _inner.GetMemory(sizeHint);
-    public override Span<byte> GetSpan(int sizeHint = 0) => _inner.GetSpan(sizeHint);
-
-    public override async ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
-    {
-        _unflushedBytes = 0;
-        return await _inner.FlushAsync(cancellationToken);
-    }
-
+    public override void Advance(Int32 bytes) => _inner.Advance(bytes);
     public override void CancelPendingFlush() => _inner.CancelPendingFlush();
     public override void Complete(Exception? exception = null) => _inner.Complete(exception);
+    public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) =>
+        _inner.FlushAsync(cancellationToken);
+    public override Memory<Byte> GetMemory(Int32 sizeHint = 0) => _inner.GetMemory(sizeHint);
+    public override Span<Byte> GetSpan(Int32 sizeHint = 0) => _inner.GetSpan(sizeHint);
 }

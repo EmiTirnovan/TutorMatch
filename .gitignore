@@ -29,3 +29,12 @@ Desktop.ini
 *.db
 *.db-shm
 *.db-wal
+
+## Node and Angular outputs
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.angular/
+**/.angular/
+npm-debug.log*

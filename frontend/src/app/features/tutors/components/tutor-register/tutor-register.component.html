@@ -1,0 +1,175 @@
+<div class="container register-page">
+  <div class="page-header">
+    <h2>Become a Peer Tutor</h2>
+    <p class="text-muted">
+      Help fellow students succeed in technical subjects, share your university experience, and set your own schedule.
+    </p>
+  </div>
+
+  @if (successTutorId()) {
+    <div class="card success-card">
+      <div class="success-icon-wrap">
+        <svg class="success-svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <h3>Tutor Profile Created Successfully</h3>
+      <p class="text-muted">
+        Your profile is now live. An AI embedding for semantic search is automatically generated from your bio and subjects.
+      </p>
+      <div class="action-buttons">
+        <a [routerLink]="['/tutors', successTutorId()]" class="btn btn-primary">
+          View My Tutor Profile
+        </a>
+        <a [routerLink]="['/tutors', successTutorId(), 'availability']" class="btn btn-secondary">
+          Edit Availability
+        </a>
+      </div>
+    </div>
+  } @else {
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+      @if (errorMessage()) {
+        <div class="alert alert-danger" role="alert">
+          <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div>{{ errorMessage() }}</div>
+        </div>
+      }
+
+      <div class="form-layout">
+        <!-- Left Column: Personal & Academic Info -->
+        <div class="card form-card">
+          <h3>Profile Information</h3>
+          <p class="text-muted text-sm" style="margin-bottom: 1.25rem;">
+            Provide your university contact details and teaching background.
+          </p>
+
+          <div class="form-group">
+            <label for="name">Full Name *</label>
+            <input
+              id="name"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('name')"
+              formControlName="name"
+              placeholder="e.g. Andrei Ionescu"
+            />
+            @if (isFieldInvalid('name')) {
+              <div class="error-feedback">Full name is required (minimum 2 characters).</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="email">University Email *</label>
+            <input
+              id="email"
+              type="email"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('email')"
+              formControlName="email"
+              placeholder="e.g. andrei.ionescu@student.upt.ro"
+            />
+            @if (isFieldInvalid('email')) {
+              <div class="error-feedback">Please enter a valid email address.</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="hourlyRate">Hourly Rate (RON / hour) *</label>
+            <input
+              id="hourlyRate"
+              type="number"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('hourlyRate')"
+              formControlName="hourlyRate"
+              min="1"
+              max="1000"
+            />
+            @if (isFieldInvalid('hourlyRate')) {
+              <div class="error-feedback">Rate must be between 1 and 1000 RON.</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="bio">Biography & Tutoring Experience *</label>
+            <textarea
+              id="bio"
+              class="form-control"
+              rows="4"
+              [class.is-invalid]="isFieldInvalid('bio')"
+              formControlName="bio"
+              placeholder="Describe your university year, experience with lab assignments, exam tips, and how you help students understand complex topics..."
+            ></textarea>
+            @if (isFieldInvalid('bio')) {
+              <div class="error-feedback">Biography is required (minimum 10 characters).</div>
+            }
+          </div>
+
+          <!-- Subject Tags Input -->
+          <div class="form-group">
+            <label>Subjects & Topics Taught *</label>
+            <div class="subject-input-wrapper">
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="newSubjectInput"
+                [ngModelOptions]="{standalone: true}"
+                placeholder="Type topic (e.g. Algoritmi, Pointers) and click Add"
+                (keydown.enter)="$event.preventDefault(); addSubject()"
+              />
+              <button type="button" class="btn btn-secondary btn-add-subject" (click)="addSubject()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>Add</span>
+              </button>
+            </div>
+
+            <div class="chips-container">
+              @for (subj of subjects(); track $index) {
+                <span class="chip">
+                  {{ subj }}
+                  <button type="button" class="chip-remove" (click)="removeSubject($index)" aria-label="Remove subject">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/>
+                      <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </span>
+              }
+            </div>
+            @if (subjects().length === 0) {
+              <div class="error-feedback">Please add at least one subject tag.</div>
+            }
+          </div>
+        </div>
+
+        <!-- Right Column: Initial Availability Schedule -->
+        <div class="availability-column">
+          <div class="card">
+            <h3>Initial Availability</h3>
+            <p class="text-muted text-sm" style="margin-bottom: 1.25rem;">
+              Set your available time slots. You can modify these anytime later.
+            </p>
+            <app-availability-editor [isEmbedded]="true"></app-availability-editor>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="btn btn-accent btn-lg"
+          [disabled]="isSubmitting() || registerForm.invalid || subjects().length === 0"
+        >
+          {{ isSubmitting() ? 'Submitting Registration...' : 'Complete Tutor Registration' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>

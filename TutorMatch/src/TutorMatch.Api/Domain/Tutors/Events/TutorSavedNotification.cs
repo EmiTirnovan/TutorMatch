@@ -12,4 +12,19 @@ public record TutorSavedNotification(Guid TutorId, string Bio, List<string> Subj
     {
         Handler?.Invoke(notification);
     }
+
+    // Dispatches all pending domain events on an entity strictly after successful persistence/commit
+    public static void DispatchPostCommitEvents(Tutor tutor)
+    {
+        ArgumentNullException.ThrowIfNull(tutor);
+        var events = tutor.DomainEvents.ToList();
+        tutor.ClearDomainEvents();
+        foreach (var domainEvent in events)
+        {
+            if (domainEvent is TutorSavedNotification notification)
+            {
+                Publish(notification);
+            }
+        }
+    }
 }

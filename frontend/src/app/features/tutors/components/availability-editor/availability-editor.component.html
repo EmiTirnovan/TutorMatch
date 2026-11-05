@@ -1,0 +1,162 @@
+<div class="availability-editor" [class.embedded]="isEmbedded">
+  @if (!isEmbedded) {
+    <div class="page-header">
+      <div class="header-breadcrumbs">
+        <a [routerLink]="['/tutors', tutorId]" class="breadcrumb-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          <span>Back to Tutor Profile</span>
+        </a>
+      </div>
+      <h2>Manage Tutor Availability</h2>
+      <p class="text-muted">
+        Define the date and time windows when you are available for tutoring sessions.
+      </p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger" role="alert">
+      <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>{{ errorMessage() }}</div>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="alert alert-success" role="alert">
+      <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <div>{{ successMessage() }}</div>
+    </div>
+  }
+
+  <div class="editor-grid">
+    <!-- Add Slot Card -->
+    <div class="card add-slot-card">
+      <h3>Add New Time Window</h3>
+      <p class="text-muted text-sm" style="margin-bottom: 1.25rem;">
+        Select start and end dates/times. Overlapping intervals are rejected immediately.
+      </p>
+
+      <div class="form-group">
+        <label for="slotStart">Start Date & Time</label>
+        <input
+          id="slotStart"
+          type="datetime-local"
+          class="form-control"
+          [(ngModel)]="newStart"
+          [disabled]="isSaving()"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="slotEnd">End Date & Time</label>
+        <input
+          id="slotEnd"
+          type="datetime-local"
+          class="form-control"
+          [(ngModel)]="newEnd"
+          [disabled]="isSaving()"
+        />
+      </div>
+
+      @if (validationError()) {
+        <div class="validation-warning">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>{{ validationError() }}</span>
+        </div>
+      }
+
+      <button
+        type="button"
+        class="btn btn-accent"
+        style="width: 100%;"
+        (click)="addSlot()"
+        [disabled]="isSaving()"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Add Interval to List</span>
+      </button>
+    </div>
+
+    <!-- Active Slots Card -->
+    <div class="card slots-list-card">
+      <div class="slots-header">
+        <div>
+          <h3>Current Availability Slots</h3>
+          <p class="text-muted text-sm">
+            Total active windows: <strong>{{ slots().length }}</strong>
+          </p>
+        </div>
+
+        @if (!isEmbedded && tutorId) {
+          <button
+            type="button"
+            class="btn btn-primary btn-save-header"
+            (click)="saveAvailability()"
+            [disabled]="isSaving() || isLoading()"
+          >
+            {{ isSaving() ? 'Saving Changes...' : 'Save Availability' }}
+          </button>
+        }
+      </div>
+
+      @if (isLoading()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p class="text-muted">Loading availability schedule...</p>
+        </div>
+      } @else if (slots().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon-wrap">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <h4>No availability slots added yet</h4>
+          <p class="text-muted text-sm">
+            Add at least one time window so students can book tutoring sessions with you.
+          </p>
+        </div>
+      } @else {
+        <div class="slots-container">
+          @for (slot of slots(); track $index) {
+            <div class="slot-item">
+              <div class="slot-info">
+                <span class="slot-time">{{ formatReadableRange(slot.start, slot.end) }}</span>
+                <span class="badge badge-neutral">{{ calculateDurationHours(slot.start, slot.end) }}</span>
+              </div>
+              <button
+                type="button"
+                class="btn btn-danger btn-sm"
+                title="Remove interval"
+                (click)="removeSlot($index)"
+                [disabled]="isSaving()"
+              >
+                Delete
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

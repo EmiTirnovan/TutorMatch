@@ -1,0 +1,36 @@
+<header class="app-header">
+  <div class="header-container">
+    <div class="brand">
+      <a routerLink="/" class="logo">
+        <svg class="logo-svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+          <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+        </svg>
+        <span class="logo-text">TutorMatch</span>
+      </a>
+      <span class="badge badge-primary header-badge">University Peer Tutoring</span>
+    </div>
+
+    <nav class="nav-links">
+      <a routerLink="/tutors/register" routerLinkActive="active" class="nav-item">
+        Become a Tutor
+      </a>
+      <a routerLink="/tutors/demo" routerLinkActive="active" class="nav-item">
+        Tutor Profile
+      </a>
+    </nav>
+
+    <div class="user-control">
+      <span class="role-indicator">
+        Mode: <strong>{{ userRole() === 'tutor' ? 'Tutor View' : 'Student View' }}</strong>
+      </span>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="toggleRole()">
+        Switch to {{ userRole() === 'tutor' ? 'Student' : 'Tutor' }}
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="main-content">
+  <router-outlet></router-outlet>
+</main>

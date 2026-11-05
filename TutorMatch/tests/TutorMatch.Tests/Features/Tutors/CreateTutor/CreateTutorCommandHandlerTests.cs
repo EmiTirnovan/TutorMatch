@@ -1,5 +1,4 @@
 using FluentAssertions;
-using TutorMatch.Api.Common.Dtos;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Domain.Tutors.Events;
@@ -43,16 +42,11 @@ public class CreateTutorCommandHandlerTests
     }
 
     [Fact]
-    public async Task Given_validCommand_When_handlingCreateTutor_Then_returnsSuccessfulResult()
+    public async Task Given_validCommand_When_handlingCreateTutor_Then_createsTutorSuccessfully()
     {
         var repository = new FakeTutorRepository();
         var handler = new CreateTutorCommandHandler(repository);
-        var subjectId = Guid.NewGuid();
-        var availability = new List<DateRangeDto>
-        {
-            new(new DateTime(2026, 10, 20, 10, 0, 0), new DateTime(2026, 10, 20, 12, 0, 0))
-        };
-        var command = new CreateTutorCommand("Emi", "emi@test.com", "Bio", 90m, new List<Guid>{ subjectId }, availability);
+        var command = new CreateTutorCommand("Emi", "emi@test.com", "Bio", 90m);
 
         var result = await handler.HandleAsync(command);
 
@@ -80,6 +74,26 @@ public class CreateTutorCommandHandlerTests
         published.Should().NotBeNull();
         published!.TutorId.Should().Be(result.Value.Id);
         published.Bio.Should().Be("Bio");
+    }
+
+    [Fact]
+    public async Task Given_DatabaseSaveFails_When_HandlingCreateTutor_Then_DoesNotPublishTutorSavedNotification()
+    {
+        var repository = new FakeTutorRepository
+        {
+            AddBehavior = _ => throw new InvalidOperationException("Simulated database failure")
+        };
+        var handler = new CreateTutorCommandHandler(repository);
+        TutorSavedNotification? published = null;
+        Action<TutorSavedNotification> onPublished = n => published = n;
+        TutorSavedNotification.Handler += onPublished;
+        var command = new CreateTutorCommand("Emi", "emi@test.com", "Bio", 90m);
+
+        var result = await handler.HandleAsync(command);
+
+        TutorSavedNotification.Handler -= onPublished;
+        result.IsSuccess.Should().BeFalse();
+        published.Should().BeNull();
     }
 
     [Fact]

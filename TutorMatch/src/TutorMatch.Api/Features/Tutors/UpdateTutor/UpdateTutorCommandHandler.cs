@@ -26,12 +26,16 @@ public class UpdateTutorCommandHandler : ICommandHandler<UpdateTutorCommand>
         try
         {
             tutor.UpdateProfile(command.Name, command.Bio, command.HourlyRate);
-            _repository.Update(tutor);
 
-            // Publish TutorSavedNotification for in-process subscribers like AI embedding generation
+            // Record domain event on aggregate prior to persistence
             var notification = tutor.CreateTutorSavedNotification();
             tutor.AddDomainEvent(notification);
-            TutorSavedNotification.Publish(notification);
+
+            // Persist to database; if persistence fails, no event is dispatched
+            _repository.Update(tutor);
+
+            // Dispatch domain events strictly post-commit
+            TutorSavedNotification.DispatchPostCommitEvents(tutor);
 
             return Task.FromResult(Result.Success());
         }

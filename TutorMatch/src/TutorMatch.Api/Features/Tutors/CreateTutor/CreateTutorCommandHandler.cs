@@ -1,6 +1,5 @@
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
-using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Domain.Tutors.Events;
 
@@ -15,8 +14,12 @@ public class CreateTutorCommandHandler : ICommandHandler<CreateTutorCommand, Res
         _repository = repository;
     }
 
-    public Task<Result<CreateTutorResponse>> HandleAsync(CreateTutorCommand command, CancellationToken cancellationToken = default)
+    public Task<Result<CreateTutorResponse>> HandleAsync(
+        CreateTutorCommand command,
+        CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(command);
+
         try
         {
             var tutor = new Tutor(
@@ -41,12 +44,15 @@ public class CreateTutorCommandHandler : ICommandHandler<CreateTutorCommand, Res
                 }
             }
 
-            _repository.Add(tutor);
-
-            // Publish TutorSavedNotification for in-process subscribers like AI embedding generation
+            // Record domain event on aggregate prior to persistence
             var notification = tutor.CreateTutorSavedNotification();
             tutor.AddDomainEvent(notification);
-            TutorSavedNotification.Publish(notification);
+
+            // Persist to database; if persistence fails, no event is dispatched
+            _repository.Add(tutor);
+
+            // Dispatch domain events strictly post-commit
+            TutorSavedNotification.DispatchPostCommitEvents(tutor);
 
             var response = new CreateTutorResponse(
                 tutor.Id,
