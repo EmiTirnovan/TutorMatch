@@ -1,0 +1,37 @@
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+.filter-field label {
+  margin-bottom: 0.375rem;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .filter-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-actions {
+    grid-column: 1 / -1;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 540px) {
+  .filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-actions .btn {
+    flex: 1;
+  }
+}

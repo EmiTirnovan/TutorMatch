@@ -107,4 +107,42 @@ describe('TutorService', () => {
     expect(req.request.body).toEqual(mockProfile);
     req.flush(null);
   });
+
+  it('Given_ActiveFilters_When_SearchingTutors_Then_SendsFiltersAsQueryParams', () => {
+    service
+      .searchTutors({ subject: ' SQL ', maxPrice: 80, date: '2026-11-10', sortBy: 'priceDesc', page: 2, pageSize: 6 })
+      .subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('subject')).toBe('SQL');
+    expect(req.request.params.get('maxPrice')).toBe('80');
+    expect(req.request.params.get('date')).toBe('2026-11-10');
+    expect(req.request.params.get('sortBy')).toBe('priceDesc');
+    expect(req.request.params.get('page')).toBe('2');
+    expect(req.request.params.get('pageSize')).toBe('6');
+    req.flush({ tutors: [], totalCount: 0, page: 2, pageSize: 6, mode: 'keyword' });
+  });
+
+  it('Given_EmptyFilters_When_SearchingTutors_Then_OmitsOptionalQueryParams', () => {
+    service
+      .searchTutors({ subject: '', maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
+      .subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
+    expect(req.request.params.has('subject')).toBe(false);
+    expect(req.request.params.has('maxPrice')).toBe(false);
+    expect(req.request.params.has('date')).toBe(false);
+    req.flush({ tutors: [], totalCount: 0, page: 1, pageSize: 6, mode: 'keyword' });
+  });
+
+  it('Given_RatingRequest_When_RatingSession_Then_PostsScoreWithStudentHeader', () => {
+    service.rateSession('tutor-1', 'session-1', 'student-1', { score: 4, notes: 'Clear explanations' }).subscribe();
+
+    const req = httpMock.expectOne('/api/tutors/tutor-1/sessions/session-1/rate');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.headers.get('X-Student-Id')).toBe('student-1');
+    expect(req.request.body).toEqual({ score: 4, notes: 'Clear explanations' });
+    req.flush(null);
+  });
 });

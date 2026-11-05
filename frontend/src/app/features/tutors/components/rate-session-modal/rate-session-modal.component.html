@@ -1,0 +1,69 @@
+<div class="modal-backdrop" (click)="close()">
+  <div
+    #dialog
+    class="card modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="rate-modal-title"
+    tabindex="-1"
+    (click)="$event.stopPropagation()"
+    (keydown.escape)="close()"
+  >
+    <h2 id="rate-modal-title">Rate your session</h2>
+
+    @if (!canRate()) {
+      <div class="alert alert-warning" role="alert">Ratings are available only after a session is completed.</div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="close()">Close</button>
+      </div>
+    } @else {
+      <p class="text-muted text-sm">You can rate a completed session once.</p>
+
+      @if (isRated() && !errorMessage()) {
+        <div class="alert alert-success" role="status">Thank you. Your rating was saved.</div>
+      }
+      @if (errorMessage()) {
+        <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-group">
+          <span class="field-label" id="rate-score-label">Your rating</span>
+          <div class="star-input" role="radiogroup" aria-labelledby="rate-score-label">
+            @for (value of starValues; track value) {
+              <button
+                type="button"
+                class="star-button"
+                role="radio"
+                [class.star-filled]="value <= form.controls.score.value"
+                [attr.aria-checked]="form.controls.score.value === value"
+                [attr.aria-label]="value + (value === 1 ? ' star' : ' stars')"
+                [disabled]="isRated()"
+                (click)="selectScore(value)"
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </button>
+            }
+          </div>
+          @if (form.controls.score.invalid && form.controls.score.touched) {
+            <div class="error-feedback">Choose a rating from 1 to 5 stars.</div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="rate-notes">Comment (optional)</label>
+          <textarea id="rate-notes" class="form-control" rows="3" formControlName="notes" [readonly]="isRated()"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="close()">{{ isRated() ? 'Close' : 'Cancel' }}</button>
+          <button type="submit" class="btn btn-accent" [disabled]="isSubmitting() || isRated()">
+            {{ isSubmitting() ? 'Submitting...' : 'Submit rating' }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</div>

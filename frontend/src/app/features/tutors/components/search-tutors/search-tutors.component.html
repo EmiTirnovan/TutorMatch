@@ -1,0 +1,50 @@
+<div class="container search-page">
+  <header class="search-header">
+    <h1>Discover tutors</h1>
+    <p class="text-muted">Filter by subject, price and availability to find the right tutor.</p>
+  </header>
+
+  <app-tutor-filter-bar (criteriaChange)="onCriteriaChange($event)" />
+
+  <p class="result-count text-muted text-sm" aria-live="polite">
+    @if (!isLoading() && !errorMessage()) {
+      {{ totalCount() }} {{ totalCount() === 1 ? 'tutor' : 'tutors' }} found
+    }
+  </p>
+
+  @if (isLoading()) {
+    <div class="tutor-grid" aria-busy="true">
+      @for (item of skeletonItems; track item) {
+        <div class="card skeleton-card"></div>
+      }
+    </div>
+  } @else if (errorMessage()) {
+    <div class="alert alert-danger" role="alert">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" class="btn btn-secondary" (click)="loadTutors()">Retry</button>
+    </div>
+  } @else if (tutors().length === 0) {
+    <div class="card empty-state">
+      <h3>No tutors match your filters</h3>
+      <p class="text-muted">Try a different subject, a higher max price or another date.</p>
+    </div>
+  } @else {
+    <div class="tutor-grid">
+      @for (tutor of tutors(); track tutor.id) {
+        <app-tutor-card [tutor]="tutor" />
+      }
+    </div>
+
+    @if (totalPages() > 1) {
+      <nav class="pagination" aria-label="Tutor results pages">
+        <button type="button" class="btn btn-secondary" [disabled]="page() === 1" (click)="goToPage(page() - 1)">
+          Previous
+        </button>
+        <span class="text-sm">Page {{ page() }} of {{ totalPages() }}</span>
+        <button type="button" class="btn btn-secondary" [disabled]="page() === totalPages()" (click)="goToPage(page() + 1)">
+          Next
+        </button>
+      </nav>
+    }
+  }
+</div>
