@@ -27,6 +27,8 @@ export interface TutorSearchItem {
   averageRating: number;
   ratingCount: number;
   subjects: string[];
+  /** Semantic similarity (0..1). Only present for semantic search results. */
+  similarityScore?: number | null;
 }
 
 export interface TutorSearchResponse {

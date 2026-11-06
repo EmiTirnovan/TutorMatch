@@ -1,10 +1,37 @@
 <div class="container search-page">
   <header class="search-header">
-    <h1>Discover tutors</h1>
-    <p class="text-muted">Filter by subject, price and availability to find the right tutor.</p>
+    <div class="header-row">
+      <h1>Discover tutors</h1>
+      <button type="button" class="btn btn-secondary" [attr.aria-pressed]="showEvaluation()" (click)="toggleEvaluation()">
+        {{ showEvaluation() ? 'Hide evaluation' : 'Evaluation dashboard' }}
+      </button>
+    </div>
+    <p class="text-muted">Describe what you need help with, or filter by subject, price and availability.</p>
   </header>
 
+  @if (showEvaluation()) {
+    <app-evaluation-dashboard class="evaluation-section" />
+  }
+
+  <section class="semantic-section" aria-label="Căutare în limbaj natural">
+    <app-semantic-search-bar
+      [(query)]="semanticQuery"
+      [loading]="isLoading()"
+      (searchRequested)="onSemanticSearch($event)"
+    />
+    <app-prompt-chips [disabled]="isLoading()" (promptSelected)="onPromptSelected($event)" />
+  </section>
+
   <app-tutor-filter-bar (criteriaChange)="onCriteriaChange($event)" />
+
+  @if (searchMode(); as mode) {
+    <div class="mode-row">
+      @if (!isLoading() && !errorMessage()) {
+        <app-search-mode-badge [mode]="mode" [topScore]="topScore()" />
+      }
+      <button type="button" class="btn btn-secondary" (click)="clearSemanticSearch()">Back to all tutors</button>
+    </div>
+  }
 
   <p class="result-count text-muted text-sm" aria-live="polite">
     @if (!isLoading() && !errorMessage()) {
@@ -21,17 +48,22 @@
   } @else if (errorMessage()) {
     <div class="alert alert-danger" role="alert">
       <span>{{ errorMessage() }}</span>
-      <button type="button" class="btn btn-secondary" (click)="loadTutors()">Retry</button>
+      <button type="button" class="btn btn-secondary" (click)="retry()">Retry</button>
     </div>
   } @else if (tutors().length === 0) {
     <div class="card empty-state">
-      <h3>No tutors match your filters</h3>
-      <p class="text-muted">Try a different subject, a higher max price or another date.</p>
+      @if (searchMode()) {
+        <h3>No tutors match your description</h3>
+        <p class="text-muted">Try describing the problem differently or pick one of the suggestions.</p>
+      } @else {
+        <h3>No tutors match your filters</h3>
+        <p class="text-muted">Try a different subject, a higher max price or another date.</p>
+      }
     </div>
   } @else {
     <div class="tutor-grid">
-      @for (tutor of tutors(); track tutor.id) {
-        <app-tutor-card [tutor]="tutor" />
+      @for (tutor of tutors(); track tutor.id; let first = $first) {
+        <app-tutor-card [tutor]="tutor" [bestMatch]="first && searchMode() === 'semantic'" />
       }
     </div>
 

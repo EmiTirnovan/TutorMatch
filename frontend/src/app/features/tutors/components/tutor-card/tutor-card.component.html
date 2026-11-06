@@ -1,4 +1,12 @@
-<article class="card tutor-card">
+<article class="card tutor-card" [class.tutor-card-best]="bestMatch()">
+  @if (matchPercent() !== null) {
+    <div class="match-row">
+      <span class="badge match-badge" [class.match-badge-best]="bestMatch()">{{ matchPercent() }}% match</span>
+      @if (bestMatch()) {
+        <span class="best-match-label text-sm">Best match</span>
+      }
+    </div>
+  }
   <div class="card-header">
     <div class="avatar-circle" aria-hidden="true">{{ initials() }}</div>
     <div class="card-title">

@@ -2,6 +2,34 @@
   margin-bottom: 1.5rem;
 }
 
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.evaluation-section {
+  display: block;
+  margin-bottom: 1.5rem;
+}
+
+.semantic-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
 .result-count {
   margin: 1rem 0;
   min-height: 1.25rem;
