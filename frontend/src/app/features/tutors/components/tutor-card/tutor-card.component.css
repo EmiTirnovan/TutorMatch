@@ -6,6 +6,34 @@
   padding: 1.25rem;
 }
 
+.tutor-card-best {
+  border-color: var(--accent-500);
+  box-shadow: 0 0 0 1px var(--accent-500), var(--shadow-md);
+}
+
+.match-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.match-badge {
+  background-color: var(--accent-50);
+  color: var(--accent-600);
+  border: 1px solid var(--accent-100);
+}
+
+.match-badge-best {
+  background-color: var(--accent-600);
+  color: #ffffff;
+  border-color: var(--accent-600);
+}
+
+.best-match-label {
+  font-weight: 600;
+  color: var(--accent-600);
+}
+
 .card-header {
   display: flex;
   align-items: center;

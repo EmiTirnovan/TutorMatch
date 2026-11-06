@@ -113,4 +113,59 @@ describe('TutorCardComponent', () => {
     expect(card.querySelector('a.btn')?.textContent).toContain('View profile');
     expect(card.querySelector('a.btn')?.getAttribute('href')).toBe('/tutors/tutor-8');
   });
+
+  describe('semantic similarity', () => {
+    const base = { id: 'tutor-5', name: 'Ana Pop', hourlyRate: 60, averageRating: 4, ratingCount: 2 };
+
+    it('Given_SimilarityScore_When_Rendering_Then_ShowsRoundedMatchPercentage', () => {
+      const card = createCard({ ...base, similarityScore: 0.874 });
+
+      expect(card.querySelector('.match-badge')?.textContent).toContain('87% match');
+    });
+
+    it('Given_NoSimilarityScore_When_Rendering_Then_HidesMatchBadge', () => {
+      const card = createCard(base);
+
+      expect(card.querySelector('.match-row')).toBeNull();
+    });
+
+    it('Given_NullSimilarityScore_When_Rendering_Then_HidesMatchBadge', () => {
+      const card = createCard({ ...base, similarityScore: null });
+
+      expect(card.querySelector('.match-badge')).toBeNull();
+    });
+
+    it('Given_ZeroSimilarityScore_When_Rendering_Then_ShowsZeroPercent', () => {
+      const card = createCard({ ...base, similarityScore: 0 });
+
+      expect(card.querySelector('.match-badge')?.textContent).toContain('0% match');
+    });
+
+    it('Given_ScoreOutsideRange_When_Rendering_Then_ClampsBetweenZeroAndHundred', () => {
+      createCard({ ...base, similarityScore: 1.3 });
+      expect(fixture.componentInstance.matchPercent()).toBe(100);
+
+      createCard({ ...base, similarityScore: -0.5 });
+      expect(fixture.componentInstance.matchPercent()).toBe(0);
+    });
+
+    it('Given_BestMatchFlag_When_Rendering_Then_HighlightsCardAndShowsLabel', () => {
+      fixture = TestBed.createComponent(TutorCardComponent);
+      fixture.componentRef.setInput('tutor', { ...base, subjects: [], similarityScore: 0.9 });
+      fixture.componentRef.setInput('bestMatch', true);
+      fixture.detectChanges();
+      const card = fixture.nativeElement as HTMLElement;
+
+      expect(card.querySelector('.tutor-card-best')).not.toBeNull();
+      expect(card.querySelector('.best-match-label')?.textContent).toContain('Best match');
+      expect(card.querySelector('.match-badge-best')).not.toBeNull();
+    });
+
+    it('Given_NoBestMatchFlag_When_Rendering_Then_CardIsNotHighlighted', () => {
+      const card = createCard({ ...base, similarityScore: 0.9 });
+
+      expect(card.querySelector('.tutor-card-best')).toBeNull();
+      expect(card.querySelector('.best-match-label')).toBeNull();
+    });
+  });
 });

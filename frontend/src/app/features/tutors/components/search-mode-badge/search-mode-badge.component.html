@@ -1,0 +1,11 @@
+<div class="mode-indicator" aria-live="polite">
+  <span class="badge mode-badge" [class.mode-semantic]="isSemantic()" [class.mode-fallback]="!isSemantic()">
+    {{ label() }}
+    @if (isSemantic() && scorePercent() !== null) {
+      <span class="mode-score">· {{ scorePercent() }}% match</span>
+    }
+  </span>
+  @if (!isSemantic()) {
+    <p class="mode-message text-sm">{{ fallbackMessage }}</p>
+  }
+</div>

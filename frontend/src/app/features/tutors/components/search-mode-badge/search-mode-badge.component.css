@@ -1,0 +1,26 @@
+.mode-indicator {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.mode-semantic {
+  background-color: var(--accent-50);
+  color: var(--accent-600);
+  border: 1px solid var(--accent-100);
+}
+
+.mode-fallback {
+  background-color: var(--warning-50);
+  color: var(--warning-600);
+  border: 1px solid var(--warning-border);
+}
+
+.mode-score {
+  font-weight: 600;
+}
+
+.mode-message {
+  color: var(--slate-500);
+}

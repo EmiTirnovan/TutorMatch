@@ -3,12 +3,15 @@ import { provideRouter } from '@angular/router';
 import { NEVER, Observable, Subject, of, throwError } from 'rxjs';
 import { SearchTutorsComponent, SEARCH_PAGE_SIZE } from '../../../../../src/app/features/tutors/components/search-tutors/search-tutors.component';
 import { TutorService } from '../../../../../src/app/core/services/tutor.service';
+import { SemanticSearchService } from '../../../../../src/app/core/services/semantic-search.service';
+import { SemanticSearchResult } from '../../../../../src/app/core/models/semantic-search.models';
 import { TutorSearchFilters, TutorSearchItem, TutorSearchResponse } from '../../../../../src/app/core/models/tutor-search.models';
 
 describe('SearchTutorsComponent', () => {
   let component: SearchTutorsComponent;
   let fixture: ComponentFixture<SearchTutorsComponent>;
   let searchSpy: ReturnType<typeof vi.fn<(filters: TutorSearchFilters) => Observable<TutorSearchResponse>>>;
+  let semanticSpy: ReturnType<typeof vi.fn<(query: string) => Observable<SemanticSearchResult>>>;
 
   const tutor = (id: string, name: string, subjects: string[] = []): TutorSearchItem => ({
     id,
@@ -29,9 +32,14 @@ describe('SearchTutorsComponent', () => {
 
   const createPage = (result: Observable<TutorSearchResponse>): void => {
     searchSpy = vi.fn<(filters: TutorSearchFilters) => Observable<TutorSearchResponse>>().mockReturnValue(result);
+    semanticSpy = vi.fn<(query: string) => Observable<SemanticSearchResult>>();
     TestBed.configureTestingModule({
       imports: [SearchTutorsComponent],
-      providers: [provideRouter([]), { provide: TutorService, useValue: { searchTutors: searchSpy } }]
+      providers: [
+        provideRouter([]),
+        { provide: TutorService, useValue: { searchTutors: searchSpy } },
+        { provide: SemanticSearchService, useValue: { search: semanticSpy } }
+      ]
     });
     fixture = TestBed.createComponent(SearchTutorsComponent);
     component = fixture.componentInstance;
@@ -319,5 +327,169 @@ describe('SearchTutorsComponent', () => {
 
     expect(first.observed).toBe(false);
     expect(element().querySelectorAll('app-tutor-card').length).toBe(1);
+  });
+
+  describe('semantic search', () => {
+    const semanticResult = (
+      mode: SemanticSearchResult['mode'],
+      scores: (number | null)[] = [0.91, 0.74]
+    ): SemanticSearchResult => ({
+      mode,
+      message: null,
+      tutors: scores.map((score, index) => ({ ...tutor(`s${index}`, `Tutor ${index}`), similarityScore: score }))
+    });
+
+    const typeAndSubmit = (text: string): void => {
+      const input = element().querySelector('#semantic-search-input') as HTMLInputElement;
+      input.value = text;
+      input.dispatchEvent(new Event('input'));
+      (element().querySelector('app-semantic-search-bar form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+      fixture.detectChanges();
+    };
+
+    it('Given_Query_When_SubmittingSearchBar_Then_ShowsSemanticResultsWithBadgeAndBestMatch', () => {
+      createPage(of(response([tutor('1', 'Maria Dragomir')])));
+      semanticSpy.mockReturnValue(of(semanticResult('semantic')));
+
+      typeAndSubmit('pointeri in C');
+
+      expect(semanticSpy).toHaveBeenCalledWith('pointeri in C');
+      const cards = element().querySelectorAll('app-tutor-card');
+      expect(cards.length).toBe(2);
+      expect(cards[0].querySelector('.best-match-label')).not.toBeNull();
+      expect(cards[1].querySelector('.best-match-label')).toBeNull();
+      expect(element().querySelector('app-search-mode-badge .mode-semantic')?.textContent).toContain('91% match');
+      expect(component.topScore()).toBe(0.91);
+    });
+
+    it('Given_SemanticFallback_When_Searching_Then_ShowsKeywordFallbackBadgeWithoutBestMatch', () => {
+      createPage(of(response([])));
+      semanticSpy.mockReturnValue(of(semanticResult('keyword_fallback', [null, null])));
+
+      component.onSemanticSearch('pointeri');
+      fixture.detectChanges();
+
+      expect(element().querySelector('app-search-mode-badge .mode-fallback')).not.toBeNull();
+      expect(element().querySelector('.best-match-label')).toBeNull();
+      expect(element().querySelector('.match-badge')).toBeNull();
+      expect(component.topScore()).toBeNull();
+    });
+
+    it('Given_PromptChip_When_Clicked_Then_PopulatesSearchBarAndSearches', () => {
+      createPage(of(response([])));
+      semanticSpy.mockReturnValue(of(semanticResult('semantic')));
+      const chip = element().querySelector('app-prompt-chips .chip') as HTMLButtonElement;
+
+      chip.click();
+      fixture.detectChanges();
+
+      const input = element().querySelector('#semantic-search-input') as HTMLInputElement;
+      expect(semanticSpy).toHaveBeenCalledWith(chip.textContent?.trim());
+      expect(component.semanticQuery()).toBe(chip.textContent?.trim());
+      expect(input.value).toBe(chip.textContent?.trim());
+    });
+
+    it('Given_BlankQuery_When_SearchingSemantically_Then_DoesNothing', () => {
+      createPage(of(response([])));
+
+      component.onSemanticSearch('   ');
+
+      expect(semanticSpy).not.toHaveBeenCalled();
+    });
+
+    it('Given_PendingSemanticSearch_When_Rendering_Then_ShowsSkeletonsAndDisablesChips', () => {
+      createPage(of(response([])));
+      semanticSpy.mockReturnValue(NEVER);
+
+      component.onSemanticSearch('pointeri');
+      fixture.detectChanges();
+
+      expect(element().querySelectorAll('.skeleton-card').length).toBe(SEARCH_PAGE_SIZE);
+      expect(element().querySelector('app-search-mode-badge')).toBeNull();
+      expect((element().querySelector('app-prompt-chips .chip') as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('Given_SemanticFailure_When_Searching_Then_ShowsErrorAndRetryRepeatsSemanticQuery', () => {
+      createPage(of(response([])));
+      semanticSpy.mockReturnValue(throwError(() => new Error('bad request')));
+      component.onSemanticSearch('pointeri');
+      fixture.detectChanges();
+      expect(element().querySelector('.alert-danger')).not.toBeNull();
+
+      semanticSpy.mockReturnValue(of(semanticResult('semantic')));
+      (element().querySelector('.alert-danger button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(semanticSpy).toHaveBeenCalledTimes(2);
+      expect(semanticSpy).toHaveBeenLastCalledWith('pointeri');
+      expect(element().querySelector('.alert-danger')).toBeNull();
+      expect(element().querySelectorAll('app-tutor-card').length).toBe(2);
+    });
+
+    it('Given_NoSemanticMatches_When_Rendering_Then_ShowsDescriptionEmptyState', () => {
+      createPage(of(response([tutor('1', 'Maria Dragomir')])));
+      semanticSpy.mockReturnValue(of(semanticResult('semantic', [])));
+
+      component.onSemanticSearch('ceva obscur');
+      fixture.detectChanges();
+
+      expect(element().querySelector('.empty-state h3')?.textContent).toContain('No tutors match your description');
+    });
+
+    it('Given_SemanticResults_When_ClickingBackToAllTutors_Then_ReloadsClassicListAndClearsMode', () => {
+      createPage(of(response([tutor('1', 'Maria Dragomir')])));
+      semanticSpy.mockReturnValue(of(semanticResult('semantic')));
+      component.onSemanticSearch('pointeri');
+      fixture.detectChanges();
+      searchSpy.mockClear();
+
+      (element().querySelector('.mode-row button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(searchSpy).toHaveBeenCalledTimes(1);
+      expect(component.searchMode()).toBeNull();
+      expect(component.semanticQuery()).toBe('');
+      expect(element().querySelector('app-search-mode-badge')).toBeNull();
+    });
+
+    it('Given_SemanticResults_When_ApplyingFilters_Then_LeavesSemanticMode', () => {
+      createPage(of(response([tutor('1', 'Maria Dragomir')])));
+      semanticSpy.mockReturnValue(of(semanticResult('semantic')));
+      component.onSemanticSearch('pointeri');
+
+      component.onCriteriaChange({ subject: 'SQL', maxPrice: null, date: '', sortBy: 'priceAsc' });
+
+      expect(component.searchMode()).toBeNull();
+      expect(component.activeSemanticQuery()).toBeNull();
+    });
+
+    it('Given_NewSemanticSearchWhilePreviousIsPending_When_Searching_Then_CancelsPreviousRequest', () => {
+      createPage(of(response([])));
+      const first = new Subject<SemanticSearchResult>();
+      semanticSpy.mockReturnValue(first);
+      component.onSemanticSearch('pointeri');
+
+      semanticSpy.mockReturnValue(of(semanticResult('semantic')));
+      component.onSemanticSearch('sortare');
+
+      expect(first.observed).toBe(false);
+    });
+  });
+
+  describe('evaluation dashboard toggle', () => {
+    it('Given_Page_When_TogglingEvaluation_Then_ShowsAndHidesDashboard', () => {
+      createPage(of(response([])));
+      expect(element().querySelector('app-evaluation-dashboard')).toBeNull();
+      const toggle = element().querySelector('.header-row button') as HTMLButtonElement;
+
+      toggle.click();
+      fixture.detectChanges();
+      expect(element().querySelector('app-evaluation-dashboard')).not.toBeNull();
+      expect(toggle.getAttribute('aria-pressed')).toBe('true');
+
+      toggle.click();
+      fixture.detectChanges();
+      expect(element().querySelector('app-evaluation-dashboard')).toBeNull();
+    });
   });
 });
