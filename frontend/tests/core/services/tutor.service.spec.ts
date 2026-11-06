@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { TutorService } from './tutor.service';
-import { CreateTutorRequest, CreateTutorResponse, TutorDetailsResponse, UpdateAvailabilityRequest, UpdateTutorRequest } from '../models/tutor.models';
+import { TutorService } from '../../../src/app/core/services/tutor.service';
+import { CreateTutorRequest, CreateTutorResponse, TutorDetailsResponse, UpdateAvailabilityRequest, UpdateTutorRequest } from '../../../src/app/core/models/tutor.models';
 
 describe('TutorService', () => {
   let service: TutorService;
@@ -144,5 +144,80 @@ describe('TutorService', () => {
     expect(req.request.headers.get('X-Student-Id')).toBe('student-1');
     expect(req.request.body).toEqual({ score: 4, notes: 'Clear explanations' });
     req.flush(null);
+  });
+
+  it('Given_AnyFilters_When_SearchingTutors_Then_AlwaysSendsPagingAndSortParams', () => {
+    service.searchTutors({ subject: '', maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 }).subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
+    expect(req.request.params.get('page')).toBe('1');
+    expect(req.request.params.get('pageSize')).toBe('6');
+    expect(req.request.params.get('sortBy')).toBe('priceAsc');
+    expect(req.request.params.keys().sort()).toEqual(['page', 'pageSize', 'sortBy']);
+    req.flush({ tutors: [], totalCount: 0, page: 1, pageSize: 6, mode: 'keyword' });
+  });
+
+  it('Given_WhitespaceOnlySubject_When_SearchingTutors_Then_OmitsSubjectParam', () => {
+    service.searchTutors({ subject: '   ', maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 }).subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
+    expect(req.request.params.has('subject')).toBe(false);
+    req.flush({ tutors: [], totalCount: 0, page: 1, pageSize: 6, mode: 'keyword' });
+  });
+
+  it('Given_SearchResponse_When_SearchingTutors_Then_EmitsServerPayload', () => {
+    const payload = {
+      tutors: [{ id: 'tutor-1', name: 'Maria Dragomir', hourlyRate: 75, averageRating: 4.5, ratingCount: 2, subjects: ['Algoritmi', 'SQL'] }],
+      totalCount: 1,
+      page: 1,
+      pageSize: 6,
+      mode: 'keyword'
+    };
+    let received: unknown;
+
+    service
+      .searchTutors({ subject: '', maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
+      .subscribe((response) => (received = response));
+    httpMock.expectOne((r) => r.url === '/api/tutors/search').flush(payload);
+
+    expect(received).toEqual(payload);
+  });
+
+  it('Given_ServerFailure_When_SearchingTutors_Then_PropagatesHttpError', () => {
+    let status: number | undefined;
+
+    service
+      .searchTutors({ subject: '', maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
+      .subscribe({ error: (error) => (status = error.status) });
+    httpMock.expectOne((r) => r.url === '/api/tutors/search').flush('boom', { status: 500, statusText: 'Server Error' });
+
+    expect(status).toBe(500);
+  });
+
+  it('Given_RatingWithoutNotes_When_RatingSession_Then_PostsBodyWithoutNotes', () => {
+    service.rateSession('tutor-1', 'session-1', 'student-1', { score: 5 }).subscribe();
+
+    const req = httpMock.expectOne('/api/tutors/tutor-1/sessions/session-1/rate');
+    expect(req.request.body).toEqual({ score: 5 });
+    expect(req.request.body).not.toHaveProperty('notes');
+    req.flush(null);
+  });
+
+  it('Given_DuplicateRating_When_RatingSession_Then_PropagatesConflictWithServerDetail', () => {
+    let status: number | undefined;
+    let detail: string | undefined;
+
+    service.rateSession('tutor-1', 'session-1', 'student-1', { score: 3 }).subscribe({
+      error: (error) => {
+        status = error.status;
+        detail = error.error.detail;
+      }
+    });
+    httpMock
+      .expectOne('/api/tutors/tutor-1/sessions/session-1/rate')
+      .flush({ detail: 'Această sesiune a fost deja evaluată.' }, { status: 409, statusText: 'Conflict' });
+
+    expect(status).toBe(409);
+    expect(detail).toBe('Această sesiune a fost deja evaluată.');
   });
 });

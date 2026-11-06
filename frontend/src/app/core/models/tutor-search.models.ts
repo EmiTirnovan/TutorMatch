@@ -26,7 +26,7 @@ export interface TutorSearchItem {
   hourlyRate: number;
   averageRating: number;
   ratingCount: number;
-  subjects?: string[];
+  subjects: string[];
 }
 
 export interface TutorSearchResponse {

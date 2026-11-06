@@ -21,7 +21,7 @@
     </div>
   </div>
 
-  @if (tutor().subjects?.length) {
+  @if (tutor().subjects.length) {
     <div class="subjects">
       @for (subject of tutor().subjects; track subject) {
         <span class="badge badge-primary">{{ subject }}</span>

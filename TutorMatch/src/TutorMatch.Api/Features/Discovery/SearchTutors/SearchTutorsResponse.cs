@@ -14,4 +14,5 @@ public record TutorSearchDto(
     string Name,
     decimal HourlyRate,
     double AverageRating,
-    int RatingCount);
+    int RatingCount,
+    IReadOnlyList<string> Subjects);

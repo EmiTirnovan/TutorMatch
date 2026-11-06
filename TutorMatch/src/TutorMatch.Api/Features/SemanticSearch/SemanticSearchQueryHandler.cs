@@ -139,25 +139,18 @@ public class SemanticSearchQueryHandler : IQueryHandler<SemanticSearchQuery, Res
             {
                 foreach (var tutorDto in searchResponse.Tutors)
                 {
-                    // Obtinem bio si materii din repo/db pentru un raspuns complet
-                    var tutor = await _dbContext.Tutors
-                        .Include(t => t.TutorSubjects)
-                            .ThenInclude(ts => ts.Subject)
-                        .FirstOrDefaultAsync(t => t.Id == tutorDto.Id, cancellationToken);
-
-                    var subjects = tutor?.TutorSubjects
-                        .Select(ts => ts.Subject?.Name)
-                        .Where(s => !string.IsNullOrWhiteSpace(s))
-                        .Select(s => s!)
-                        .ToList() ?? new List<string>();
+                    var bio = await _dbContext.Tutors
+                        .Where(t => t.Id == tutorDto.Id)
+                        .Select(t => t.Bio)
+                        .FirstOrDefaultAsync(cancellationToken);
 
                     results.Add(new SemanticSearchResultItem(
                         tutorDto.Id,
                         tutorDto.Name,
-                        tutor?.Bio ?? string.Empty,
+                        bio ?? string.Empty,
                         tutorDto.HourlyRate,
                         0f,
-                        subjects));
+                        tutorDto.Subjects));
                 }
             }
 

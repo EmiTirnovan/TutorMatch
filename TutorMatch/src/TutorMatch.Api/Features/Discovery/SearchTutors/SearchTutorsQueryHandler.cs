@@ -50,17 +50,31 @@ public class SearchTutorsQueryHandler : IQueryHandler<SearchTutorsQuery, Result<
             _ => queryable.OrderBy(t => (double)t.HourlyRate)
         };
 
-        var tutors = await queryable
+        var page = await queryable
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
+            .Select(t => new
+            {
+                t.Id,
+                t.Name,
+                t.HourlyRate,
+                AverageRating = _dbContext.Ratings
+                    .Where(r => r.TutorId == t.Id)
+                    .Average(r => (double?)r.Score),
+                RatingCount = _dbContext.Ratings.Count(r => r.TutorId == t.Id),
+                SubjectNames = t.TutorSubjects.Select(ts => ts.Subject.Name).ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        var tutors = page
             .Select(t => new TutorSearchDto(
                 t.Id,
                 t.Name,
                 t.HourlyRate,
-                0, // Placeholder
-                0  // Placeholder
-            ))
-            .ToListAsync(cancellationToken);
+                t.AverageRating ?? 0,
+                t.RatingCount,
+                t.SubjectNames.Order(StringComparer.OrdinalIgnoreCase).ToList()))
+            .ToList();
 
         var response = new SearchTutorsResponse(tutors, totalCount, query.Page, query.PageSize);
         return Result<SearchTutorsResponse>.Success(response);

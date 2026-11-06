@@ -3,9 +3,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { TutorProfileComponent } from './tutor-profile.component';
-import { TutorService } from '../../../../core/services/tutor.service';
-import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
+import { TutorProfileComponent } from '../../../../../src/app/features/tutors/components/tutor-profile/tutor-profile.component';
+import { TutorService } from '../../../../../src/app/core/services/tutor.service';
+import { TutorDetailsResponse } from '../../../../../src/app/core/models/tutor.models';
 
 describe('TutorProfileComponent', () => {
   let component: TutorProfileComponent;
