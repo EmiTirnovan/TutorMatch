@@ -169,6 +169,7 @@ describe('EvaluationDashboardComponent', () => {
     runButton().click();
     semanticRequest().flush('bad', { status: 400, statusText: 'Bad Request' });
     semanticRequest().flush('bad', { status: 400, statusText: 'Bad Request' });
+    classicRequests(); // forkJoin cancels the keyword requests when the semantic call fails
     fixture.detectChanges();
 
     expect(component.state()).toBe('error');
@@ -181,7 +182,8 @@ describe('EvaluationDashboardComponent', () => {
     runButton().click();
     semanticRequest().flush('bad', { status: 400, statusText: 'Bad Request' });
     semanticRequest().flush(semanticDto('tutor-b'));
-    flushClassic(classicDto());
+    // forkJoin cancels the keyword request of the failed case; only flush the live one
+    classicRequests().filter((request) => !request.cancelled).forEach((request) => request.flush(classicDto()));
     fixture.detectChanges();
 
     expect(component.state()).toBe('success');
