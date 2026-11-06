@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
+using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Infrastructure.Persistence;
 
@@ -28,6 +29,11 @@ public class RateSessionCommandHandler : ICommandHandler<RateSessionCommand, Res
         if (session.StudentId != command.StudentId)
         {
             return Result.Failure(Error.Conflict("Session.Conflict", "Doar studentul participant poate evalua sesiunea."));
+        }
+
+        if (session.Status != SessionStatus.Completed)
+        {
+            return Result.Failure(Error.Conflict("Session.Conflict", "Sesiunea poate fi evaluată doar după ce a fost finalizată."));
         }
 
         // Verificăm dacă există deja un rating pentru această sesiune

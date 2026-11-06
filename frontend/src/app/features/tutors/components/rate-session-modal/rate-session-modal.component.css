@@ -1,0 +1,84 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(15, 23, 42, 0.5);
+}
+
+.modal-dialog {
+  width: 100%;
+  max-width: 440px;
+  max-height: 100%;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-dialog:focus {
+  outline: none;
+}
+
+.modal-dialog h2 {
+  margin-bottom: 0.5rem;
+}
+
+.modal-dialog form,
+.modal-dialog .alert {
+  margin-top: 1rem;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--primary-800);
+  margin-bottom: 0.375rem;
+}
+
+.star-input {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.star-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--slate-200);
+  cursor: pointer;
+}
+
+.star-button:focus-visible {
+  outline: 2px solid var(--accent-500);
+  outline-offset: 2px;
+}
+
+.star-button:disabled {
+  cursor: not-allowed;
+}
+
+.star-button.star-filled {
+  color: var(--warning-600);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 540px) {
+  .modal-actions .btn {
+    flex: 1;
+  }
+}

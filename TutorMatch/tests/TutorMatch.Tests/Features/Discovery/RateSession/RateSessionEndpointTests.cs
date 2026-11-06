@@ -62,7 +62,7 @@ public class RateSessionEndpointTests : IDisposable
                 studentId, "Student Rating", "srating@test.com");
             await db.Database.ExecuteSqlRawAsync(
                 "INSERT INTO Sessions (Id, TutorId, StudentId, StartTime, EndTime, Status, Version) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6})", 
-                sessionId, tutorId, studentId, DateTime.UtcNow.AddDays(-1), DateTime.UtcNow, 0, 1);
+                sessionId, tutorId, studentId, DateTime.UtcNow.AddDays(-1), DateTime.UtcNow, "Completed", 1);
         }
 
         var request = new RateSessionRequest(5, "Foarte bun!");
@@ -83,6 +83,45 @@ public class RateSessionEndpointTests : IDisposable
             
             rating.Should().NotBeNull();
             rating!.Score.Should().Be(5);
+        }
+    }
+
+    [Fact]
+    public async Task Given_BookedSession_When_RatingSession_Then_ReturnsConflictAndSavesNothing()
+    {
+        // Arrange
+        var tutorId = Guid.NewGuid();
+        var studentId = Guid.NewGuid();
+        var sessionId = Guid.NewGuid();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+            await db.Database.ExecuteSqlRawAsync(
+                "INSERT INTO Tutors (Id, Name, Email, Bio, HourlyRate) VALUES ({0}, {1}, {2}, {3}, {4})",
+                tutorId, "Tutor Booked", "booked@test.com", "Bio", 100);
+            await db.Database.ExecuteSqlRawAsync(
+                "INSERT INTO Students (Id, Name, Email) VALUES ({0}, {1}, {2})",
+                studentId, "Student Booked", "sbooked@test.com");
+            await db.Database.ExecuteSqlRawAsync(
+                "INSERT INTO Sessions (Id, TutorId, StudentId, StartTime, EndTime, Status, Version) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6})",
+                sessionId, tutorId, studentId, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(1).AddHours(1), "Booked", 1);
+        }
+
+        var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"/api/tutors/{tutorId}/sessions/{sessionId}/rate");
+        requestMessage.Headers.Add("X-Student-Id", studentId.ToString());
+        requestMessage.Content = JsonContent.Create(new RateSessionRequest(5, "Prea devreme"));
+
+        // Act
+        var response = await _client.SendAsync(requestMessage);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+            (await db.Ratings.AnyAsync(r => r.SessionId == sessionId)).Should().BeFalse();
         }
     }
 

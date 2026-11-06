@@ -3,9 +3,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { TutorRegisterComponent } from './tutor-register.component';
-import { TutorService } from '../../../../core/services/tutor.service';
-import { CreateTutorResponse } from '../../../../core/models/tutor.models';
+import { TutorRegisterComponent } from '../../../../../src/app/features/tutors/components/tutor-register/tutor-register.component';
+import { TutorService } from '../../../../../src/app/core/services/tutor.service';
+import { CreateTutorResponse } from '../../../../../src/app/core/models/tutor.models';
 
 describe('TutorRegisterComponent', () => {
   let component: TutorRegisterComponent;

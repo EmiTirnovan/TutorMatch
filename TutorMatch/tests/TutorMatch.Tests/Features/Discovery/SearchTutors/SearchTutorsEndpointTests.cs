@@ -110,6 +110,39 @@ public class SearchTutorsEndpointTests : IDisposable
         content.Tutors.First().Name.Should().Be("Tutor Info Scump");
     }
 
+    [Fact]
+    public async Task Given_SearchRequest_When_Searching_Then_ResponseExposesSubjectsOfEachTutor()
+    {
+        // Arrange
+        await SeedDataAsync();
+
+        // Act
+        var response = await _client.GetAsync("/api/tutors/search?sortBy=priceAsc");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<SearchTutorsResponse>();
+
+        content.Should().NotBeNull();
+        var tutors = content!.Tutors.ToList();
+        tutors.Select(t => t.Name).Should().Equal("Tutor Mate Ieftin", "Tutor Info Scump");
+        tutors[0].Subjects.Should().Equal("Matematica");
+        tutors[1].Subjects.Should().Equal("Informatica");
+    }
+
+    [Fact]
+    public async Task Given_SearchRequest_When_Searching_Then_JsonUsesCamelCaseSubjectsArray()
+    {
+        // Arrange
+        await SeedDataAsync();
+
+        // Act
+        var json = await _client.GetStringAsync("/api/tutors/search?subject=Matematica");
+
+        // Assert
+        json.Should().Contain("\"subjects\":[\"Matematica\"]");
+    }
+
     public void Dispose()
     {
         _connection.Close();
