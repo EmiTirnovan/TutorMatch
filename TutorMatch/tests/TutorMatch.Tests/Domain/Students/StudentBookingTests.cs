@@ -43,7 +43,7 @@ public class StudentBookingTests
     }
 
     [Fact]
-    public void Given_studentWithTwoSessionsOnSameDay_When_bookingThirdSessionOnSameDay_Then_throwsInvalidOperationException()
+    public void Given_studentWithTwoSessionsOnSameDay_When_bookingThirdSessionOnSameDay_Then_throwsDailySessionLimitExceededException()
     {
         var student = new Student(Guid.NewGuid(), "Jane Student", "jane@example.com");
         var tutor1 = Guid.NewGuid();
@@ -57,7 +57,7 @@ public class StudentBookingTests
 
         var action = () => student.BookSession(tutor3, session3Interval);
 
-        action.Should().Throw<InvalidOperationException>()
+        action.Should().Throw<DailySessionLimitExceededException>()
             .WithMessage("*Student already has 2 booked sessions today*");
     }
 

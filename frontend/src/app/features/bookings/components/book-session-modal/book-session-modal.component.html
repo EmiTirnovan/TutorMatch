@@ -15,7 +15,7 @@
     <dl class="modal-summary">
       <dt>Tutor</dt>
       <dd>{{ tutor().name }}</dd>
-      <dt>Subject</dt>
+      <dt>Subjects taught</dt>
       <dd>{{ tutor().subjects?.length ? tutor().subjects?.join(', ') : 'Not specified' }}</dd>
       <dt>Date</dt>
       <dd>{{ slot().start | date: 'fullDate' }}</dd>

@@ -53,7 +53,7 @@ public class Student
 
         if (_sessions.Count(s => s.Status == SessionStatus.Booked && s.Interval.Start.Date == interval.Start.Date) >= 2)
         {
-            throw new InvalidOperationException("Student already has 2 booked sessions today, which is the max.");
+            throw new DailySessionLimitExceededException("Student already has 2 booked sessions today, which is the max.");
         }
 
         var session = Session.Create(tutorId, Id, interval);

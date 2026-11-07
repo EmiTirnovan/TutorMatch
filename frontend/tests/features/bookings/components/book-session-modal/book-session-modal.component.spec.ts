@@ -61,6 +61,7 @@ describe('BookSessionModalComponent', () => {
     expect(document.activeElement).toBe(dialog());
     expect(dialog().getAttribute('aria-modal')).toBe('true');
     expect(text()).toContain('Maria Dragomir');
+    expect(text()).toContain('Subjects taught');
     expect(text()).toContain('Discrete Math');
     expect(text()).toContain('75 RON / hour');
   });
