@@ -70,9 +70,9 @@ public class BookSessionEndpointTests : IDisposable
             await db.SaveChangesAsync();
         }
 
-        var request = new BookSessionRequest(tutorId, studentId, startTime, endTime);
+        var request = new BookSessionRequest(tutorId, startTime, endTime);
 
-        var response = await _client.PostAsJsonAsync("/api/sessions", request);
+        var response = await BookAsync(studentId, request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var result = await response.Content.ReadFromJsonAsync<BookSessionResponse>();
@@ -111,13 +111,13 @@ public class BookSessionEndpointTests : IDisposable
             await db.SaveChangesAsync();
         }
 
-        var request1 = new BookSessionRequest(tutorId, student1Id, startTime, endTime);
-        var request2 = new BookSessionRequest(tutorId, student2Id, startTime, endTime);
+        var request1 = new BookSessionRequest(tutorId, startTime, endTime);
+        var request2 = new BookSessionRequest(tutorId, startTime, endTime);
 
-        var response1 = await _client.PostAsJsonAsync("/api/sessions", request1);
+        var response1 = await BookAsync(student1Id, request1);
         response1.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var response2 = await _client.PostAsJsonAsync("/api/sessions", request2);
+        var response2 = await BookAsync(student2Id, request2);
         response2.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
         var body = await response2.Content.ReadAsStringAsync();
@@ -144,9 +144,9 @@ public class BookSessionEndpointTests : IDisposable
             await db.SaveChangesAsync();
         }
 
-        var request = new BookSessionRequest(tutorId, studentId, requestedStart, requestedEnd);
+        var request = new BookSessionRequest(tutorId, requestedStart, requestedEnd);
 
-        var response = await _client.PostAsJsonAsync("/api/sessions", request);
+        var response = await BookAsync(studentId, request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
@@ -169,9 +169,9 @@ public class BookSessionEndpointTests : IDisposable
             await db.SaveChangesAsync();
         }
 
-        var request = new BookSessionRequest(tutorId, studentId, startTime, endTime);
+        var request = new BookSessionRequest(tutorId, startTime, endTime);
 
-        var response = await _client.PostAsJsonAsync("/api/sessions", request);
+        var response = await BookAsync(studentId, request);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var body = await response.Content.ReadAsStringAsync();
@@ -198,9 +198,9 @@ public class BookSessionEndpointTests : IDisposable
             await db.SaveChangesAsync();
         }
 
-        var request = new BookSessionRequest(tutorId, studentId, requestedStart, requestedStart.AddHours(1));
+        var request = new BookSessionRequest(tutorId, requestedStart, requestedStart.AddHours(1));
 
-        var response = await _client.PostAsJsonAsync("/api/sessions", request);
+        var response = await BookAsync(studentId, request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
@@ -220,9 +220,9 @@ public class BookSessionEndpointTests : IDisposable
     {
         var studentId = Guid.NewGuid();
         var startTime = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
-        var request = new BookSessionRequest(Guid.Empty, studentId, startTime, startTime.AddHours(1));
+        var request = new BookSessionRequest(Guid.Empty, startTime, startTime.AddHours(1));
 
-        var response = await _client.PostAsJsonAsync("/api/sessions", request);
+        var response = await BookAsync(studentId, request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
@@ -232,6 +232,24 @@ public class BookSessionEndpointTests : IDisposable
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
         var sessionSaved = await verifyDb.Sessions.AnyAsync(s => s.StudentId == studentId);
         sessionSaved.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_MissingStudentHeader_When_BookingSession_Then_ReturnsBadRequest()
+    {
+        var startTime = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
+        var request = new BookSessionRequest(Guid.NewGuid(), startTime, startTime.AddHours(1));
+
+        var response = await _client.PostAsJsonAsync("/api/sessions", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    private Task<HttpResponseMessage> BookAsync(Guid studentId, BookSessionRequest request)
+    {
+        var message = new HttpRequestMessage(HttpMethod.Post, "/api/sessions") { Content = JsonContent.Create(request) };
+        message.Headers.Add("X-Student-Id", studentId.ToString());
+        return _client.SendAsync(message);
     }
 
     public void Dispose()

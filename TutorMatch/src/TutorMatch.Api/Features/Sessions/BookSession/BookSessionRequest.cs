@@ -4,6 +4,5 @@
 [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public record BookSessionRequest(
     Guid TutorId,
-    Guid StudentId,
     DateTime StartTime,
     DateTime EndTime);

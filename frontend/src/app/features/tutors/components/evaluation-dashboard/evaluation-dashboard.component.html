@@ -1,0 +1,91 @@
+<section class="card evaluation" aria-labelledby="evaluation-title">
+  <header class="evaluation-header">
+    <div>
+      <h2 id="evaluation-title">Search evaluation</h2>
+      <p class="text-muted text-sm">
+        Compares Top-3 accuracy of semantic search against the keyword baseline on {{ cases().length }} test queries.
+      </p>
+    </div>
+    <button type="button" class="btn btn-primary run-button" [disabled]="isLoading()" (click)="run()">
+      {{ state() === 'idle' ? 'Run evaluation' : 'Run again' }}
+    </button>
+  </header>
+
+  @switch (state()) {
+    @case ('idle') {
+      <p class="text-muted state-message">Run the evaluation to see how both search modes perform.</p>
+    }
+    @case ('error') {
+      <div class="alert alert-danger" role="alert">
+        The evaluation could not be completed. Check that the API is running and try again.
+      </div>
+    }
+    @default {
+      @if (isLoading()) {
+        <p class="text-muted text-sm" aria-live="polite">Evaluating... {{ progress() }}</p>
+      }
+
+      <div class="metrics">
+        <div class="metric metric-semantic">
+          <span class="metric-label">Semantic Top-3</span>
+          <strong class="metric-value" data-testid="semantic-accuracy">{{ summary().semanticAccuracy }}%</strong>
+          <span class="text-muted text-sm">{{ summary().semanticHits }} / {{ summary().evaluated }} queries</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Keyword baseline Top-3</span>
+          <strong class="metric-value" data-testid="keyword-accuracy">{{ summary().keywordAccuracy }}%</strong>
+          <span class="text-muted text-sm">{{ summary().keywordHits }} / {{ summary().evaluated }} queries</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Difference</span>
+          <strong class="metric-value" data-testid="improvement">
+            {{ summary().improvement > 0 ? '+' : '' }}{{ summary().improvement }} pts
+          </strong>
+        </div>
+      </div>
+
+      @if (summary().fallbackCount > 0) {
+        <p class="alert alert-warning" role="status">
+          Semantic search was unavailable for {{ summary().fallbackCount }} of {{ summary().total }} queries; those
+          count as semantic misses.
+        </p>
+      }
+
+      <div class="table-wrapper">
+        <table class="results-table">
+          <caption class="visually-hidden">Evaluated queries</caption>
+          <thead>
+            <tr>
+              <th scope="col">Query</th>
+              <th scope="col">Expected tutor</th>
+              <th scope="col">Match score</th>
+              <th scope="col">Keyword</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (result of results(); track result.testCase.query) {
+              <tr>
+                <td class="query-cell">{{ result.testCase.query }}</td>
+                <td>{{ result.testCase.expectedTutorName }}</td>
+                <td>{{ formatScore(result.matchScore) }}</td>
+                <td>{{ result.keywordHit ? 'Hit' : 'Miss' }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.badge-success]="result.status === 'hit'"
+                    [class.badge-warning]="result.status === 'fallback'"
+                    [class.badge-neutral]="result.status === 'miss'"
+                    [class.badge-error]="result.status === 'error'"
+                  >
+                    {{ statusLabel(result.status) }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

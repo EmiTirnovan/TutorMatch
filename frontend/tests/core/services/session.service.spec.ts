@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { SessionService } from './session.service';
-import { BookSessionRequest, SessionResponse } from '../models/session.models';
+import { SessionService } from '../../../src/app/core/services/session.service';
+import { BookSessionRequest, SessionResponse } from '../../../src/app/core/models/session.models';
 
 describe('SessionService', () => {
   let service: SessionService;
@@ -28,21 +28,21 @@ describe('SessionService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('Given_BookingRequest_When_Booking_Then_PostsToBookEndpoint', () => {
+  it('Given_BookingRequest_When_Booking_Then_PostsToSessionsWithStudentHeader', () => {
     const request: BookSessionRequest = {
       tutorId: 'tutor-1',
-      studentId: 'student-1',
       startTime: session.startTime,
       endTime: session.endTime
     };
     let result: SessionResponse | undefined;
 
-    service.bookSession(request).subscribe(response => (result = response));
+    service.bookSession('student-1', request).subscribe(response => (result = response));
     const req = httpMock.expectOne('/api/sessions');
     req.flush(session);
 
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(request);
+    expect(req.request.headers.get('X-Student-Id')).toBe('student-1');
     expect(result).toEqual(session);
   });
 

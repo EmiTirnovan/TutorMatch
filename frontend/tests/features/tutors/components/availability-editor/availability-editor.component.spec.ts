@@ -3,9 +3,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { AvailabilityEditorComponent } from './availability-editor.component';
-import { TutorService } from '../../../../core/services/tutor.service';
-import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
+import { AvailabilityEditorComponent } from '../../../../../src/app/features/tutors/components/availability-editor/availability-editor.component';
+import { TutorService } from '../../../../../src/app/core/services/tutor.service';
+import { TutorDetailsResponse } from '../../../../../src/app/core/models/tutor.models';
 
 describe('AvailabilityEditorComponent', () => {
   let component: AvailabilityEditorComponent;

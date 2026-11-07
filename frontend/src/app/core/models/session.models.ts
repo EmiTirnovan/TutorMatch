@@ -3,7 +3,6 @@ export const DEMO_STUDENT_ID = '11111111-1111-1111-1111-111111111111';
 
 export interface BookSessionRequest {
   tutorId: string;
-  studentId: string;
   startTime: string;
   endTime: string;
 }

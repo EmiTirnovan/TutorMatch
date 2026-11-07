@@ -1,21 +1,33 @@
-import { AfterViewInit, Component, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DateRangeDto } from '../../../../core/models/date-range.dto';
 import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
 import { ApiError, DEMO_STUDENT_ID, SessionResponse } from '../../../../core/models/session.models';
 import { SessionService } from '../../../../core/services/session.service';
+import { keepTabFocusInside, restoreFocusOnDestroy } from '../../../../core/utils/modal-focus';
 
 @Component({
   selector: 'app-book-session-modal',
   standalone: true,
   imports: [DatePipe],
-  templateUrl: './book-session-modal.component.html'
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './book-session-modal.component.html',
+  styleUrl: './book-session-modal.component.css'
 })
 export class BookSessionModalComponent implements AfterViewInit {
   private readonly sessionService = inject(SessionService);
-  private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
-
+  private readonly dialog = viewChild.required<ElementRef<HTMLElement>>('dialog');
   readonly tutor = input.required<TutorDetailsResponse>();
   readonly slot = input.required<DateRangeDto>();
 
@@ -27,22 +39,21 @@ export class BookSessionModalComponent implements AfterViewInit {
   readonly dailyLimitReached = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
+  constructor() {
+    restoreFocusOnDestroy();
+  }
+
   ngAfterViewInit(): void {
-    this.dialog().nativeElement.showModal();
+    this.dialog().nativeElement.focus();
   }
 
-  onCancel(event: Event): void {
+  onKeydown(event: KeyboardEvent): void {
+    keepTabFocusInside(event, this.dialog().nativeElement);
+  }
+
+  close(): void {
     // Closing mid-request would hide the outcome of a booking the server may still accept.
-    if (this.isSubmitting()) {
-      event.preventDefault();
-    }
-  }
-
-  onClose(): void {
-    // Browsers let a repeated Esc close the dialog even after preventDefault.
-    if (this.isSubmitting()) {
-      this.dialog().nativeElement.showModal();
-    } else {
+    if (!this.isSubmitting()) {
       this.closed.emit();
     }
   }
@@ -56,9 +67,8 @@ export class BookSessionModalComponent implements AfterViewInit {
     this.errorMessage.set(null);
 
     this.sessionService
-      .bookSession({
+      .bookSession(DEMO_STUDENT_ID, {
         tutorId: this.tutor().id,
-        studentId: DEMO_STUDENT_ID,
         startTime: this.slot().start,
         endTime: this.slot().end
       })

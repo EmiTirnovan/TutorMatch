@@ -1,36 +1,48 @@
-<dialog #dialog class="modal" aria-labelledby="book-session-title" (cancel)="onCancel($event)" (close)="onClose()">
-  <h3 id="book-session-title">Confirm your booking</h3>
+<div class="modal-backdrop" (click)="close()">
+  <div
+    #dialog
+    class="card modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="book-session-title"
+    tabindex="-1"
+    (click)="$event.stopPropagation()"
+    (keydown.escape)="close()"
+    (keydown)="onKeydown($event)"
+  >
+    <h2 id="book-session-title">Confirm your booking</h2>
 
-  <dl class="modal-summary">
-    <dt>Tutor</dt>
-    <dd>{{ tutor().name }}</dd>
-    <dt>Subject</dt>
-    <dd>{{ tutor().subjects?.length ? tutor().subjects?.join(', ') : 'Not specified' }}</dd>
-    <dt>Date</dt>
-    <dd>{{ slot().start | date: 'fullDate' }}</dd>
-    <dt>Time</dt>
-    <dd>{{ slot().start | date: 'HH:mm' }} – {{ slot().end | date: 'HH:mm' }}</dd>
-    <dt>Hourly rate</dt>
-    <dd>{{ tutor().hourlyRate }} RON / hour</dd>
-  </dl>
+    <dl class="modal-summary">
+      <dt>Tutor</dt>
+      <dd>{{ tutor().name }}</dd>
+      <dt>Subject</dt>
+      <dd>{{ tutor().subjects?.length ? tutor().subjects?.join(', ') : 'Not specified' }}</dd>
+      <dt>Date</dt>
+      <dd>{{ slot().start | date: 'fullDate' }}</dd>
+      <dt>Time</dt>
+      <dd>{{ slot().start | date: 'HH:mm' }} – {{ slot().end | date: 'HH:mm' }}</dd>
+      <dt>Hourly rate</dt>
+      <dd>{{ tutor().hourlyRate }} RON / hour</dd>
+    </dl>
 
-  @if (dailyLimitReached()) {
-    <div class="alert alert-warning" role="alert">
-      You already have 2 sessions on this date, which is the daily limit. Choose a slot on another date.
-    </div>
-  }
-  @if (errorMessage(); as message) {
-    <div class="alert alert-danger" role="alert">{{ message }}</div>
-  }
-
-  <div class="modal-actions">
-    <button type="button" class="btn btn-secondary" [disabled]="isSubmitting()" (click)="dialog.close()">
-      {{ dailyLimitReached() ? 'Choose another date' : 'Cancel' }}
-    </button>
-    @if (!dailyLimitReached()) {
-      <button type="button" class="btn btn-accent" [disabled]="isSubmitting()" (click)="confirm()">
-        {{ isSubmitting() ? 'Booking...' : 'Confirm booking' }}
-      </button>
+    @if (dailyLimitReached()) {
+      <div class="alert alert-warning" role="alert">
+        You already have 2 sessions on this date, which is the daily limit. Choose a slot on another date.
+      </div>
     }
+    @if (errorMessage(); as message) {
+      <div class="alert alert-danger" role="alert">{{ message }}</div>
+    }
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" [disabled]="isSubmitting()" (click)="close()">
+        {{ dailyLimitReached() ? 'Choose another date' : 'Cancel' }}
+      </button>
+      @if (!dailyLimitReached()) {
+        <button type="button" class="btn btn-accent" [disabled]="isSubmitting()" (click)="confirm()">
+          {{ isSubmitting() ? 'Booking...' : 'Confirm booking' }}
+        </button>
+      }
+    </div>
   </div>
-</dialog>
+</div>

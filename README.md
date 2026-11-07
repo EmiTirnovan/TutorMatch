@@ -147,7 +147,7 @@ Modulele au dificultate echilibrată și fiecare conține câte un subiect „gr
 - **400 cu codul `Session.DailyLimit`** (R4) → avertisment în modal;
 - orice altă eroare → mesaj în modal.
 
-Până la stabilirea identității, rezervările se fac în numele studentului demo creat la pornire (`DEMO_STUDENT_ID`).
+Studentul care rezervă se trimite în header-ul `X-Student-Id`, la fel ca la `RateSession`. Până la stabilirea identității, rezervările se fac în numele studentului demo creat la pornire (`DEMO_STUDENT_ID`).
 
 ---
 

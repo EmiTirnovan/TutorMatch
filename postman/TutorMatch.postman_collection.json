@@ -357,10 +357,10 @@
 					],
 					"request": {
 						"method": "POST",
-						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Student-Id", "value": "{{studentId}}" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"tutorId\": \"{{tutorId}}\",\n  \"studentId\": \"{{studentId}}\",\n  \"startTime\": \"2026-12-01T10:00:00Z\",\n  \"endTime\": \"2026-12-01T11:00:00Z\"\n}"
+							"raw": "{\n  \"tutorId\": \"{{tutorId}}\",\n  \"startTime\": \"2026-12-01T10:00:00Z\",\n  \"endTime\": \"2026-12-01T11:00:00Z\"\n}"
 						},
 						"url": { "raw": "{{baseUrl}}/api/sessions", "host": ["{{baseUrl}}"], "path": ["api", "sessions"] }
 					}
@@ -378,10 +378,10 @@
 					],
 					"request": {
 						"method": "POST",
-						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Student-Id", "value": "{{studentId}}" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"tutorId\": \"{{tutorId}}\",\n  \"studentId\": \"{{studentId}}\",\n  \"startTime\": \"2026-12-01T14:00:00Z\",\n  \"endTime\": \"2026-12-01T13:00:00Z\"\n}"
+							"raw": "{\n  \"tutorId\": \"{{tutorId}}\",\n  \"startTime\": \"2026-12-01T14:00:00Z\",\n  \"endTime\": \"2026-12-01T13:00:00Z\"\n}"
 						},
 						"url": { "raw": "{{baseUrl}}/api/sessions", "host": ["{{baseUrl}}"], "path": ["api", "sessions"] }
 					}
@@ -399,10 +399,10 @@
 					],
 					"request": {
 						"method": "POST",
-						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Student-Id", "value": "{{studentId}}" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"tutorId\": \"00000000-0000-0000-0000-000000000000\",\n  \"studentId\": \"{{studentId}}\",\n  \"startTime\": \"2026-12-02T10:00:00Z\",\n  \"endTime\": \"2026-12-02T11:00:00Z\"\n}"
+							"raw": "{\n  \"tutorId\": \"00000000-0000-0000-0000-000000000000\",\n  \"startTime\": \"2026-12-02T10:00:00Z\",\n  \"endTime\": \"2026-12-02T11:00:00Z\"\n}"
 						},
 						"url": { "raw": "{{baseUrl}}/api/sessions", "host": ["{{baseUrl}}"], "path": ["api", "sessions"] }
 					}

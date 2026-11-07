@@ -1,17 +1,24 @@
-<dialog
-  #dialog
-  class="modal"
-  role="alertdialog"
-  aria-labelledby="conflict-title"
-  aria-describedby="conflict-description"
-  (cancel)="$event.preventDefault(); refresh.emit()"
->
-  <h3 id="conflict-title">This slot is no longer available</h3>
-  <p id="conflict-description" class="text-muted modal-text">
-    Another student may have just booked it, or it overlaps one of your sessions. You have not been booked.
-    Refresh the slots to choose another time.
-  </p>
-  <div class="modal-actions">
-    <button type="button" class="btn btn-accent" (click)="refresh.emit()">Refresh slots</button>
+<!-- Refreshing is the only way out: the selected slot is no longer bookable. -->
+<div class="modal-backdrop" (click)="refresh.emit()">
+  <div
+    #dialog
+    class="card modal-dialog"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="conflict-title"
+    aria-describedby="conflict-description"
+    tabindex="-1"
+    (click)="$event.stopPropagation()"
+    (keydown.escape)="refresh.emit()"
+    (keydown)="onKeydown($event)"
+  >
+    <h2 id="conflict-title">This slot is no longer available</h2>
+    <p id="conflict-description" class="text-muted">
+      Another student may have just booked it, or it overlaps one of your sessions. You have not been booked.
+      Refresh the slots to choose another time.
+    </p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-accent" (click)="refresh.emit()">Refresh slots</button>
+    </div>
   </div>
-</dialog>
+</div>

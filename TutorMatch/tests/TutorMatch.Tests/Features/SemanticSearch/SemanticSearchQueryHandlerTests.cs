@@ -142,6 +142,46 @@ public class SemanticSearchQueryHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task Given_OllamaUnavailable_When_FallingBack_Then_ReturnsBioAndAllSubjectsOfMatchingTutor()
+    {
+        var math = new Subject("Matematica");
+        var physics = new Subject("Fizica");
+        _context.Subjects.AddRange(math, physics);
+        var tutor = new Tutor("Ion Popescu", "ion@test.ro", "Profesor de matematica", 80m);
+        tutor.AddSubject(math);
+        tutor.AddSubject(physics);
+        _context.Tutors.Add(tutor);
+        await _context.SaveChangesAsync();
+        _fakeOllama.EmbeddingGenerator = _ => null;
+        var handler = new SemanticSearchQueryHandler(_fakeOllama, _context, _fallbackHandler);
+
+        var result = await handler.HandleAsync(new SemanticSearchQuery("Matematica"));
+
+        var item = result.Value.Results.Single();
+        item.Bio.Should().Be("Profesor de matematica");
+        item.HourlyRate.Should().Be(80m);
+        item.Subjects.Should().BeEquivalentTo(["Matematica", "Fizica"]);
+    }
+
+    [Fact]
+    public async Task Given_OllamaUnavailableAndNoMatch_When_FallingBack_Then_ReturnsEmptyKeywordResults()
+    {
+        var subject = new Subject("Matematica");
+        _context.Subjects.Add(subject);
+        var tutor = new Tutor("Ion Popescu", "ion@test.ro", "Profesor", 80m);
+        tutor.AddSubject(subject);
+        _context.Tutors.Add(tutor);
+        await _context.SaveChangesAsync();
+        _fakeOllama.EmbeddingGenerator = _ => null;
+        var handler = new SemanticSearchQueryHandler(_fakeOllama, _context, _fallbackHandler);
+
+        var result = await handler.HandleAsync(new SemanticSearchQuery("Chimie"));
+
+        result.Value.Mode.Should().Be("keyword");
+        result.Value.Results.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Given_EmptyQuery_When_SearchingSemantically_Then_ReturnsEmptyResultsWithSemanticMode()
     {
         // Arrange

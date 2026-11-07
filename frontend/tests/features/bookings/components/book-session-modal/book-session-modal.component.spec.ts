@@ -2,9 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import type { Mock } from 'vitest';
-import { BookSessionModalComponent } from './book-session-modal.component';
-import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
-import { DEMO_STUDENT_ID } from '../../../../core/models/session.models';
+import { BookSessionModalComponent } from '../../../../../src/app/features/bookings/components/book-session-modal/book-session-modal.component';
+import { TutorDetailsResponse } from '../../../../../src/app/core/models/tutor.models';
+import { DEMO_STUDENT_ID } from '../../../../../src/app/core/models/session.models';
 
 const TUTOR: TutorDetailsResponse = {
   id: 'tutor-1',
@@ -21,9 +21,12 @@ describe('BookSessionModalComponent', () => {
   let fixture: ComponentFixture<BookSessionModalComponent>;
   let httpMock: HttpTestingController;
   let component: BookSessionModalComponent;
+  let opener: HTMLButtonElement;
 
   const text = (): string => fixture.nativeElement.textContent;
+  const dialog = (): HTMLElement => fixture.nativeElement.querySelector('[role="dialog"]');
   const confirmButton = (): HTMLButtonElement | null => fixture.nativeElement.querySelector('.btn-accent');
+  const cancelButton = (): HTMLButtonElement => fixture.nativeElement.querySelector('.btn-secondary');
 
   const submitAndFail = (status: number, body: object | null): void => {
     component.confirm();
@@ -32,26 +35,31 @@ describe('BookSessionModalComponent', () => {
   };
 
   beforeEach(() => {
-    // jsdom does not implement the native dialog API.
-    HTMLDialogElement.prototype.showModal = vi.fn();
-    HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
-      this.dispatchEvent(new Event('close'));
-    };
+    opener = document.createElement('button');
+    document.body.appendChild(opener);
+    opener.focus();
+
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()]
     });
     httpMock = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(BookSessionModalComponent);
     component = fixture.componentInstance;
+    document.body.appendChild(fixture.nativeElement);
     fixture.componentRef.setInput('tutor', TUTOR);
     fixture.componentRef.setInput('slot', SLOT);
     fixture.detectChanges();
   });
 
-  afterEach(() => httpMock.verify());
+  afterEach(() => {
+    httpMock.verify();
+    fixture.nativeElement.remove();
+    opener.remove();
+  });
 
-  it('Given_TutorAndSlot_When_Opened_Then_ShowsSummaryInModalDialog', () => {
-    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalled();
+  it('Given_TutorAndSlot_When_Opened_Then_ShowsSummaryAndFocusesDialog', () => {
+    expect(document.activeElement).toBe(dialog());
+    expect(dialog().getAttribute('aria-modal')).toBe('true');
     expect(text()).toContain('Maria Dragomir');
     expect(text()).toContain('Discrete Math');
     expect(text()).toContain('75 RON / hour');
@@ -71,12 +79,8 @@ describe('BookSessionModalComponent', () => {
     confirmButton()?.click();
     const req = httpMock.expectOne('/api/sessions');
     expect(booked).not.toHaveBeenCalled();
-    expect(req.request.body).toEqual({
-      tutorId: 'tutor-1',
-      studentId: DEMO_STUDENT_ID,
-      startTime: SLOT.start,
-      endTime: SLOT.end
-    });
+    expect(req.request.headers.get('X-Student-Id')).toBe(DEMO_STUDENT_ID);
+    expect(req.request.body).toEqual({ tutorId: 'tutor-1', startTime: SLOT.start, endTime: SLOT.end });
     req.flush({ id: 'session-1' });
 
     expect(booked).toHaveBeenCalledWith({ id: 'session-1' });
@@ -94,49 +98,67 @@ describe('BookSessionModalComponent', () => {
   describe('closing', () => {
     let closed: Mock<() => void>;
 
-    const dialog = (): HTMLDialogElement => fixture.nativeElement.querySelector('dialog');
-    const pressEsc = (): boolean => dialog().dispatchEvent(new Event('cancel', { cancelable: true }));
+    const pressEsc = (): void => {
+      dialog().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    };
 
     beforeEach(() => {
       closed = vi.fn<() => void>();
       component.closed.subscribe(closed);
     });
 
-    it('Given_NoRequest_When_PressingEsc_Then_AllowsClosing', () => {
-      expect(pressEsc()).toBe(true);
-    });
+    it('Given_NoRequest_When_PressingEsc_Then_EmitsClosed', () => {
+      pressEsc();
 
-    it('Given_NoRequest_When_ClickingCancel_Then_ClosesNativelyAndEmitsClosed', () => {
-      const closeSpy = vi.spyOn(HTMLDialogElement.prototype, 'close');
-
-      fixture.nativeElement.querySelector('.btn-secondary').click();
-
-      expect(closeSpy).toHaveBeenCalledOnce();
       expect(closed).toHaveBeenCalledOnce();
     });
 
-    it('Given_RequestInFlight_When_PressingEsc_Then_StaysOpenAndStillReportsBooked', () => {
+    it('Given_NoRequest_When_ClickingBackdrop_Then_EmitsClosed', () => {
+      fixture.nativeElement.querySelector('.modal-backdrop').click();
+
+      expect(closed).toHaveBeenCalledOnce();
+    });
+
+    it('Given_NoRequest_When_ClickingInsideDialog_Then_StaysOpen', () => {
+      dialog().click();
+
+      expect(closed).not.toHaveBeenCalled();
+    });
+
+    it('Given_NoRequest_When_ClickingCancel_Then_EmitsClosed', () => {
+      cancelButton().click();
+
+      expect(closed).toHaveBeenCalledOnce();
+    });
+
+    it('Given_RequestInFlight_When_PressingEscOrClickingBackdrop_Then_StaysOpenAndStillReportsBooked', () => {
       const booked = vi.fn();
       component.booked.subscribe(booked);
       component.confirm();
 
-      expect(pressEsc()).toBe(false);
+      pressEsc();
+      fixture.nativeElement.querySelector('.modal-backdrop').click();
       expect(closed).not.toHaveBeenCalled();
 
       httpMock.expectOne('/api/sessions').flush({ id: 'session-1' });
       expect(booked).toHaveBeenCalledWith({ id: 'session-1' });
     });
 
-    it('Given_RequestInFlight_When_BrowserForcesClose_Then_ReopensDialog', () => {
-      component.confirm();
-      vi.mocked(HTMLDialogElement.prototype.showModal).mockClear();
+    it('Given_OpenModal_When_Destroyed_Then_ReturnsFocusToOpener', () => {
+      fixture.destroy();
 
-      dialog().dispatchEvent(new Event('close'));
-
-      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce();
-      expect(closed).not.toHaveBeenCalled();
-      httpMock.expectOne('/api/sessions').flush({ id: 'session-1' });
+      expect(document.activeElement).toBe(opener);
     });
+  });
+
+  it('Given_FocusOnLastButton_When_PressingTab_Then_WrapsToFirstButton', () => {
+    confirmButton()?.focus();
+
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    dialog().dispatchEvent(tab);
+
+    expect(tab.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(cancelButton());
   });
 
   it('Given_409_When_Confirming_Then_EmitsConflict', () => {

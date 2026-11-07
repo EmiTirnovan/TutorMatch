@@ -1,0 +1,39 @@
+<form class="card filter-bar" [formGroup]="form" (ngSubmit)="apply()" aria-label="Tutor filters">
+  <div class="filter-field">
+    <label for="filter-subject">Subject</label>
+    <input id="filter-subject" class="form-control" type="text" formControlName="subject" placeholder="e.g. Algoritmi, SQL" />
+  </div>
+
+  <div class="filter-field">
+    <label for="filter-max-price">Max price (RON / hour)</label>
+    <input
+      id="filter-max-price"
+      class="form-control"
+      type="number"
+      min="1"
+      formControlName="maxPrice"
+      [class.is-invalid]="form.controls.maxPrice.invalid && form.controls.maxPrice.touched"
+    />
+    @if (form.controls.maxPrice.invalid && form.controls.maxPrice.touched) {
+      <div class="error-feedback">Max price must be at least 1 RON.</div>
+    }
+  </div>
+
+  <div class="filter-field">
+    <label for="filter-date">Available on</label>
+    <input id="filter-date" class="form-control" type="date" formControlName="date" />
+  </div>
+
+  <div class="filter-field">
+    <label for="filter-sort">Sort by</label>
+    <select id="filter-sort" class="form-control" formControlName="sortBy">
+      <option value="priceAsc">Price: low to high</option>
+      <option value="priceDesc">Price: high to low</option>
+    </select>
+  </div>
+
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary">Apply filters</button>
+    <button type="button" class="btn btn-secondary" (click)="reset()">Reset</button>
+  </div>
+</form>

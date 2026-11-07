@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
@@ -16,13 +17,14 @@ public static class BookSessionEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
+        [FromHeader(Name = "X-Student-Id")] Guid studentId,
         BookSessionRequest request,
         ICommandHandler<BookSessionCommand, Result<BookSessionResponse>> handler,
         CancellationToken cancellationToken)
     {
         var command = new BookSessionCommand(
             request.TutorId,
-            request.StudentId,
+            studentId,
             request.StartTime,
             request.EndTime);
 

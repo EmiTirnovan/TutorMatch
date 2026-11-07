@@ -4,10 +4,10 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import type { MockInstance } from 'vitest';
-import { TutorProfileComponent } from './tutor-profile.component';
-import { TutorService } from '../../../../core/services/tutor.service';
-import { SessionService } from '../../../../core/services/session.service';
-import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
+import { TutorProfileComponent } from '../../../../../src/app/features/tutors/components/tutor-profile/tutor-profile.component';
+import { TutorService } from '../../../../../src/app/core/services/tutor.service';
+import { SessionService } from '../../../../../src/app/core/services/session.service';
+import { TutorDetailsResponse } from '../../../../../src/app/core/models/tutor.models';
 
 describe('TutorProfileComponent', () => {
   let component: TutorProfileComponent;
@@ -82,8 +82,6 @@ describe('TutorProfileComponent', () => {
     const query = (selector: string): HTMLButtonElement => fixture.nativeElement.querySelector(selector);
 
     beforeEach(() => {
-      // jsdom does not implement the native dialog API.
-      HTMLDialogElement.prototype.showModal = vi.fn();
       vi.spyOn(tutorService, 'getTutorById').mockReturnValue(of(TUTOR));
       getBookedSpy = vi
         .spyOn(TestBed.inject(SessionService), 'getBookedSessionsForTutor')

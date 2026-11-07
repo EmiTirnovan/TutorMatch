@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SlotPickerComponent, buildAvailableSlots } from './slot-picker.component';
+import { SlotPickerComponent, buildAvailableSlots } from '../../../../../src/app/features/bookings/components/slot-picker/slot-picker.component';
 
 const NOW = new Date('2026-11-05T12:00:00Z');
 const WINDOW = { start: '2026-11-06T10:00:00Z', end: '2026-11-06T12:00:00Z' };

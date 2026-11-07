@@ -1,4 +1,4 @@
-import { Component, computed, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { DateRangeDto } from '../../../../core/models/date-range.dto';
 import { SessionResponse } from '../../../../core/models/session.models';
@@ -45,6 +45,7 @@ export function buildAvailableSlots(
   selector: 'app-slot-picker',
   standalone: true,
   imports: [DatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './slot-picker.component.html',
   styleUrl: './slot-picker.component.css'
 })

@@ -1,0 +1,44 @@
+<article class="card tutor-card" [class.tutor-card-best]="bestMatch()">
+  @if (matchPercent() !== null) {
+    <div class="match-row">
+      <span class="badge match-badge" [class.match-badge-best]="bestMatch()">{{ matchPercent() }}% match</span>
+      @if (bestMatch()) {
+        <span class="best-match-label text-sm">Best match</span>
+      }
+    </div>
+  }
+  <div class="card-header">
+    <div class="avatar-circle" aria-hidden="true">{{ initials() }}</div>
+    <div class="card-title">
+      <h3 class="tutor-name">{{ tutor().name }}</h3>
+      @if (hasRatings()) {
+        <div class="rating" [attr.aria-label]="formattedRating() + ' out of 5, ' + tutor().ratingCount + ' ratings'">
+          <span class="stars" aria-hidden="true">
+            @for (filled of stars(); track $index) {
+              <svg class="star" [class.star-filled]="filled" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            }
+          </span>
+          <strong>{{ formattedRating() }}</strong>
+          <span class="text-muted text-sm">({{ tutor().ratingCount }})</span>
+        </div>
+      } @else {
+        <span class="text-muted text-sm">No ratings yet</span>
+      }
+    </div>
+  </div>
+
+  @if (tutor().subjects.length) {
+    <div class="subjects">
+      @for (subject of tutor().subjects; track subject) {
+        <span class="badge badge-primary">{{ subject }}</span>
+      }
+    </div>
+  }
+
+  <div class="card-footer">
+    <span class="price"><strong>{{ tutor().hourlyRate }} RON</strong> / hour</span>
+    <a class="btn btn-accent" [routerLink]="['/tutors', tutor().id]">View profile</a>
+  </div>
+</article>
