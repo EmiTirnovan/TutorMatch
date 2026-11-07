@@ -7,6 +7,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TutorMatch.Api.Domain.Common;
+using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features.Sessions.BookSession;
@@ -71,7 +72,7 @@ public class BookSessionEndpointTests : IDisposable
 
         var request = new BookSessionRequest(tutorId, studentId, startTime, endTime);
 
-        var response = await _client.PostAsJsonAsync("/api/sessions/book", request);
+        var response = await _client.PostAsJsonAsync("/api/sessions", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var result = await response.Content.ReadFromJsonAsync<BookSessionResponse>();
@@ -113,10 +114,10 @@ public class BookSessionEndpointTests : IDisposable
         var request1 = new BookSessionRequest(tutorId, student1Id, startTime, endTime);
         var request2 = new BookSessionRequest(tutorId, student2Id, startTime, endTime);
 
-        var response1 = await _client.PostAsJsonAsync("/api/sessions/book", request1);
+        var response1 = await _client.PostAsJsonAsync("/api/sessions", request1);
         response1.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var response2 = await _client.PostAsJsonAsync("/api/sessions/book", request2);
+        var response2 = await _client.PostAsJsonAsync("/api/sessions", request2);
         response2.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
         var body = await response2.Content.ReadAsStringAsync();
@@ -145,7 +146,7 @@ public class BookSessionEndpointTests : IDisposable
 
         var request = new BookSessionRequest(tutorId, studentId, requestedStart, requestedEnd);
 
-        var response = await _client.PostAsJsonAsync("/api/sessions/book", request);
+        var response = await _client.PostAsJsonAsync("/api/sessions", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
@@ -170,11 +171,67 @@ public class BookSessionEndpointTests : IDisposable
 
         var request = new BookSessionRequest(tutorId, studentId, startTime, endTime);
 
-        var response = await _client.PostAsJsonAsync("/api/sessions/book", request);
+        var response = await _client.PostAsJsonAsync("/api/sessions", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var body = await response.Content.ReadAsStringAsync();
         body.Should().Contain("Tutor.NotFound");
+    }
+
+    [Fact]
+    public async Task Given_StudentWithTwoSessionsThatDay_When_BookingThirdSession_Then_ReturnsBadRequestWithDailyLimitCode()
+    {
+        var tutorId = Guid.NewGuid();
+        var studentId = Guid.NewGuid();
+        var day = DateTime.UtcNow.Date.AddDays(1);
+        var requestedStart = day.AddHours(14);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+            var tutor = new Tutor("Tutor Limit", "tutor_limit@test.com", "Bio", 70, tutorId);
+            tutor.AddAvailability(new DateRange(day.AddHours(8), day.AddHours(18)));
+            db.Tutors.Add(tutor);
+            db.Students.Add(new Student(studentId, "Student Limit", "student_limit@test.com"));
+            db.Sessions.Add(Session.Create(tutorId, studentId, new DateRange(day.AddHours(9), day.AddHours(10))));
+            db.Sessions.Add(Session.Create(tutorId, studentId, new DateRange(day.AddHours(11), day.AddHours(12))));
+            await db.SaveChangesAsync();
+        }
+
+        var request = new BookSessionRequest(tutorId, studentId, requestedStart, requestedStart.AddHours(1));
+
+        var response = await _client.PostAsJsonAsync("/api/sessions", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Session.DailyLimit");
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+        var studentSessionStarts = await verifyDb.Sessions
+            .Where(s => s.StudentId == studentId)
+            .Select(s => s.Interval.Start)
+            .ToListAsync();
+        studentSessionStarts.Should().HaveCount(2).And.NotContain(requestedStart);
+    }
+
+    [Fact]
+    public async Task Given_EmptyTutorId_When_BookingSession_Then_ReturnsBadRequestWithValidationCode()
+    {
+        var studentId = Guid.NewGuid();
+        var startTime = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
+        var request = new BookSessionRequest(Guid.Empty, studentId, startTime, startTime.AddHours(1));
+
+        var response = await _client.PostAsJsonAsync("/api/sessions", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Session.Validation");
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+        var sessionSaved = await verifyDb.Sessions.AnyAsync(s => s.StudentId == studentId);
+        sessionSaved.Should().BeFalse();
     }
 
     public void Dispose()

@@ -38,7 +38,7 @@ describe('SessionService', () => {
     let result: SessionResponse | undefined;
 
     service.bookSession(request).subscribe(response => (result = response));
-    const req = httpMock.expectOne('/api/sessions/book');
+    const req = httpMock.expectOne('/api/sessions');
     req.flush(session);
 
     expect(req.request.method).toBe('POST');

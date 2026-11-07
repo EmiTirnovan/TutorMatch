@@ -10,9 +10,8 @@ export class SessionService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/sessions';
 
-  // /book, not POST /api/sessions: only this slice enforces availability, R2 and R4.
   bookSession(request: BookSessionRequest): Observable<SessionResponse> {
-    return this.http.post<SessionResponse>(`${this.baseUrl}/book`, request);
+    return this.http.post<SessionResponse>(this.baseUrl, request);
   }
 
   getBookedSessionsForTutor(tutorId: string): Observable<SessionResponse[]> {

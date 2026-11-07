@@ -142,7 +142,7 @@ Modulele au dificultate echilibrată și fiecare conține câte un subiect „gr
 
 **Ce învață:** concurență, optimistic locking, invariante de domeniu, teste cu task-uri paralele.
 
-**Flux de rezervare (Angular):** `SlotPickerComponent` afișează pe profilul tutorelui sloturi de 60 de minute din disponibilitate, fără cele deja rezervate. `BookSessionModalComponent` trimite `POST /api/sessions/book`:
+**Flux de rezervare (Angular):** `SlotPickerComponent` afișează pe profilul tutorelui sloturi de 60 de minute din disponibilitate, fără cele deja rezervate. `BookSessionModalComponent` trimite `POST /api/sessions`:
 - **409** → `ConcurrencyConflictDialogComponent`, cu reîmprospătarea sloturilor;
 - **400 cu codul `Session.DailyLimit`** (R4) → avertisment în modal;
 - orice altă eroare → mesaj în modal.

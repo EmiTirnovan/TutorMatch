@@ -11,7 +11,7 @@ public static class BookSessionEndpoint
 {
     public static IEndpointRouteBuilder MapBookSession(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/book", HandleAsync);
+        group.MapPost("/", HandleAsync);
         return group;
     }
 

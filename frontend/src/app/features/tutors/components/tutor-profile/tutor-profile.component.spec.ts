@@ -98,7 +98,7 @@ describe('TutorProfileComponent', () => {
       fixture.detectChanges();
       query('app-book-session-modal .btn-accent').click();
       TestBed.inject(HttpTestingController)
-        .expectOne('/api/sessions/book')
+        .expectOne('/api/sessions')
         .flush(status === 201 ? { id: 'session-1' } : {}, { status, statusText: 'Status' });
       fixture.detectChanges();
     };

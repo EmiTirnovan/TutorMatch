@@ -27,7 +27,7 @@ describe('BookSessionModalComponent', () => {
 
   const submitAndFail = (status: number, body: object | null): void => {
     component.confirm();
-    httpMock.expectOne('/api/sessions/book').flush(body, { status, statusText: 'Error' });
+    httpMock.expectOne('/api/sessions').flush(body, { status, statusText: 'Error' });
     fixture.detectChanges();
   };
 
@@ -69,7 +69,7 @@ describe('BookSessionModalComponent', () => {
     component.booked.subscribe(booked);
 
     confirmButton()?.click();
-    const req = httpMock.expectOne('/api/sessions/book');
+    const req = httpMock.expectOne('/api/sessions');
     expect(booked).not.toHaveBeenCalled();
     expect(req.request.body).toEqual({
       tutorId: 'tutor-1',
@@ -88,7 +88,7 @@ describe('BookSessionModalComponent', () => {
     fixture.detectChanges();
 
     expect(confirmButton()?.disabled).toBe(true);
-    httpMock.expectOne('/api/sessions/book').flush({ id: 'session-1' });
+    httpMock.expectOne('/api/sessions').flush({ id: 'session-1' });
   });
 
   describe('closing', () => {
@@ -123,7 +123,7 @@ describe('BookSessionModalComponent', () => {
       expect(pressEsc()).toBe(false);
       expect(closed).not.toHaveBeenCalled();
 
-      httpMock.expectOne('/api/sessions/book').flush({ id: 'session-1' });
+      httpMock.expectOne('/api/sessions').flush({ id: 'session-1' });
       expect(booked).toHaveBeenCalledWith({ id: 'session-1' });
     });
 
@@ -135,7 +135,7 @@ describe('BookSessionModalComponent', () => {
 
       expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce();
       expect(closed).not.toHaveBeenCalled();
-      httpMock.expectOne('/api/sessions/book').flush({ id: 'session-1' });
+      httpMock.expectOne('/api/sessions').flush({ id: 'session-1' });
     });
   });
 

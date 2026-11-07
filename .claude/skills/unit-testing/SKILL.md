@@ -36,8 +36,8 @@ You are an expert C# .NET developer generating unit tests for Domain models and 
 - Example (workspace-anchored, no ambiguity):
   - Workspace root is the folder that contains README.md and TutorMatch/.
   - In this repository, source handlers are under TutorMatch/src/TutorMatch.Api/Features/... and tests are under TutorMatch/tests/TutorMatch.Tests/Features/...
-  - Source: TutorMatch/src/TutorMatch.Api/Features/Sessions/CreateSession/CreateSessionCommandHandler.cs
-    Test: TutorMatch/tests/TutorMatch.Tests/Features/Sessions/CreateSession/CreateSessionCommandHandlerTests.cs
+  - Source: TutorMatch/src/TutorMatch.Api/Features/Sessions/BookSession/BookSessionCommandHandler.cs
+    Test: TutorMatch/tests/TutorMatch.Tests/Features/Sessions/BookSession/BookSessionCommandHandlerTests.cs
   - Source: TutorMatch/src/TutorMatch.Api/Features/Sessions/DeleteSession/DeleteSessionCommandHandler.cs
     Test: TutorMatch/tests/TutorMatch.Tests/Features/Sessions/DeleteSession/DeleteSessionCommandHandlerTests.cs
   - Never create files outside the current workspace root. If a path cannot be resolved inside the workspace, stop and ask for clarification.
