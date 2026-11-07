@@ -77,36 +77,58 @@
       <div class="profile-sidebar">
         <div class="card availability-card">
           <div class="sidebar-header">
-            <h3>Available Time Slots</h3>
+            <h3 #slotsHeading tabindex="-1">Available Time Slots</h3>
             <a [routerLink]="['/tutors', t.id, 'availability']" class="edit-link text-sm">Edit</a>
           </div>
           <p class="text-muted text-sm" style="margin-bottom: 1rem;">
             Select a slot to reserve a tutoring session.
           </p>
 
-          @if (t.availability.length === 0) {
-            <div class="no-slots">
-              <p class="text-muted text-sm">No available slots at this moment.</p>
-              <a [routerLink]="['/tutors', t.id, 'availability']" class="btn btn-secondary btn-sm" style="margin-top: 0.5rem;">
-                + Add Time Windows
-              </a>
+          @if (successMessage(); as message) {
+            <div class="alert alert-success" role="status">{{ message }}</div>
+          }
+
+          @if (isDemoTutor()) {
+            <div class="alert alert-warning">This is a sample profile. Open a registered tutor to book a session.</div>
+          } @else if (slotsLoading()) {
+            <div class="slots-skeleton" aria-busy="true" aria-label="Loading available slots">
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
             </div>
+          } @else if (slotsError()) {
+            <div class="alert alert-danger" role="alert">We could not load the available slots.</div>
+            <button type="button" class="btn btn-secondary" (click)="loadBookedSessions(t.id)">Try again</button>
           } @else {
-            <div class="slots-list">
-              @for (slot of t.availability; track $index) {
-                <div class="slot-card">
-                  <div class="slot-datetime">
-                    <span class="slot-date">{{ formatReadableRange(slot.start, slot.end) }}</span>
-                    <span class="badge badge-neutral text-sm">{{ calculateDurationHours(slot.start, slot.end) }}</span>
-                  </div>
-                  <button type="button" class="btn btn-accent btn-sm">
-                    Book Slot
-                  </button>
-                </div>
-              }
-            </div>
+            <app-slot-picker
+              [availability]="t.availability"
+              [bookedSessions]="bookedSessions()"
+              [(selected)]="selectedSlot"
+            />
+            <button
+              type="button"
+              class="btn btn-accent book-button"
+              [disabled]="!selectedSlot()"
+              (click)="isBookingOpen.set(true)"
+            >
+              Book this slot
+            </button>
           }
         </div>
+
+        @if (isBookingOpen() && selectedSlot(); as slot) {
+          <app-book-session-modal
+            [tutor]="t"
+            [slot]="slot"
+            (booked)="onBooked(t.id)"
+            (conflict)="onConflict()"
+            (closed)="isBookingOpen.set(false)"
+          />
+        }
+
+        @if (hasConflict()) {
+          <app-concurrency-conflict-dialog (refresh)="onRefreshAfterConflict(t.id)" />
+        }
       </div>
     </div>
   }

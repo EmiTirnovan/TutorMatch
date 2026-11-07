@@ -33,7 +33,8 @@ export interface TutorDetailsResponse {
   email: string;
   bio: string;
   hourlyRate: number;
-  subjects: string[];
+  // Absent on real API responses: GET /api/tutors/{id} returns subjectIds only.
+  subjects?: string[];
   availability: DateRangeDto[];
   rating?: number;
   ratingCount?: number;

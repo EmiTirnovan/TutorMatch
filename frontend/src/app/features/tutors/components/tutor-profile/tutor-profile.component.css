@@ -115,38 +115,20 @@
   font-weight: 500;
 }
 
-.slots-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.slots-skeleton {
+  display: grid;
+  gap: 0.5rem;
 }
 
-.slot-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  background-color: var(--slate-50);
-  border: 1px solid var(--slate-200);
+.skeleton {
+  height: 44px;
   border-radius: var(--radius-sm);
-  gap: 0.75rem;
+  background-color: var(--slate-100);
 }
 
-.slot-datetime {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.slot-date {
-  font-weight: 500;
-  font-size: 0.875rem;
-  color: var(--primary-900);
-}
-
-.no-slots {
-  text-align: center;
-  padding: 2rem 1rem;
+.book-button {
+  width: 100%;
+  margin-top: 1.25rem;
 }
 
 .loading-card {
@@ -174,14 +156,5 @@
 
   .profile-actions .btn {
     width: 100%;
-  }
-
-  .slot-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .slot-card .btn {
-    align-self: flex-end;
   }
 }

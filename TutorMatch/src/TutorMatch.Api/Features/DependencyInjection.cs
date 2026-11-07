@@ -7,7 +7,6 @@ using TutorMatch.Api.Features.SemanticSearch.Services;
 using TutorMatch.Api.Features.Sessions.BookSession;
 using TutorMatch.Api.Features.Sessions.CancelSession;
 using TutorMatch.Api.Features.Sessions.CompleteSession;
-using TutorMatch.Api.Features.Sessions.CreateSession;
 using TutorMatch.Api.Features.Sessions.DeleteSession;
 using TutorMatch.Api.Features.Sessions.GetMySessions;
 using TutorMatch.Api.Features.Sessions.GetSessionById;
@@ -40,7 +39,6 @@ public static class DependencyInjection
 
         // Sessions CQRS Handlers
         services.AddScoped<ICommandHandler<BookSessionCommand, Result<BookSessionResponse>>, BookSessionCommandHandler>();
-        services.AddScoped<ICommandHandler<CreateSessionCommand, Result<CreateSessionResponse>>, CreateSessionCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateSessionCommand>, UpdateSessionCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteSessionCommand>, DeleteSessionCommandHandler>();
         services.AddScoped<ICommandHandler<CancelSessionCommand>, CancelSessionCommandHandler>();

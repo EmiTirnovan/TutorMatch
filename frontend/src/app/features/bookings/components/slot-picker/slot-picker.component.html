@@ -1,0 +1,22 @@
+@for (day of days(); track day.date) {
+  <div class="slot-day" role="group" [attr.aria-label]="day.date | date: 'fullDate'">
+    <h4 class="slot-day-title">{{ day.date | date: 'EEE, MMM d' }}</h4>
+    <div class="slot-grid">
+      @for (slot of day.slots; track slot.start) {
+        <button
+          type="button"
+          class="slot-button"
+          [class.selected]="isSelected(slot)"
+          [attr.aria-pressed]="isSelected(slot)"
+          (click)="selected.set(slot)"
+        >
+          {{ slot.start | date: 'HH:mm' }} – {{ slot.end | date: 'HH:mm' }}
+        </button>
+      }
+    </div>
+  </div>
+} @empty {
+  <div class="no-slots">
+    <p class="text-muted text-sm">No available slots right now. Check back later or look for another tutor.</p>
+  </div>
+}

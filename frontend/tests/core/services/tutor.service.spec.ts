@@ -68,7 +68,7 @@ describe('TutorService', () => {
 
   service.getTutorById(tutorId).subscribe((res) => {
       expect(res).toEqual(mockTutor);
-      expect(res.subjects.length).toBe(2);
+      expect(res.subjects?.length).toBe(2);
     });
 
     const req = httpMock.expectOne(`/api/tutors/${tutorId}`);

@@ -105,15 +105,14 @@ public class BookSessionCommandHandler : ICommandHandler<BookSessionCommand, Res
                 return Result<BookSessionResponse>.Failure(
                     Error.Validation("Session.Validation", ex.Message));
             }
+            catch (DailySessionLimitExceededException ex)
+            {
+                // R4 is a 400 with its own code so the UI can tell it apart from a slot conflict.
+                return Result<BookSessionResponse>.Failure(
+                    Error.Validation("Session.DailyLimit", ex.Message));
+            }
             catch (InvalidOperationException ex)
             {
-                if (ex.Message.Contains("maxim", StringComparison.OrdinalIgnoreCase) ||
-                    ex.Message.Contains("2 sesiuni", StringComparison.OrdinalIgnoreCase))
-                {
-                    return Result<BookSessionResponse>.Failure(
-                        Error.Validation("Session.Validation", ex.Message));
-                }
-
                 return Result<BookSessionResponse>.Failure(
                     Error.Conflict("Session.Conflict", ex.Message));
             }
