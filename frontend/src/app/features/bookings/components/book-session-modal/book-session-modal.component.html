@@ -1,4 +1,4 @@
-<dialog #dialog class="modal" aria-labelledby="book-session-title" (cancel)="$event.preventDefault(); closed.emit()">
+<dialog #dialog class="modal" aria-labelledby="book-session-title" (cancel)="onCancel($event)" (close)="onClose()">
   <h3 id="book-session-title">Confirm your booking</h3>
 
   <dl class="modal-summary">
@@ -24,7 +24,7 @@
   }
 
   <div class="modal-actions">
-    <button type="button" class="btn btn-secondary" [disabled]="isSubmitting()" (click)="closed.emit()">
+    <button type="button" class="btn btn-secondary" [disabled]="isSubmitting()" (click)="dialog.close()">
       {{ dailyLimitReached() ? 'Choose another date' : 'Cancel' }}
     </button>
     @if (!dailyLimitReached()) {

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TutorService } from '../../../../core/services/tutor.service';
@@ -29,6 +29,8 @@ export class TutorProfileComponent implements OnInit {
   private readonly tutorService = inject(TutorService);
   private readonly sessionService = inject(SessionService);
   private readonly route = inject(ActivatedRoute);
+  private readonly injector = inject(Injector);
+  private readonly slotsHeading = viewChild<ElementRef<HTMLElement>>('slotsHeading');
 
   readonly tutor = signal<TutorDetailsResponse | null>(null);
   readonly isLoading = signal(true);
@@ -110,6 +112,8 @@ export class TutorProfileComponent implements OnInit {
     this.isBookingOpen.set(false);
     this.selectedSlot.set(null);
     this.successMessage.set(null);
+    // The button that opened the dialog goes away with the reload, so keyboard users restart from the slots section.
+    afterNextRender(() => this.slotsHeading()?.nativeElement.focus(), { injector: this.injector });
   }
 
   loadDemoTutor(): void {

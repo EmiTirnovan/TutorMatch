@@ -31,6 +31,22 @@ export class BookSessionModalComponent implements AfterViewInit {
     this.dialog().nativeElement.showModal();
   }
 
+  onCancel(event: Event): void {
+    // Closing mid-request would hide the outcome of a booking the server may still accept.
+    if (this.isSubmitting()) {
+      event.preventDefault();
+    }
+  }
+
+  onClose(): void {
+    // Browsers let a repeated Esc close the dialog even after preventDefault.
+    if (this.isSubmitting()) {
+      this.dialog().nativeElement.showModal();
+    } else {
+      this.closed.emit();
+    }
+  }
+
   confirm(): void {
     if (this.isSubmitting()) {
       return;

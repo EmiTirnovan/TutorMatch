@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import type { Mock } from 'vitest';
 import { BookSessionModalComponent } from './book-session-modal.component';
 import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
 import { DEMO_STUDENT_ID } from '../../../../core/models/session.models';
@@ -33,6 +34,9 @@ describe('BookSessionModalComponent', () => {
   beforeEach(() => {
     // jsdom does not implement the native dialog API.
     HTMLDialogElement.prototype.showModal = vi.fn();
+    HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+      this.dispatchEvent(new Event('close'));
+    };
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()]
     });
@@ -85,6 +89,54 @@ describe('BookSessionModalComponent', () => {
 
     expect(confirmButton()?.disabled).toBe(true);
     httpMock.expectOne('/api/sessions/book').flush({ id: 'session-1' });
+  });
+
+  describe('closing', () => {
+    let closed: Mock<() => void>;
+
+    const dialog = (): HTMLDialogElement => fixture.nativeElement.querySelector('dialog');
+    const pressEsc = (): boolean => dialog().dispatchEvent(new Event('cancel', { cancelable: true }));
+
+    beforeEach(() => {
+      closed = vi.fn<() => void>();
+      component.closed.subscribe(closed);
+    });
+
+    it('Given_NoRequest_When_PressingEsc_Then_AllowsClosing', () => {
+      expect(pressEsc()).toBe(true);
+    });
+
+    it('Given_NoRequest_When_ClickingCancel_Then_ClosesNativelyAndEmitsClosed', () => {
+      const closeSpy = vi.spyOn(HTMLDialogElement.prototype, 'close');
+
+      fixture.nativeElement.querySelector('.btn-secondary').click();
+
+      expect(closeSpy).toHaveBeenCalledOnce();
+      expect(closed).toHaveBeenCalledOnce();
+    });
+
+    it('Given_RequestInFlight_When_PressingEsc_Then_StaysOpenAndStillReportsBooked', () => {
+      const booked = vi.fn();
+      component.booked.subscribe(booked);
+      component.confirm();
+
+      expect(pressEsc()).toBe(false);
+      expect(closed).not.toHaveBeenCalled();
+
+      httpMock.expectOne('/api/sessions/book').flush({ id: 'session-1' });
+      expect(booked).toHaveBeenCalledWith({ id: 'session-1' });
+    });
+
+    it('Given_RequestInFlight_When_BrowserForcesClose_Then_ReopensDialog', () => {
+      component.confirm();
+      vi.mocked(HTMLDialogElement.prototype.showModal).mockClear();
+
+      dialog().dispatchEvent(new Event('close'));
+
+      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce();
+      expect(closed).not.toHaveBeenCalled();
+      httpMock.expectOne('/api/sessions/book').flush({ id: 'session-1' });
+    });
   });
 
   it('Given_409_When_Confirming_Then_EmitsConflict', () => {

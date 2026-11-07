@@ -137,6 +137,16 @@ describe('TutorProfileComponent', () => {
       expect(query('app-concurrency-conflict-dialog')).toBeNull();
     });
 
+    it('Given_SuccessfulBooking_When_Rendered_Then_MovesFocusToSlotsHeading', () => {
+      document.body.appendChild(fixture.nativeElement);
+
+      openModalAndRespond(201);
+      TestBed.tick();
+
+      expect(document.activeElement?.textContent).toContain('Available Time Slots');
+      fixture.nativeElement.remove();
+    });
+
     it('Given_SuccessfulBooking_When_Confirmed_Then_ShowsSuccessAndReloadsSlots', () => {
       getBookedSpy.mockClear();
 
