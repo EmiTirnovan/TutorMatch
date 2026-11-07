@@ -115,6 +115,40 @@ describe('TutorProfileComponent', () => {
       expect(query('app-book-session-modal')).toBeTruthy();
     });
 
+    it('Given_OpenModal_When_Cancelling_Then_RemovesModalAndKeepsSelection', () => {
+      query('.slot-button').click();
+      fixture.detectChanges();
+      query('.book-button').click();
+      fixture.detectChanges();
+
+      query('app-book-session-modal .btn-secondary').click();
+      fixture.detectChanges();
+
+      expect(query('app-book-session-modal')).toBeNull();
+      expect(component.selectedSlot()).toEqual(SLOT);
+      expect(query('.book-button').disabled).toBe(false);
+    });
+
+    it('Given_DailyLimitReached_When_ChoosingAnotherDate_Then_RemovesModalWithoutBooking', () => {
+      getBookedSpy.mockClear();
+      query('.slot-button').click();
+      fixture.detectChanges();
+      query('.book-button').click();
+      fixture.detectChanges();
+      query('app-book-session-modal .btn-accent').click();
+      TestBed.inject(HttpTestingController)
+        .expectOne('/api/sessions')
+        .flush({ code: 'Session.DailyLimit', description: 'limit' }, { status: 400, statusText: 'Bad Request' });
+      fixture.detectChanges();
+
+      query('app-book-session-modal .btn-secondary').click();
+      fixture.detectChanges();
+
+      expect(query('app-book-session-modal')).toBeNull();
+      expect(text()).not.toContain('is booked');
+      expect(getBookedSpy).not.toHaveBeenCalled();
+    });
+
     it('Given_409_When_Booking_Then_ShowsConflictDialogAndClosesModal', () => {
       openModalAndRespond(409);
 
