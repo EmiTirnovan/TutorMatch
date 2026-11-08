@@ -37,6 +37,8 @@ public class GetTutorByIdQueryHandlerTests
         {
             return _tutors.Remove(id);
         }
+
+        public Subject GetOrCreateSubject(string name) => new Subject(name);
     }
 
     [Fact]

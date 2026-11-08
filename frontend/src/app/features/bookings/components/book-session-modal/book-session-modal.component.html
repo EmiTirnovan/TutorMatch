@@ -15,8 +15,6 @@
     <dl class="modal-summary">
       <dt>Tutor</dt>
       <dd>{{ tutor().name }}</dd>
-      <dt>Subjects taught</dt>
-      <dd>{{ tutor().subjects?.length ? tutor().subjects?.join(', ') : 'Not specified' }}</dd>
       <dt>Date</dt>
       <dd>{{ slot().start | date: 'fullDate' }}</dd>
       <dt>Time</dt>
@@ -24,6 +22,48 @@
       <dt>Hourly rate</dt>
       <dd>{{ tutor().hourlyRate }} RON / hour</dd>
     </dl>
+
+    <div class="booking-form-section">
+      <div class="form-group">
+        <label for="booking-subject-select" class="form-label">Subject / Topic to study</label>
+        @if (tutor().subjects && tutor().subjects!.length > 0) {
+          <select
+            id="booking-subject-select"
+            class="form-control"
+            [ngModel]="selectedSubjectType()"
+            (ngModelChange)="selectedSubjectType.set($event)"
+          >
+            @for (subj of tutor().subjects; track $index) {
+              <option [value]="subj">{{ subj }}</option>
+            }
+            <option value="__custom__">Custom / Other topic...</option>
+          </select>
+        }
+
+        @if (selectedSubjectType() === '__custom__' || !tutor().subjects || tutor().subjects!.length === 0) {
+          <input
+            id="booking-custom-subject"
+            type="text"
+            class="form-control custom-subject-input"
+            placeholder="Type your custom topic (e.g. Grafuri, POO, Examen)"
+            [ngModel]="customSubject()"
+            (ngModelChange)="customSubject.set($event)"
+          />
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="booking-notes" class="form-label">Session Details & Goals (optional)</label>
+        <textarea
+          id="booking-notes"
+          class="form-control"
+          rows="2"
+          placeholder="What would you like to focus on? (e.g. need help with lab 4, preparing for midterm exam)"
+          [ngModel]="notes()"
+          (ngModelChange)="notes.set($event)"
+        ></textarea>
+      </div>
+    </div>
 
     @if (dailyLimitReached()) {
       <div class="alert alert-warning" role="alert">

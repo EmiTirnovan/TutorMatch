@@ -11,13 +11,21 @@ public sealed record DateRange
 
     public DateRange(DateTime start, DateTime end)
     {
-        if (start >= end)
+        var utcStart = start.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(start, DateTimeKind.Utc)
+            : start.ToUniversalTime();
+
+        var utcEnd = end.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(end, DateTimeKind.Utc)
+            : end.ToUniversalTime();
+
+        if (utcStart >= utcEnd)
         {
             throw new ArgumentException("Data de inceput trebuie sa fie inainte de data de sfarsit.", nameof(start));
         }
 
-        Start = start;
-        End = end;
+        Start = utcStart;
+        End = utcEnd;
     }
 
     public TimeSpan Duration => End - Start;

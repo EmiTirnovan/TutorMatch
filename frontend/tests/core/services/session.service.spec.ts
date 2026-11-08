@@ -37,7 +37,7 @@ describe('SessionService', () => {
     let result: SessionResponse | undefined;
 
     service.bookSession('student-1', request).subscribe(response => (result = response));
-    const req = httpMock.expectOne('/api/sessions');
+    const req = httpMock.expectOne('/api/v2/sessions');
     req.flush(session);
 
     expect(req.request.method).toBe('POST');
@@ -50,7 +50,7 @@ describe('SessionService', () => {
     let result: SessionResponse[] | undefined;
 
     service.getBookedSessionsForTutor('tutor-1').subscribe(response => (result = response));
-    const req = httpMock.expectOne(r => r.url === '/api/sessions/my');
+    const req = httpMock.expectOne(r => r.url === '/api/v2/sessions/my');
     req.flush({ sessions: [session] });
 
     expect(req.request.params.get('userId')).toBe('tutor-1');

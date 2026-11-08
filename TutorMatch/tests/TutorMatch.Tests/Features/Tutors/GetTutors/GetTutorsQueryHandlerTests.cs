@@ -47,6 +47,8 @@ public class GetTutorsQueryHandlerTests
             _tutors.Remove(tutor);
             return true;
         }
+
+        public Subject GetOrCreateSubject(string name) => new Subject(name);
     }
 
     [Fact]

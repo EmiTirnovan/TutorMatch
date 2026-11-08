@@ -13,7 +13,6 @@ public static class SemanticSearchEndpoint
     public static IEndpointRouteBuilder MapSemanticSearchEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/tutors/semantic-search", HandleAsync)
-           .WithName("SemanticSearchTutors")
            .WithTags("Tutors");
 
         return app;
@@ -22,7 +21,6 @@ public static class SemanticSearchEndpoint
     public static IEndpointRouteBuilder MapSemanticSearch(this IEndpointRouteBuilder group)
     {
         group.MapGet("/semantic-search", HandleAsync)
-             .WithName("SemanticSearchTutorsGroup")
              .WithTags("Tutors");
 
         return group;
@@ -38,4 +36,3 @@ public static class SemanticSearchEndpoint
         return result.ToHttpResult();
     }
 }
-

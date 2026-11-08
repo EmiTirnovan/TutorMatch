@@ -37,6 +37,8 @@ public class UpdateTutorCommandHandlerTests
         {
             return _tutors.Remove(id);
         }
+
+        public Subject GetOrCreateSubject(string name) => new Subject(name);
     }
 
     [Fact]
@@ -178,6 +180,8 @@ public class UpdateTutorCommandHandlerTests
         {
             return false;
         }
+
+        public Subject GetOrCreateSubject(string name) => new Subject(name);
     }
 
     private sealed class ThrowingKeyNotFoundOnUpdateTutorRepository : ITutorRepository
@@ -212,5 +216,7 @@ public class UpdateTutorCommandHandlerTests
         {
             return false;
         }
+
+        public Subject GetOrCreateSubject(string name) => new Subject(name);
     }
 }

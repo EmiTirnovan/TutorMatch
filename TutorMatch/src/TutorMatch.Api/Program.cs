@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
@@ -22,7 +23,21 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v2", new OpenApiInfo
+            {
+                Title = "TutorMatch API v2",
+                Version = "v2",
+                Description = "TutorMatch API Version 2 - Next generation endpoints with subject selection and custom details."
+            });
+            options.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "TutorMatch API v1",
+                Version = "v1",
+                Description = "TutorMatch API Version 1"
+            });
+        });
 
         builder.Services.AddCors(options =>
         {
@@ -70,7 +85,11 @@ public class Program
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
-            app.UseSwaggerUI();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v2/swagger.json", "TutorMatch API v2 (Current)");
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "TutorMatch API v1");
+            });
         }
 
         app.MapGet("/", () => "TutorMatch API is running.");

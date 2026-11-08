@@ -9,5 +9,6 @@ public record CreateTutorRequest(
     string Email,
     string Bio,
     decimal HourlyRate,
-    List<Guid>? SubjectIds,
-    List<DateRangeDto>? Availability);
+    List<Guid>? SubjectIds = null,
+    List<DateRangeDto>? Availability = null,
+    List<string>? Subjects = null);

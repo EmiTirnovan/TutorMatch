@@ -8,6 +8,7 @@ namespace TutorMatch.Api.Infrastructure.Tutors;
 public class InMemoryTutorRepository : ITutorRepository
 {
     private readonly ConcurrentDictionary<Guid, Tutor> _tutors = new();
+    private readonly ConcurrentDictionary<string, Subject> _subjects = new(StringComparer.OrdinalIgnoreCase);
 
     public void Add(Tutor tutor)
     {
@@ -53,5 +54,12 @@ public class InMemoryTutorRepository : ITutorRepository
     {
         // Daca exista il sterge si da true, altfel da false
         return _tutors.TryRemove(id, out _);
+    }
+
+    public Subject GetOrCreateSubject(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        var trimmed = name.Trim();
+        return _subjects.GetOrAdd(trimmed, n => new Subject(n));
     }
 }

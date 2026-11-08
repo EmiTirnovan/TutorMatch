@@ -46,9 +46,15 @@ public class TutorConfiguration : IEntityTypeConfiguration<Tutor>
             availabilityBuilder.HasKey("Id");
 
             availabilityBuilder.Property(d => d.Start)
+                .HasConversion(
+                    v => v.ToUniversalTime(),
+                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
                 .IsRequired();
 
             availabilityBuilder.Property(d => d.End)
+                .HasConversion(
+                    v => v.ToUniversalTime(),
+                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
                 .IsRequired();
         });
 

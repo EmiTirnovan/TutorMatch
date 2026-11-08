@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
@@ -21,7 +21,7 @@ public static class UpdateTutorEndpoint
         ICommandHandler<UpdateTutorCommand> handler,
         CancellationToken cancellationToken)
     {
-        var command = new UpdateTutorCommand(id, request.Name, request.Bio, request.HourlyRate);
+        var command = new UpdateTutorCommand(id, request.Name, request.Bio, request.HourlyRate, request.Subjects);
         var result = await handler.HandleAsync(command, cancellationToken);
         return result.ToHttpResult();
     }

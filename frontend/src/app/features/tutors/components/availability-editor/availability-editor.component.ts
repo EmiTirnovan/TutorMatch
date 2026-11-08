@@ -6,6 +6,11 @@ import { TutorService } from '../../../../core/services/tutor.service';
 import { DateRangeDto } from '../../../../core/models/date-range.dto';
 import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
 
+// Robust UTC timestamp parser that handles SQLite strings with or without 'Z'
+export function parseUtc(value: string): number {
+  return Date.parse(/(Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`);
+}
+
 @Component({
   selector: 'app-availability-editor',
   standalone: true,
@@ -23,6 +28,7 @@ export class AvailabilityEditorComponent implements OnInit {
   readonly slots = signal<DateRangeDto[]>([]);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
+  readonly hasUnsavedChanges = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
   readonly validationError = signal<string | null>(null);
@@ -52,7 +58,12 @@ export class AvailabilityEditorComponent implements OnInit {
 
     this.tutorService.getTutorById(this.tutorId).subscribe({
       next: (tutor: TutorDetailsResponse) => {
-        this.slots.set(tutor.availability || []);
+        const normalized = (tutor.availability || []).map(s => ({
+          start: new Date(parseUtc(s.start)).toISOString(),
+          end: new Date(parseUtc(s.end)).toISOString()
+        }));
+        this.slots.set(normalized);
+        this.hasUnsavedChanges.set(false);
         this.isLoading.set(false);
         this.setDefaultSlotTimes();
       },
@@ -88,14 +99,14 @@ export class AvailabilityEditorComponent implements OnInit {
       return 'Please choose both a start date/time and an end date/time.';
     }
 
-    const startDate = new Date(startIso);
-    const endDate = new Date(endIso);
+    const startMs = parseUtc(startIso);
+    const endMs = parseUtc(endIso);
 
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    if (isNaN(startMs) || isNaN(endMs)) {
       return 'Invalid date/time format.';
     }
 
-    if (startDate >= endDate) {
+    if (startMs >= endMs) {
       return 'Start time must be strictly before end time.';
     }
 
@@ -103,11 +114,11 @@ export class AvailabilityEditorComponent implements OnInit {
     const currentSlots = this.slots();
     for (let i = 0; i < currentSlots.length; i++) {
       const existing = currentSlots[i];
-      const exStart = new Date(existing.start);
-      const exEnd = new Date(existing.end);
+      const exStartMs = parseUtc(existing.start);
+      const exEndMs = parseUtc(existing.end);
 
       // Overlap condition: start < exEnd && end > exStart
-      if (startDate < exEnd && endDate > exStart) {
+      if (startMs < exEndMs && endMs > exStartMs) {
         return `Slot overlaps with existing interval: ${this.formatReadableRange(existing.start, existing.end)}`;
       }
     }
@@ -130,8 +141,9 @@ export class AvailabilityEditorComponent implements OnInit {
 
     const updated = [...this.slots(), { start: startIso, end: endIso }];
     // Sort chronologically
-    updated.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+    updated.sort((a, b) => parseUtc(a.start) - parseUtc(b.start));
     this.slots.set(updated);
+    this.hasUnsavedChanges.set(true);
 
     // Prepare next suggestion
     const nextStart = new Date(this.newEnd);
@@ -146,6 +158,7 @@ export class AvailabilityEditorComponent implements OnInit {
     const updated = [...this.slots()];
     updated.splice(index, 1);
     this.slots.set(updated);
+    this.hasUnsavedChanges.set(true);
     this.successMessage.set(null);
   }
 
@@ -162,19 +175,27 @@ export class AvailabilityEditorComponent implements OnInit {
     this.tutorService.updateAvailability(this.tutorId, { availability: this.slots() }).subscribe({
       next: () => {
         this.isSaving.set(false);
+        this.hasUnsavedChanges.set(false);
         this.successMessage.set('Availability intervals updated and saved successfully.');
       },
-      error: (err: { error?: { detail?: string; title?: string } }) => {
+      error: (err: any) => {
         this.isSaving.set(false);
-        const detail = err?.error?.detail || err?.error?.title || 'Failed to update availability on server.';
-        this.errorMessage.set(detail);
+        const serverDesc = err?.error?.description || err?.error?.detail || err?.error?.title;
+        let message = serverDesc;
+        if (!message) {
+          message = err?.message || 'Failed to update availability on server. Please check your connection.';
+        }
+        if (serverDesc && (serverDesc.includes('suprapun') || serverDesc.includes('overlap'))) {
+          message = `Overlapping intervals detected on server: ${serverDesc}. Please adjust or remove conflicting intervals.`;
+        }
+        this.errorMessage.set(message);
       }
     });
   }
 
   formatReadableRange(startStr: string, endStr: string): string {
-    const s = new Date(startStr);
-    const e = new Date(endStr);
+    const s = new Date(parseUtc(startStr));
+    const e = new Date(parseUtc(endStr));
     const dateFormatted = s.toLocaleDateString(undefined, {
       weekday: 'short',
       year: 'numeric',
@@ -188,7 +209,7 @@ export class AvailabilityEditorComponent implements OnInit {
   }
 
   calculateDurationHours(startStr: string, endStr: string): string {
-    const diffMs = new Date(endStr).getTime() - new Date(startStr).getTime();
+    const diffMs = parseUtc(endStr) - parseUtc(startStr);
     const hours = diffMs / (1000 * 60 * 60);
     return hours === 1 ? '1 hr' : `${hours.toFixed(1)} hrs`;
   }

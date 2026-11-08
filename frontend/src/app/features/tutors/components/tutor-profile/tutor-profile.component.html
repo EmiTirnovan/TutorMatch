@@ -37,20 +37,41 @@
           </div>
 
           <div class="bio-section">
-            <h3>About the Tutor</h3>
+            <div class="section-heading-row">
+              <h3>About the Tutor</h3>
+            </div>
             <p class="bio-text">{{ t.bio }}</p>
           </div>
 
           <div class="subjects-section">
-            <h3>Subjects & Focus Areas</h3>
+            <div class="section-heading-row">
+              <h3>Subjects & Focus Areas</h3>
+              <button type="button" class="btn btn-sm btn-ghost edit-section-btn" (click)="openEditProfile()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                <span>Edit</span>
+              </button>
+            </div>
             <div class="subjects-tags">
               @for (subj of t.subjects; track $index) {
                 <span class="badge badge-primary">{{ subj }}</span>
+              }
+              @if (!t.subjects || t.subjects.length === 0) {
+                <span class="text-muted text-sm">No subjects listed yet. Click edit to add subjects.</span>
               }
             </div>
           </div>
 
           <div class="profile-actions">
+            <button type="button" class="btn btn-primary" (click)="openEditProfile()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              <span>Edit Profile & Subjects</span>
+            </button>
             <a [routerLink]="['/tutors', t.id, 'availability']" class="btn btn-secondary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -89,7 +110,9 @@
           }
 
           @if (isDemoTutor()) {
-            <div class="alert alert-warning">This is a sample profile. Open a registered tutor to book a session.</div>
+            <div class="alert alert-warning">
+              This is a sample profile. <a routerLink="/tutors/search" style="font-weight: 600; text-decoration: underline;">Browse active tutors</a> or <a routerLink="/tutors/register" style="font-weight: 600; text-decoration: underline;">register a new tutor</a> to book a session.
+            </div>
           } @else if (slotsLoading()) {
             <div class="slots-skeleton" aria-busy="true" aria-label="Loading available slots">
               <div class="skeleton"></div>
@@ -131,5 +154,111 @@
         }
       </div>
     </div>
+
+    <!-- Edit Profile Modal -->
+    @if (isEditProfileOpen()) {
+      <div class="modal-backdrop" (click)="closeEditProfile()">
+        <div class="card modal-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title">
+          <div class="modal-header">
+            <h3 id="edit-profile-title">Edit Profile & Subjects</h3>
+            <p class="text-muted text-sm">Update your public tutor details, hourly rate, and subjects.</p>
+          </div>
+
+          @if (editErrorMessage()) {
+            <div class="alert alert-error" role="alert" style="margin-top: 1rem;">
+              {{ editErrorMessage() }}
+            </div>
+          }
+
+          <form (ngSubmit)="saveProfile()" class="edit-profile-form" style="margin-top: 1.25rem;">
+            <div class="form-group">
+              <label for="edit-name" class="form-label">Full Name</label>
+              <input
+                id="edit-name"
+                type="text"
+                class="form-control"
+                [ngModel]="editName()"
+                (ngModelChange)="editName.set($event)"
+                name="editName"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="edit-hourly-rate" class="form-label">Hourly Rate (RON)</label>
+              <input
+                id="edit-hourly-rate"
+                type="number"
+                class="form-control"
+                [ngModel]="editHourlyRate()"
+                (ngModelChange)="editHourlyRate.set(+$event)"
+                name="editHourlyRate"
+                min="1"
+                max="1000"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="edit-bio" class="form-label">Bio / Description</label>
+              <textarea
+                id="edit-bio"
+                class="form-control"
+                rows="3"
+                [ngModel]="editBio()"
+                (ngModelChange)="editBio.set($event)"
+                name="editBio"
+                required
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Subjects & Focus Areas</label>
+              <div class="chips-container" style="margin-bottom: 0.5rem;">
+                @for (s of editSubjects(); track $index) {
+                  <span class="chip">
+                    <span>{{ s }}</span>
+                    <button type="button" class="chip-remove" (click)="removeEditSubject($index)" aria-label="Remove subject">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </span>
+                }
+              </div>
+
+              <div class="subject-input-wrapper">
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="e.g. Algoritmi, C++, Baze de date"
+                  [(ngModel)]="newEditSubjectInput"
+                  (keydown.enter)="$event.preventDefault(); addEditSubject()"
+                  name="newEditSubjectInput"
+                />
+                <button type="button" class="btn btn-secondary btn-add-subject" (click)="addEditSubject()">
+                  Add
+                </button>
+              </div>
+              <span class="text-muted text-xs">Press Enter or click Add to add subject tags.</span>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 1.5rem;">
+              <button type="button" class="btn btn-secondary" (click)="closeEditProfile()" [disabled]="isSavingProfile()">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary" [disabled]="isSavingProfile()">
+                @if (isSavingProfile()) {
+                  Saving...
+                } @else {
+                  Save Changes
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
   }
 </div>

@@ -8,7 +8,7 @@ import { BookSessionRequest, MySessionsResponse, SessionResponse } from '../mode
 })
 export class SessionService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/sessions';
+  private readonly baseUrl = '/api/v2/sessions';
 
   bookSession(studentId: string, request: BookSessionRequest): Observable<SessionResponse> {
     const headers = new HttpHeaders({ 'X-Student-Id': studentId });

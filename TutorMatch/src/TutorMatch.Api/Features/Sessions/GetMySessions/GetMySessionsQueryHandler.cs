@@ -48,11 +48,12 @@ public class GetMySessionsQueryHandler : IQueryHandler<GetMySessionsQuery, Resul
                 s.StartTime,
                 s.EndTime,
                 s.Status,
-                s.Version))
+                s.Version,
+                s.Subject,
+                s.Notes))
             .ToList();
 
         var response = new GetMySessionsResponse(mappedSessions);
         return Task.FromResult(Result<GetMySessionsResponse>.Success(response));
     }
 }
-

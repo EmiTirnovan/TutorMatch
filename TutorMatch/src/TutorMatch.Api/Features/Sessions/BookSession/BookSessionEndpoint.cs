@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
@@ -26,7 +26,9 @@ public static class BookSessionEndpoint
             request.TutorId,
             studentId,
             request.StartTime,
-            request.EndTime);
+            request.EndTime,
+            request.Subject,
+            request.Notes);
 
         var result = await handler.HandleAsync(command, cancellationToken);
 

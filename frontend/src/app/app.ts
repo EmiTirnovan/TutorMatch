@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
@@ -9,11 +9,22 @@ import { CommonModule } from '@angular/common';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {
+export class App implements OnInit {
   readonly title = signal('TutorMatch');
-  readonly userRole = signal<'student' | 'tutor'>('tutor');
+  readonly myTutorId = signal<string | null>(null);
 
-  toggleRole(): void {
-    this.userRole.update(r => r === 'tutor' ? 'student' : 'tutor');
+  ngOnInit(): void {
+    this.refreshMyTutor();
+  }
+
+  refreshMyTutor(): void {
+    try {
+      const stored = localStorage.getItem('tutor_match_my_tutor_id');
+      if (stored) {
+        this.myTutorId.set(stored);
+      }
+    } catch {
+      // ignore in environments without localStorage
+    }
   }
 }

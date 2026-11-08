@@ -21,6 +21,8 @@ public class Session
     public DateTime EndTime => Interval.End;
     public SessionStatus Status { get; private set; } = SessionStatus.Booked;
     public int Version { get; private set; } = 1;
+    public string? Subject { get; private set; }
+    public string? Notes { get; private set; }
 
     // Private constructor for persistence/framework deserialization
     private Session()
@@ -33,7 +35,9 @@ public class Session
         Guid studentId,
         DateRange interval,
         SessionStatus status = SessionStatus.Booked,
-        int version = 1)
+        int version = 1,
+        string? subject = null,
+        string? notes = null)
     {
         ArgumentNullException.ThrowIfNull(interval);
 
@@ -54,6 +58,8 @@ public class Session
 
         Status = status;
         Version = version;
+        Subject = string.IsNullOrWhiteSpace(subject) ? null : subject.Trim();
+        Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
     }
     
     public Session(
@@ -63,15 +69,19 @@ public class Session
         DateTime startTime,
         DateTime endTime,
         SessionStatus status = SessionStatus.Booked,
-        int version = 1)
-        : this(id, tutorId, studentId, new DateRange(startTime, endTime), status, version)
+        int version = 1,
+        string? subject = null,
+        string? notes = null)
+        : this(id, tutorId, studentId, new DateRange(startTime, endTime), status, version, subject, notes)
     {
     }
 
     public static Session Create(
         Guid tutorId,
         Guid studentId,
-        DateRange interval)
+        DateRange interval,
+        string? subject = null,
+        string? notes = null)
     {
         return new Session(
             Guid.NewGuid(),
@@ -79,7 +89,15 @@ public class Session
             studentId,
             interval,
             SessionStatus.Booked,
-            1);
+            1,
+            subject,
+            notes);
+    }
+
+    public void UpdateDetails(string? subject, string? notes)
+    {
+        Subject = string.IsNullOrWhiteSpace(subject) ? null : subject.Trim();
+        Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
     }
 
     public void Cancel()

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Features.Sessions.BookSession;
 using TutorMatch.Api.Features.Sessions.CancelSession;
 using TutorMatch.Api.Features.Sessions.CompleteSession;
@@ -15,8 +16,23 @@ public static class SessionsEndpoints
 {
     public static IEndpointRouteBuilder MapSessionEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/sessions");
+        // Version 2 (Current / Next Version) - with Subject selection & Details
+        var v2Group = app.MapGroup("/api/v2/sessions").WithTags("Sessions v2");
+        MapRoutes(v2Group);
 
+        // Version 1 (Previous Version)
+        var v1Group = app.MapGroup("/api/v1/sessions").WithTags("Sessions v1");
+        MapRoutes(v1Group);
+
+        // Legacy / Unversioned fallback
+        var legacyGroup = app.MapGroup("/api/sessions").WithTags("Sessions");
+        MapRoutes(legacyGroup);
+
+        return app;
+    }
+
+    private static void MapRoutes(RouteGroupBuilder group)
+    {
         group.MapBookSession();
         group.MapGetMySessions();
         group.MapGetSessionById();
@@ -25,7 +41,5 @@ public static class SessionsEndpoints
         group.MapDeleteSession();
         group.MapCancelSession();
         group.MapCompleteSession();
-
-        return app;
     }
 }

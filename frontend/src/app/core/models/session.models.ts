@@ -5,6 +5,8 @@ export interface BookSessionRequest {
   tutorId: string;
   startTime: string;
   endTime: string;
+  subject?: string;
+  notes?: string;
 }
 
 export interface SessionResponse {
@@ -13,8 +15,10 @@ export interface SessionResponse {
   studentId: string;
   startTime: string;
   endTime: string;
-  status: number;
+  status: number | string;
   version: number;
+  subject?: string;
+  notes?: string;
 }
 
 export interface MySessionsResponse {

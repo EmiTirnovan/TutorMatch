@@ -77,6 +77,7 @@ export class TutorRegisterComponent {
       email: formVal.email,
       bio: formVal.bio,
       hourlyRate: Number(formVal.hourlyRate),
+      subjects: this.subjects(),
       availability: initialSlots
     };
 
@@ -84,6 +85,11 @@ export class TutorRegisterComponent {
       next: (response: CreateTutorResponse) => {
         this.isSubmitting.set(false);
         this.successTutorId.set(response.id);
+        try {
+          localStorage.setItem('tutor_match_my_tutor_id', response.id);
+        } catch {
+          // ignore in environments without localStorage
+        }
       },
       error: (err: { error?: { detail?: string; title?: string } }) => {
         this.isSubmitting.set(false);
