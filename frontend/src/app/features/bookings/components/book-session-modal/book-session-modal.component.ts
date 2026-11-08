@@ -15,8 +15,9 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DateRangeDto } from '../../../../core/models/date-range.dto';
 import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
-import { ApiError, DEMO_STUDENT_ID, SessionResponse } from '../../../../core/models/session.models';
+import { ApiError, SessionResponse } from '../../../../core/models/session.models';
 import { SessionService } from '../../../../core/services/session.service';
+import { UserContextService } from '../../../../core/services/user-context.service';
 import { keepTabFocusInside, restoreFocusOnDestroy } from '../../../../core/utils/modal-focus';
 
 @Component({
@@ -29,6 +30,7 @@ import { keepTabFocusInside, restoreFocusOnDestroy } from '../../../../core/util
 })
 export class BookSessionModalComponent implements OnInit, AfterViewInit {
   private readonly sessionService = inject(SessionService);
+  private readonly userContext = inject(UserContextService);
   private readonly dialog = viewChild.required<ElementRef<HTMLElement>>('dialog');
   readonly tutor = input.required<TutorDetailsResponse>();
   readonly slot = input.required<DateRangeDto>();
@@ -87,7 +89,7 @@ export class BookSessionModalComponent implements OnInit, AfterViewInit {
     this.errorMessage.set(null);
 
     this.sessionService
-      .bookSession(DEMO_STUDENT_ID, {
+      .bookSession(this.userContext.studentId(), {
         tutorId: this.tutor().id,
         startTime: this.slot().start,
         endTime: this.slot().end,

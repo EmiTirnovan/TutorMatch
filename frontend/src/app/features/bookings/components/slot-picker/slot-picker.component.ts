@@ -3,8 +3,6 @@ import { DatePipe } from '@angular/common';
 import { DateRangeDto } from '../../../../core/models/date-range.dto';
 import { SessionResponse } from '../../../../core/models/session.models';
 
-const SLOT_MINUTES = 60;
-
 interface SlotDay {
   date: string;
   slots: DateRangeDto[];
@@ -24,15 +22,11 @@ export function buildAvailableSlots(
   const slots: { start: number; end: number }[] = [];
 
   for (const window of availability) {
-    const windowEnd = parseUtc(window.end);
-    let start = parseUtc(window.start);
-    while (start < windowEnd) {
-      const end = Math.min(start + SLOT_MINUTES * 60_000, windowEnd);
-      const isTaken = booked.some(b => start < b.end && end > b.start);
-      if (!isTaken && start > now.getTime()) {
-        slots.push({ start, end });
-      }
-      start = end;
+    const start = parseUtc(window.start);
+    const end = parseUtc(window.end);
+    const isTaken = booked.some(b => start < b.end && end > b.start);
+    if (!isTaken && start > now.getTime()) {
+      slots.push({ start, end });
     }
   }
 

@@ -7,6 +7,7 @@ import { routes } from '../src/app/app.routes';
 import { SearchTutorsComponent } from '../src/app/features/tutors/components/search-tutors/search-tutors.component';
 import { TutorProfileComponent } from '../src/app/features/tutors/components/tutor-profile/tutor-profile.component';
 import { TutorRegisterComponent } from '../src/app/features/tutors/components/tutor-register/tutor-register.component';
+import { MySessionsComponent } from '../src/app/features/sessions/components/my-sessions/my-sessions.component';
 
 describe('app routes', () => {
   const indexOfPath = (path: string): number => routes.findIndex((route) => route.path === path);
@@ -43,6 +44,15 @@ describe('app routes', () => {
     const component = await harness.navigateByUrl('/tutors/123e4567-e89b-12d3-a456-426614174000', TutorProfileComponent);
 
     expect(component).toBeInstanceOf(TutorProfileComponent);
+  });
+
+  it('Given_SessionsUrl_When_Navigating_Then_ActivatesMySessionsComponent', async () => {
+    const harness = await RouterTestingHarness.create();
+
+    const component = await harness.navigateByUrl('/sessions', MySessionsComponent);
+
+    expect(component).toBeInstanceOf(MySessionsComponent);
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain('My Sessions');
   });
 
   it('Given_UnknownUrl_When_Navigating_Then_RedirectsToRegisterPage', async () => {

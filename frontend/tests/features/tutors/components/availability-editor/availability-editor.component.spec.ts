@@ -26,6 +26,7 @@ describe('AvailabilityEditorComponent', () => {
     fixture = TestBed.createComponent(AvailabilityEditorComponent);
     component = fixture.componentInstance;
     tutorService = TestBed.inject(TutorService);
+    component.userContext.setRole('tutor');
     fixture.detectChanges();
   });
 
@@ -139,5 +140,62 @@ describe('AvailabilityEditorComponent', () => {
     const withZ = parseUtc('2026-11-04T10:00:00Z');
     const withoutZ = parseUtc('2026-11-04T10:00:00');
     expect(withZ).toBe(withoutZ);
+  });
+
+  describe('Student Role Restrictions', () => {
+    beforeEach(() => {
+      component.userContext.setRole('student');
+      component.isEmbedded = false;
+      fixture.detectChanges();
+    });
+
+    it('Given_StudentRole_When_CheckingCanEdit_Then_ReturnsFalse', () => {
+      expect(component.canEdit()).toBe(false);
+    });
+
+    it('Given_StudentRole_When_AttemptingToAddSlot_Then_BlocksAndSetsValidationError', () => {
+      component.slots.set([]);
+      component.newStart = '2026-11-05T14:00';
+      component.newEnd = '2026-11-05T16:00';
+
+      component.addSlot();
+
+      expect(component.slots().length).toBe(0);
+      expect(component.validationError()).toContain('Students cannot add availability intervals');
+    });
+
+    it('Given_StudentRole_When_AttemptingToRemoveSlot_Then_SlotIsPreserved', () => {
+      component.slots.set([{ start: '2026-11-04T10:00:00Z', end: '2026-11-04T12:00:00Z' }]);
+
+      component.removeSlot(0);
+
+      expect(component.slots().length).toBe(1);
+    });
+
+    it('Given_StudentRole_When_AttemptingToSave_Then_BlocksAndSetsErrorMessage', () => {
+      component.tutorId = 'tutor-123';
+      const updateSpy = vi.spyOn(tutorService, 'updateAvailability');
+
+      component.saveAvailability();
+
+      expect(updateSpy).not.toHaveBeenCalled();
+      expect(component.errorMessage()).toContain('Students cannot update or save tutor availability');
+    });
+
+    it('Given_StudentRole_When_Rendering_Then_RendersReadonlyNoticeAndHidesActionButtons', () => {
+      component.tutorId = 'tutor-123';
+      component.slots.set([{ start: '2026-11-04T10:00:00Z', end: '2026-11-04T12:00:00Z' }]);
+      fixture.detectChanges();
+
+      const readonlyNotice = fixture.nativeElement.querySelector('[data-testid="student-readonly-notice"]');
+      const readonlyCard = fixture.nativeElement.querySelector('[data-testid="student-readonly-card"]');
+      const saveBtn = fixture.nativeElement.querySelector('.btn-save-header');
+      const deleteBtn = fixture.nativeElement.querySelector('[data-testid="delete-slot-btn"]');
+
+      expect(readonlyNotice).not.toBeNull();
+      expect(readonlyCard).not.toBeNull();
+      expect(saveBtn).toBeNull();
+      expect(deleteBtn).toBeNull();
+    });
   });
 });

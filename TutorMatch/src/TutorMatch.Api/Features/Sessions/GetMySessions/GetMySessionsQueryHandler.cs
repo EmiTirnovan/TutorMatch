@@ -1,16 +1,25 @@
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Sessions;
+using TutorMatch.Api.Domain.Students;
+using TutorMatch.Api.Domain.Tutors;
 
 namespace TutorMatch.Api.Features.Sessions.GetMySessions;
 
 public class GetMySessionsQueryHandler : IQueryHandler<GetMySessionsQuery, Result<GetMySessionsResponse>>
 {
     private readonly ISessionRepository _repository;
+    private readonly ITutorRepository? _tutorRepository;
+    private readonly IStudentRepository? _studentRepository;
 
-    public GetMySessionsQueryHandler(ISessionRepository repository)
+    public GetMySessionsQueryHandler(
+        ISessionRepository repository,
+        ITutorRepository? tutorRepository = null,
+        IStudentRepository? studentRepository = null)
     {
         _repository = repository;
+        _tutorRepository = tutorRepository;
+        _studentRepository = studentRepository;
     }
 
     public Task<Result<GetMySessionsResponse>> HandleAsync(GetMySessionsQuery query, CancellationToken cancellationToken = default)
@@ -41,16 +50,23 @@ public class GetMySessionsQueryHandler : IQueryHandler<GetMySessionsQuery, Resul
 
         var mappedSessions = sessions
             .OrderBy(s => s.StartTime)
-            .Select(s => new MySessionDto(
-                s.Id,
-                s.TutorId,
-                s.StudentId,
-                s.StartTime,
-                s.EndTime,
-                s.Status,
-                s.Version,
-                s.Subject,
-                s.Notes))
+            .Select(s =>
+            {
+                var tutorName = _tutorRepository?.GetById(s.TutorId)?.Name;
+                var studentName = _studentRepository?.GetById(s.StudentId)?.Name;
+                return new MySessionDto(
+                    s.Id,
+                    s.TutorId,
+                    s.StudentId,
+                    s.StartTime,
+                    s.EndTime,
+                    s.Status,
+                    s.Version,
+                    s.Subject,
+                    s.Notes,
+                    tutorName,
+                    studentName);
+            })
             .ToList();
 
         var response = new GetMySessionsResponse(mappedSessions);

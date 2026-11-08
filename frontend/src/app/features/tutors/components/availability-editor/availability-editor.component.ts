@@ -1,8 +1,9 @@
-import { Component, Input, OnInit, inject, signal } from '@angular/core';
+import { Component, Input, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TutorService } from '../../../../core/services/tutor.service';
+import { UserContextService } from '../../../../core/services/user-context.service';
 import { DateRangeDto } from '../../../../core/models/date-range.dto';
 import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
 
@@ -21,9 +22,13 @@ export function parseUtc(value: string): number {
 export class AvailabilityEditorComponent implements OnInit {
   private readonly tutorService = inject(TutorService);
   private readonly route = inject(ActivatedRoute);
+  readonly userContext = inject(UserContextService);
 
   @Input() tutorId: string = '';
   @Input() isEmbedded: boolean = false;
+
+  readonly userRole = this.userContext.currentRole;
+  readonly canEdit = computed(() => this.isEmbedded || this.userRole() === 'tutor');
 
   readonly slots = signal<DateRangeDto[]>([]);
   readonly isLoading = signal(false);
@@ -127,6 +132,11 @@ export class AvailabilityEditorComponent implements OnInit {
   }
 
   addSlot(): void {
+    if (!this.canEdit()) {
+      this.validationError.set('Students cannot add availability intervals. Switch to Tutor View to edit.');
+      return;
+    }
+
     this.validationError.set(null);
     this.successMessage.set(null);
 
@@ -155,6 +165,10 @@ export class AvailabilityEditorComponent implements OnInit {
   }
 
   removeSlot(index: number): void {
+    if (!this.canEdit()) {
+      return;
+    }
+
     const updated = [...this.slots()];
     updated.splice(index, 1);
     this.slots.set(updated);
@@ -163,6 +177,11 @@ export class AvailabilityEditorComponent implements OnInit {
   }
 
   saveAvailability(): void {
+    if (!this.canEdit()) {
+      this.errorMessage.set('Students cannot update or save tutor availability.');
+      return;
+    }
+
     if (!this.tutorId) {
       this.errorMessage.set('Cannot save availability: Tutor ID is missing.');
       return;

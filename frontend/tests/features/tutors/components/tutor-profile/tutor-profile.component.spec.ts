@@ -67,7 +67,7 @@ describe('TutorProfileComponent', () => {
   });
 
   describe('booking flow', () => {
-    const SLOT = { start: '2099-11-06T10:00:00.000Z', end: '2099-11-06T11:00:00.000Z' };
+    const SLOT = { start: '2099-11-06T10:00:00.000Z', end: '2099-11-06T12:00:00.000Z' };
     const TUTOR: TutorDetailsResponse = {
       id: 'tutor-xyz',
       name: 'Maria Dragomir',
@@ -187,6 +187,14 @@ describe('TutorProfileComponent', () => {
       expect(text()).toContain('is booked');
       expect(getBookedSpy).toHaveBeenCalledWith('tutor-xyz');
       expect(query('app-book-session-modal')).toBeNull();
+    });
+
+    it('Given_TutorRole_When_Rendering_Then_BookButtonIsNotRendered', () => {
+      component.userContext.setRole('tutor');
+      fixture.detectChanges();
+
+      expect(query('.book-button')).toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="tutor-schedule-notice"]')).toBeTruthy();
     });
 
     it('Given_SlotsRequestFails_When_Retrying_Then_LoadsSlots', () => {

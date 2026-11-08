@@ -1,0 +1,129 @@
+.session-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.session-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.session-card.is-late-cancelled {
+  border-color: var(--warning-border);
+  background: #fffdf8;
+}
+
+.session-card.is-ongoing {
+  border-color: var(--slate-300);
+  background: var(--surface);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.date-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.session-day {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--primary-900);
+}
+
+.session-hours {
+  font-size: 0.875rem;
+  color: var(--slate-500);
+}
+
+.card-body {
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.participant-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.participant-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--slate-400);
+  font-weight: 600;
+}
+
+.participant-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--primary-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.participant-id {
+  font-family: monospace;
+  font-size: 0.8125rem;
+  color: var(--primary-800);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.late-cancellation-note {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--warning-600);
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+.ongoing-note {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.ongoing-note.tutor-note {
+  color: var(--accent-600);
+}
+
+.ongoing-note.student-note {
+  color: var(--slate-500);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--slate-100);
+}
+
+.awaiting-text {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.65rem;
+}

@@ -1,0 +1,98 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  <div
+    #dialog
+    class="modal-dialog card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cancel-modal-title"
+    tabindex="-1"
+    (keydown)="onKeydown($event)"
+  >
+    <div class="modal-header">
+      <h2 id="cancel-modal-title">Cancel Session</h2>
+      <button
+        type="button"
+        class="btn-close"
+        aria-label="Close"
+        [disabled]="isSubmitting()"
+        (click)="close()"
+      >
+        &times;
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="session-info">
+        <p class="session-label">Scheduled time:</p>
+        <p class="session-time">
+          {{ session().startTime | date: 'EEEE, MMMM d, y' }} &bull;
+          {{ session().startTime | date: 'shortTime' }} - {{ session().endTime | date: 'shortTime' }}
+        </p>
+      </div>
+
+      @if (isLate()) {
+        <div class="alert alert-warning" role="alert" data-testid="late-cancellation-warning">
+          <div class="alert-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div class="alert-content">
+            <p class="alert-title"><strong>Late Cancellation Warning (Policy R3)</strong></p>
+            <p class="alert-message">
+              This session starts in less than 12 hours (approx. {{ hoursRemaining() }}h remaining).
+              Per cancellation policy, this cancellation will be marked as <strong>LateCancelled</strong>.
+            </p>
+          </div>
+        </div>
+      } @else {
+        <div class="alert alert-success" role="status" data-testid="free-cancellation-notice">
+          <div class="alert-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div class="alert-content">
+            <p class="alert-title"><strong>Cancellation is free</strong></p>
+            <p class="alert-message">
+              You are cancelling at least 12 hours before the start time. No penalty applies.
+            </p>
+          </div>
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <div class="alert alert-danger" role="alert">
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <p class="confirmation-text">
+        Are you sure you want to cancel this booking? This action cannot be undone.
+      </p>
+    </div>
+
+    <div class="modal-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        [disabled]="isSubmitting()"
+        (click)="close()"
+      >
+        Keep Session
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger"
+        [disabled]="isSubmitting()"
+        (click)="confirmCancellation()"
+      >
+        {{ isSubmitting() ? 'Cancelling...' : 'Confirm Cancellation' }}
+      </button>
+    </div>
+  </div>
+</div>
+

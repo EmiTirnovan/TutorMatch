@@ -10,6 +10,7 @@ import { SessionResponse } from '../../../../core/models/session.models';
 import { SlotPickerComponent } from '../../../bookings/components/slot-picker/slot-picker.component';
 import { BookSessionModalComponent } from '../../../bookings/components/book-session-modal/book-session-modal.component';
 import { ConcurrencyConflictDialogComponent } from '../../../bookings/components/concurrency-conflict-dialog/concurrency-conflict-dialog.component';
+import { UserContextService } from '../../../../core/services/user-context.service';
 
 const DEMO_TUTOR_ID = 'demo-tutor-001';
 
@@ -32,11 +33,18 @@ export class TutorProfileComponent implements OnInit {
   private readonly sessionService = inject(SessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly injector = inject(Injector);
+  readonly userContext = inject(UserContextService);
   private readonly slotsHeading = viewChild<ElementRef<HTMLElement>>('slotsHeading');
 
   readonly tutor = signal<TutorDetailsResponse | null>(null);
   readonly isLoading = signal(true);
   readonly errorMessage = signal<string | null>(null);
+
+  readonly userRole = this.userContext.currentRole;
+  readonly isOwnProfile = computed(() => {
+    const t = this.tutor();
+    return t ? t.id.toLowerCase() === this.userContext.tutorId().toLowerCase() : false;
+  });
 
   readonly isDemoTutor = computed(() => this.tutor()?.id === DEMO_TUTOR_ID);
   readonly bookedSessions = signal<SessionResponse[]>([]);
