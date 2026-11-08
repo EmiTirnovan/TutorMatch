@@ -17,6 +17,19 @@
     </div>
   }
 
+  @if (!canEdit()) {
+    <div class="alert alert-warning" role="region" data-testid="student-readonly-notice">
+      <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>
+        <strong>Read-Only Mode:</strong> You are currently in <strong>Student View</strong>. You can view the tutor's availability windows, but you cannot add, modify, or delete intervals. To manage intervals, switch to <strong>Tutor View</strong> from the top navigation.
+      </div>
+    </div>
+  }
+
   @if (errorMessage()) {
     <div class="alert alert-danger" role="alert">
       <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -40,59 +53,73 @@
 
   <div class="editor-grid">
     <!-- Add Slot Card -->
-    <div class="card add-slot-card">
-      <h3>Add New Time Window</h3>
-      <p class="text-muted text-sm" style="margin-bottom: 1.25rem;">
-        Select start and end dates/times. Overlapping intervals are rejected immediately.
-      </p>
+    @if (canEdit()) {
+      <div class="card add-slot-card">
+        <h3>Add New Time Window</h3>
+        <p class="text-muted text-sm" style="margin-bottom: 1.25rem;">
+          Select start and end dates/times. Overlapping intervals are rejected immediately.
+        </p>
 
-      <div class="form-group">
-        <label for="slotStart">Start Date & Time</label>
-        <input
-          id="slotStart"
-          type="datetime-local"
-          class="form-control"
-          [(ngModel)]="newStart"
-          [disabled]="isSaving()"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="slotEnd">End Date & Time</label>
-        <input
-          id="slotEnd"
-          type="datetime-local"
-          class="form-control"
-          [(ngModel)]="newEnd"
-          [disabled]="isSaving()"
-        />
-      </div>
-
-      @if (validationError()) {
-        <div class="validation-warning">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-          <span>{{ validationError() }}</span>
+        <div class="form-group">
+          <label for="slotStart">Start Date & Time</label>
+          <input
+            id="slotStart"
+            type="datetime-local"
+            class="form-control"
+            [(ngModel)]="newStart"
+            [disabled]="isSaving()"
+          />
         </div>
-      }
 
-      <button
-        type="button"
-        class="btn btn-accent"
-        style="width: 100%;"
-        (click)="addSlot()"
-        [disabled]="isSaving()"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        <span>Add Interval to List</span>
-      </button>
-    </div>
+        <div class="form-group">
+          <label for="slotEnd">End Date & Time</label>
+          <input
+            id="slotEnd"
+            type="datetime-local"
+            class="form-control"
+            [(ngModel)]="newEnd"
+            [disabled]="isSaving()"
+          />
+        </div>
+
+        @if (validationError()) {
+          <div class="validation-warning">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span>{{ validationError() }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-accent"
+          style="width: 100%;"
+          (click)="addSlot()"
+          [disabled]="isSaving()"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Add Interval to List</span>
+        </button>
+      </div>
+    } @else {
+      <div class="card add-slot-card read-only-info" data-testid="student-readonly-card">
+        <h3>Availability Schedule</h3>
+        <p class="text-muted text-sm">
+          You are viewing this schedule as a student. Students can review the tutor's available intervals, but modifications are restricted to the tutor.
+        </p>
+        <div style="margin-top: 1.5rem;">
+          <a [routerLink]="['/tutors', tutorId]" class="btn btn-primary" style="width: 100%; text-align: center; justify-content: center;">
+            Book on Tutor Profile
+          </a>
+        </div>
+      </div>
+    }
 
     <!-- Active Slots Card -->
     <div class="card slots-list-card">
@@ -104,7 +131,7 @@
           </p>
         </div>
 
-        @if (!isEmbedded && tutorId) {
+        @if (!isEmbedded && tutorId && canEdit()) {
           <button
             type="button"
             class="btn btn-primary btn-save-header"
@@ -144,15 +171,18 @@
                 <span class="slot-time">{{ formatReadableRange(slot.start, slot.end) }}</span>
                 <span class="badge badge-neutral">{{ calculateDurationHours(slot.start, slot.end) }}</span>
               </div>
-              <button
-                type="button"
-                class="btn btn-danger btn-sm"
-                title="Remove interval"
-                (click)="removeSlot($index)"
-                [disabled]="isSaving()"
-              >
-                Delete
-              </button>
+              @if (canEdit()) {
+                <button
+                  type="button"
+                  class="btn btn-danger btn-sm"
+                  title="Remove interval"
+                  (click)="removeSlot($index)"
+                  [disabled]="isSaving()"
+                  data-testid="delete-slot-btn"
+                >
+                  Delete
+                </button>
+              }
             </div>
           }
         </div>

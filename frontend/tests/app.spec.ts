@@ -37,6 +37,7 @@ describe('App', () => {
 
     expect(discover?.getAttribute('href')).toBe('/tutors/search');
     expect(links.map((link) => link.textContent?.trim())).toContain('Become a Tutor');
+    expect(links.map((link) => link.textContent?.trim())).toContain('My Sessions');
   });
 });
 
@@ -64,6 +65,22 @@ describe('App navigation', () => {
     expect(discover?.classList.contains('active')).toBe(true);
   });
 
+  it('Given_SessionsRoute_When_Navigating_Then_RendersMySessionsPageAndMarksNavLinkActive', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    await TestBed.inject(Router).navigateByUrl('/sessions');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const mySessionsLink = Array.from(compiled.querySelectorAll<HTMLAnchorElement>('nav.nav-links a')).find((link) =>
+      link.textContent?.includes('My Sessions')
+    );
+    expect(compiled.querySelector('app-my-sessions')).not.toBeNull();
+    expect(mySessionsLink?.classList.contains('active')).toBe(true);
+  });
+
   it('Given_OtherRoute_When_Navigating_Then_DiscoverLinkIsNotActive', async () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
@@ -84,11 +101,15 @@ describe('App navigation', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.role-indicator')?.textContent).toContain('Tutor View');
+    expect(compiled.querySelector('.role-indicator')?.textContent).toContain('Student View');
 
     (compiled.querySelector('.user-control button') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('.role-indicator')?.textContent).toContain('Student View');
+    expect(compiled.querySelector('.role-indicator')?.textContent).toContain('Tutor View');
+
+    const links = Array.from(compiled.querySelectorAll<HTMLAnchorElement>('nav.nav-links a'));
+    expect(links.map((link) => link.textContent?.trim())).toContain('My Profile');
+    expect(links.map((link) => link.textContent?.trim())).toContain('Manage Availability');
   });
 });

@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { UserContextService } from './core/services/user-context.service';
 
 @Component({
   selector: 'app-root',
@@ -10,10 +11,15 @@ import { CommonModule } from '@angular/common';
   styleUrl: './app.css'
 })
 export class App {
+  readonly userContext = inject(UserContextService);
+
   readonly title = signal('TutorMatch');
-  readonly userRole = signal<'student' | 'tutor'>('tutor');
+  readonly userRole = this.userContext.currentRole;
+  readonly tutorId = this.userContext.tutorId;
+  readonly studentId = this.userContext.studentId;
+  readonly activeUserName = this.userContext.currentUserName;
 
   toggleRole(): void {
-    this.userRole.update(r => r === 'tutor' ? 'student' : 'tutor');
+    this.userContext.toggleRole();
   }
 }

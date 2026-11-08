@@ -58,4 +58,56 @@ describe('SessionService', () => {
     expect(req.request.params.get('status')).toBe('Booked');
     expect(result).toEqual([session]);
   });
+
+  it('Given_UserIdAndRole_When_GettingMySessionsWithoutStatus_Then_CallsEndpointWithoutStatusFilter', () => {
+    let result: SessionResponse[] | undefined;
+
+    service.getMySessions('student-1', 'Student').subscribe(response => (result = response));
+    const req = httpMock.expectOne(r => r.url === '/api/sessions/my');
+    req.flush({ sessions: [session] });
+
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('userId')).toBe('student-1');
+    expect(req.request.params.get('role')).toBe('Student');
+    expect(req.request.params.has('status')).toBe(false);
+    expect(result).toEqual([session]);
+  });
+
+  it('Given_UserIdRoleAndStatus_When_GettingMySessionsWithStatus_Then_IncludesStatusInQueryParams', () => {
+    let result: SessionResponse[] | undefined;
+
+    service.getMySessions('tutor-1', 'Tutor', 'Upcoming').subscribe(response => (result = response));
+    const req = httpMock.expectOne(r => r.url === '/api/sessions/my');
+    req.flush({ sessions: [session] });
+
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('userId')).toBe('tutor-1');
+    expect(req.request.params.get('role')).toBe('Tutor');
+    expect(req.request.params.get('status')).toBe('Upcoming');
+    expect(result).toEqual([session]);
+  });
+
+  it('Given_SessionIdAndRequesterId_When_CancellingSession_Then_PostsToCancelEndpointWithRequesterId', () => {
+    let completed = false;
+
+    service.cancelSession('session-1', 'student-1').subscribe(() => (completed = true));
+    const req = httpMock.expectOne('/api/sessions/session-1/cancel');
+    req.flush(null);
+
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ requesterId: 'student-1' });
+    expect(completed).toBe(true);
+  });
+
+  it('Given_SessionIdAndTutorId_When_CompletingSession_Then_PostsToCompleteEndpointWithTutorId', () => {
+    let completed = false;
+
+    service.completeSession('session-1', 'tutor-1').subscribe(() => (completed = true));
+    const req = httpMock.expectOne('/api/sessions/session-1/complete');
+    req.flush(null);
+
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ tutorId: 'tutor-1' });
+    expect(completed).toBe(true);
+  });
 });

@@ -1,8 +1,9 @@
-import { Component, Input, OnInit, inject, signal } from '@angular/core';
+import { Component, Input, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TutorService } from '../../../../core/services/tutor.service';
+import { UserContextService } from '../../../../core/services/user-context.service';
 import { DateRangeDto } from '../../../../core/models/date-range.dto';
 import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
 
@@ -16,9 +17,13 @@ import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
 export class AvailabilityEditorComponent implements OnInit {
   private readonly tutorService = inject(TutorService);
   private readonly route = inject(ActivatedRoute);
+  readonly userContext = inject(UserContextService);
 
   @Input() tutorId: string = '';
   @Input() isEmbedded: boolean = false;
+
+  readonly userRole = this.userContext.currentRole;
+  readonly canEdit = computed(() => this.isEmbedded || this.userRole() === 'tutor');
 
   readonly slots = signal<DateRangeDto[]>([]);
   readonly isLoading = signal(false);
@@ -116,6 +121,11 @@ export class AvailabilityEditorComponent implements OnInit {
   }
 
   addSlot(): void {
+    if (!this.canEdit()) {
+      this.validationError.set('Students cannot add availability intervals. Switch to Tutor View to edit.');
+      return;
+    }
+
     this.validationError.set(null);
     this.successMessage.set(null);
 
@@ -143,6 +153,10 @@ export class AvailabilityEditorComponent implements OnInit {
   }
 
   removeSlot(index: number): void {
+    if (!this.canEdit()) {
+      return;
+    }
+
     const updated = [...this.slots()];
     updated.splice(index, 1);
     this.slots.set(updated);
@@ -150,6 +164,11 @@ export class AvailabilityEditorComponent implements OnInit {
   }
 
   saveAvailability(): void {
+    if (!this.canEdit()) {
+      this.errorMessage.set('Students cannot update or save tutor availability.');
+      return;
+    }
+
     if (!this.tutorId) {
       this.errorMessage.set('Cannot save availability: Tutor ID is missing.');
       return;
@@ -172,9 +191,13 @@ export class AvailabilityEditorComponent implements OnInit {
     });
   }
 
+  private parseUtcDate(value: string): Date {
+    return new Date(/(Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`);
+  }
+
   formatReadableRange(startStr: string, endStr: string): string {
-    const s = new Date(startStr);
-    const e = new Date(endStr);
+    const s = this.parseUtcDate(startStr);
+    const e = this.parseUtcDate(endStr);
     const dateFormatted = s.toLocaleDateString(undefined, {
       weekday: 'short',
       year: 'numeric',
@@ -188,7 +211,9 @@ export class AvailabilityEditorComponent implements OnInit {
   }
 
   calculateDurationHours(startStr: string, endStr: string): string {
-    const diffMs = new Date(endStr).getTime() - new Date(startStr).getTime();
+    const s = this.parseUtcDate(startStr).getTime();
+    const e = this.parseUtcDate(endStr).getTime();
+    const diffMs = e - s;
     const hours = diffMs / (1000 * 60 * 60);
     return hours === 1 ? '1 hr' : `${hours.toFixed(1)} hrs`;
   }

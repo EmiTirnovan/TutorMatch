@@ -81,6 +81,19 @@
   gap: 0.75rem;
 }
 
+.role-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.user-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-700);
+}
+
 .role-indicator {
   font-size: 0.8125rem;
   color: var(--slate-500);

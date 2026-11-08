@@ -12,22 +12,39 @@
     </div>
 
     <nav class="nav-links">
-      <a routerLink="/tutors/search" routerLinkActive="active" class="nav-item">
-        Discover tutors
-      </a>
-      <a routerLink="/tutors/register" routerLinkActive="active" class="nav-item">
-        Become a Tutor
-      </a>
-      <a routerLink="/tutors/demo" routerLinkActive="active" class="nav-item">
-        Tutor Profile
-      </a>
+      @if (userRole() === 'student') {
+        <a routerLink="/tutors/search" routerLinkActive="active" class="nav-item">
+          Discover tutors
+        </a>
+        <a routerLink="/sessions" routerLinkActive="active" class="nav-item">
+          My Sessions
+        </a>
+        <a routerLink="/tutors/register" routerLinkActive="active" class="nav-item">
+          Become a Tutor
+        </a>
+      } @else {
+        <a routerLink="/sessions" routerLinkActive="active" class="nav-item">
+          My Sessions
+        </a>
+        <a [routerLink]="['/tutors', tutorId()]" routerLinkActive="active" class="nav-item">
+          My Profile
+        </a>
+        <a [routerLink]="['/tutors', tutorId(), 'availability']" routerLinkActive="active" class="nav-item">
+          Manage Availability
+        </a>
+      }
     </nav>
 
     <div class="user-control">
-      <span class="role-indicator">
-        Mode: <strong>{{ userRole() === 'tutor' ? 'Tutor View' : 'Student View' }}</strong>
-      </span>
-      <button type="button" class="btn btn-secondary btn-sm" (click)="toggleRole()">
+      <div class="role-identity">
+        <span class="role-indicator">
+          Mode: <strong>{{ userRole() === 'tutor' ? 'Tutor View' : 'Student View' }}</strong>
+        </span>
+        <span class="user-name">
+          ({{ activeUserName() }})
+        </span>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="toggleRole()" data-testid="header-toggle-role-btn">
         Switch to {{ userRole() === 'tutor' ? 'Student' : 'Tutor' }}
       </button>
     </div>

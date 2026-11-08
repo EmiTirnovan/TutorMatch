@@ -95,11 +95,11 @@ public class Program
             }
 
             // shortcut: no auth yet, the frontend books as this student (DEMO_STUDENT_ID); replace when identity lands.
-            var demoStudentId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            var demoStudentId = Guid.Parse("23a81600-7740-49c2-9de8-ad86816f5291");
             var studentRepo = scope.ServiceProvider.GetRequiredService<IStudentRepository>();
             if (studentRepo.GetById(demoStudentId) is null)
             {
-                studentRepo.Add(new Student(demoStudentId, "Demo Student", "demo.student@tutormatch.ro"));
+                studentRepo.Add(new Student(demoStudentId, "Alex Radu", "alex.radu@student.upt.ro"));
             }
         }
 
@@ -142,6 +142,8 @@ internal sealed class CompatibilityPipeWriter : PipeWriter
     {
         _inner = inner;
     }
+
+    public override bool CanGetUnflushedBytes => true;
 
     public override Int64 UnflushedBytes
     {

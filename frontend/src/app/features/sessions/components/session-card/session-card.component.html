@@ -1,0 +1,115 @@
+<div class="card session-card" [class.is-late-cancelled]="isLateCancelledSession()" [class.is-ongoing]="hasStarted() && isUpcomingSession()">
+  <div class="card-header">
+    <div class="date-block">
+      <span class="session-day">{{ session().startTime | date: 'EEE, MMM d, y' }}</span>
+      <span class="session-hours">
+        {{ session().startTime | date: 'shortTime' }} - {{ session().endTime | date: 'shortTime' }}
+      </span>
+    </div>
+    <span class="badge" [ngClass]="statusBadgeClass()" data-testid="status-badge">
+      {{ statusLabel() }}
+    </span>
+  </div>
+
+  <div class="card-body">
+    <div class="participant-info">
+      @if (userRole() === 'student') {
+        <span class="participant-label">Tutor</span>
+        <span class="participant-id" title="{{ session().tutorId }}">
+          {{ session().tutorId }}
+        </span>
+      } @else {
+        <span class="participant-label">Student</span>
+        <span class="participant-id" title="{{ session().studentId }}">
+          {{ session().studentId }}
+        </span>
+      }
+    </div>
+
+    @if (isLateCancelledSession()) {
+      <div class="late-cancellation-note">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>Cancelled with less than 12h notice</span>
+      </div>
+    }
+
+    @if (isUpcomingSession() && hasStarted()) {
+      <div class="ongoing-note" [class.tutor-note]="userRole() === 'tutor'" [class.student-note]="userRole() === 'student'" data-testid="ongoing-note">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        @if (userRole() === 'tutor') {
+          <span>Session has started &bull; Ready for tutor completion</span>
+        } @else {
+          <span>Session in progress or ended &bull; Awaiting tutor completion</span>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="card-actions">
+    @if (canCancel()) {
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm"
+        data-testid="cancel-btn"
+        (click)="onCancel()"
+      >
+        Cancel Booking
+      </button>
+    }
+
+    @if (canComplete()) {
+      <button
+        type="button"
+        class="btn btn-primary btn-sm"
+        data-testid="complete-btn"
+        (click)="onComplete()"
+      >
+        Mark as Completed
+      </button>
+    }
+
+    @if (isUpcomingSession() && hasStarted() && userRole() === 'student') {
+      <span class="badge badge-neutral awaiting-text" data-testid="student-awaiting-badge">
+        Awaiting tutor completion
+      </span>
+    }
+
+    @if (canRate()) {
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm"
+        data-testid="rate-btn"
+        (click)="onRate()"
+      >
+        Rate Tutor
+      </button>
+    }
+  </div>
+</div>
