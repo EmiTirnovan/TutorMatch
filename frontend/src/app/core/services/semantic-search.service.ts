@@ -9,7 +9,7 @@ import {
 import { TutorSearchItem } from '../models/tutor-search.models';
 import { TutorService } from './tutor.service';
 
-export const SEMANTIC_SEARCH_TIMEOUT_MS = 8000;
+export const SEMANTIC_SEARCH_TIMEOUT_MS = 20000;
 export const SEMANTIC_RESULT_LIMIT = 5;
 export const KEYWORD_FALLBACK_MESSAGE =
   'Căutarea semantică este indisponibilă momentan, afișăm rezultate pe baza cuvintelor cheie';
