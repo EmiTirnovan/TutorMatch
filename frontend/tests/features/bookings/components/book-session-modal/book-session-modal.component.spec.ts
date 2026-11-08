@@ -30,7 +30,7 @@ describe('BookSessionModalComponent', () => {
 
   const submitAndFail = (status: number, body: object | null): void => {
     component.confirm();
-    httpMock.expectOne('/api/sessions').flush(body, { status, statusText: 'Error' });
+    httpMock.expectOne('/api/v2/sessions').flush(body, { status, statusText: 'Error' });
     fixture.detectChanges();
   };
 
@@ -61,16 +61,18 @@ describe('BookSessionModalComponent', () => {
     expect(document.activeElement).toBe(dialog());
     expect(dialog().getAttribute('aria-modal')).toBe('true');
     expect(text()).toContain('Maria Dragomir');
-    expect(text()).toContain('Subjects taught');
+    expect(text()).toContain('Subject / Topic to study');
     expect(text()).toContain('Discrete Math');
     expect(text()).toContain('75 RON / hour');
   });
 
-  it('Given_TutorWithoutSubjects_When_Opened_Then_ShowsNotSpecified', () => {
+  it('Given_TutorWithoutSubjects_When_Opened_Then_DefaultsToCustomSubjectInput', () => {
     fixture.componentRef.setInput('tutor', { ...TUTOR, subjects: undefined });
+    component.ngOnInit();
     fixture.detectChanges();
 
-    expect(text()).toContain('Not specified');
+    expect(component.selectedSubjectType()).toBe('__custom__');
+    expect(fixture.nativeElement.querySelector('#booking-custom-subject')).not.toBeNull();
   });
 
   it('Given_SuccessfulResponse_When_Confirming_Then_EmitsBookedOnlyAfterResponse', () => {
@@ -78,13 +80,36 @@ describe('BookSessionModalComponent', () => {
     component.booked.subscribe(booked);
 
     confirmButton()?.click();
-    const req = httpMock.expectOne('/api/sessions');
+    const req = httpMock.expectOne('/api/v2/sessions');
     expect(booked).not.toHaveBeenCalled();
     expect(req.request.headers.get('X-Student-Id')).toBe(DEMO_STUDENT_ID);
-    expect(req.request.body).toEqual({ tutorId: 'tutor-1', startTime: SLOT.start, endTime: SLOT.end });
-    req.flush({ id: 'session-1' });
+    expect(req.request.body).toEqual({
+      tutorId: 'tutor-1',
+      startTime: SLOT.start,
+      endTime: SLOT.end,
+      subject: 'Discrete Math'
+    });
+    req.flush({ id: 'session-1', subject: 'Discrete Math' });
 
-    expect(booked).toHaveBeenCalledWith({ id: 'session-1' });
+    expect(booked).toHaveBeenCalledWith({ id: 'session-1', subject: 'Discrete Math' });
+  });
+
+  it('Given_CustomSubjectAndNotes_When_Confirming_Then_SendsCustomSubjectAndNotes', () => {
+    component.selectedSubjectType.set('__custom__');
+    component.customSubject.set('Teoria Grafurilor');
+    component.notes.set('Ajutor la tema 2 si arbori minimi');
+    fixture.detectChanges();
+
+    confirmButton()?.click();
+    const req = httpMock.expectOne('/api/v2/sessions');
+    expect(req.request.body).toEqual({
+      tutorId: 'tutor-1',
+      startTime: SLOT.start,
+      endTime: SLOT.end,
+      subject: 'Teoria Grafurilor',
+      notes: 'Ajutor la tema 2 si arbori minimi'
+    });
+    req.flush({ id: 'session-2', subject: 'Teoria Grafurilor', notes: 'Ajutor la tema 2 si arbori minimi' });
   });
 
   it('Given_RequestInFlight_When_ConfirmingAgain_Then_SendsOnlyOneRequest', () => {
@@ -93,7 +118,7 @@ describe('BookSessionModalComponent', () => {
     fixture.detectChanges();
 
     expect(confirmButton()?.disabled).toBe(true);
-    httpMock.expectOne('/api/sessions').flush({ id: 'session-1' });
+    httpMock.expectOne('/api/v2/sessions').flush({ id: 'session-1' });
   });
 
   describe('closing', () => {
@@ -141,7 +166,7 @@ describe('BookSessionModalComponent', () => {
       fixture.nativeElement.querySelector('.modal-backdrop').click();
       expect(closed).not.toHaveBeenCalled();
 
-      httpMock.expectOne('/api/sessions').flush({ id: 'session-1' });
+      httpMock.expectOne('/api/v2/sessions').flush({ id: 'session-1' });
       expect(booked).toHaveBeenCalledWith({ id: 'session-1' });
     });
 
@@ -152,14 +177,15 @@ describe('BookSessionModalComponent', () => {
     });
   });
 
-  it('Given_FocusOnLastButton_When_PressingTab_Then_WrapsToFirstButton', () => {
+  it('Given_FocusOnLastButton_When_PressingTab_Then_WrapsToFirstFocusableElement', () => {
     confirmButton()?.focus();
 
     const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
     dialog().dispatchEvent(tab);
 
     expect(tab.defaultPrevented).toBe(true);
-    expect(document.activeElement).toBe(cancelButton());
+    const firstFocusable = dialog().querySelector('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])');
+    expect(document.activeElement).toBe(firstFocusable);
   });
 
   it('Given_409_When_Confirming_Then_EmitsConflict', () => {

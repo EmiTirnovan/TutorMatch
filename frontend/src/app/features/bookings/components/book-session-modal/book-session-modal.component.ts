@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  OnInit,
   inject,
   input,
   output,
@@ -10,6 +11,7 @@ import {
   viewChild
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DateRangeDto } from '../../../../core/models/date-range.dto';
 import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
@@ -21,12 +23,12 @@ import { keepTabFocusInside, restoreFocusOnDestroy } from '../../../../core/util
 @Component({
   selector: 'app-book-session-modal',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './book-session-modal.component.html',
   styleUrl: './book-session-modal.component.css'
 })
-export class BookSessionModalComponent implements AfterViewInit {
+export class BookSessionModalComponent implements OnInit, AfterViewInit {
   private readonly sessionService = inject(SessionService);
   private readonly userContext = inject(UserContextService);
   private readonly dialog = viewChild.required<ElementRef<HTMLElement>>('dialog');
@@ -41,8 +43,22 @@ export class BookSessionModalComponent implements AfterViewInit {
   readonly dailyLimitReached = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
+  // Subject and details state
+  readonly selectedSubjectType = signal<string>('__custom__');
+  readonly customSubject = signal<string>('');
+  readonly notes = signal<string>('');
+
   constructor() {
     restoreFocusOnDestroy();
+  }
+
+  ngOnInit(): void {
+    const subjects = this.tutor().subjects;
+    if (subjects && subjects.length > 0) {
+      this.selectedSubjectType.set(subjects[0]);
+    } else {
+      this.selectedSubjectType.set('__custom__');
+    }
   }
 
   ngAfterViewInit(): void {
@@ -65,6 +81,10 @@ export class BookSessionModalComponent implements AfterViewInit {
       return;
     }
 
+    const isCustom = this.selectedSubjectType() === '__custom__' || !this.tutor().subjects?.length;
+    const finalSubject = (isCustom ? this.customSubject() : this.selectedSubjectType()).trim();
+    const finalNotes = this.notes().trim();
+
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
 
@@ -72,7 +92,9 @@ export class BookSessionModalComponent implements AfterViewInit {
       .bookSession(this.userContext.studentId(), {
         tutorId: this.tutor().id,
         startTime: this.slot().start,
-        endTime: this.slot().end
+        endTime: this.slot().end,
+        subject: finalSubject || undefined,
+        notes: finalNotes || undefined
       })
       .subscribe({
         next: session => this.booked.emit(session),

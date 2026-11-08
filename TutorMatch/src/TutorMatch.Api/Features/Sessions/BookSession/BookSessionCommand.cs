@@ -1,4 +1,4 @@
-﻿using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
 
 namespace TutorMatch.Api.Features.Sessions.BookSession;
@@ -9,5 +9,7 @@ public record BookSessionCommand(
     Guid TutorId,
     Guid StudentId,
     DateTime StartTime,
-    DateTime EndTime
+    DateTime EndTime,
+    string? Subject = null,
+    string? Notes = null
 ) : ICommand<Result<BookSessionResponse>>;

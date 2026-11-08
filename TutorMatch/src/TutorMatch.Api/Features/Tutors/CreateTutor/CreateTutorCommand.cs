@@ -12,5 +12,6 @@ public record CreateTutorCommand(
     string Bio,
     decimal HourlyRate,
     List<Guid>? SubjectIds = null,
-    List<DateRangeDto>? Availability = null
+    List<DateRangeDto>? Availability = null,
+    List<string>? Subjects = null
 ) : ICommand<Result<CreateTutorResponse>>;

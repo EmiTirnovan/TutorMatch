@@ -11,4 +11,5 @@ public record GetTutorByIdResponse(
     string Bio,
     decimal HourlyRate,
     List<Guid> SubjectIds,
-    List<DateRangeDto> Availability);
+    List<DateRangeDto> Availability,
+    List<string>? Subjects = null);

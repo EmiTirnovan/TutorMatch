@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
@@ -26,7 +26,8 @@ public static class CreateTutorEndpoint
             request.Bio,
             request.HourlyRate,
             request.SubjectIds,
-            request.Availability);
+            request.Availability,
+            request.Subjects);
 
         var result = await handler.HandleAsync(command, cancellationToken);
 

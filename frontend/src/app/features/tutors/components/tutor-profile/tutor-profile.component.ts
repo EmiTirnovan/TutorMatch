@@ -1,5 +1,6 @@
 import { Component, ElementRef, Injector, OnInit, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TutorService } from '../../../../core/services/tutor.service';
 import { SessionService } from '../../../../core/services/session.service';
@@ -18,6 +19,7 @@ const DEMO_TUTOR_ID = 'demo-tutor-001';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterLink,
     SlotPickerComponent,
     BookSessionModalComponent,
@@ -52,6 +54,16 @@ export class TutorProfileComponent implements OnInit {
   readonly isBookingOpen = signal(false);
   readonly hasConflict = signal(false);
   readonly successMessage = signal<string | null>(null);
+
+  // Profile edit modal state
+  readonly isEditProfileOpen = signal(false);
+  readonly isSavingProfile = signal(false);
+  readonly editErrorMessage = signal<string | null>(null);
+  readonly editName = signal('');
+  readonly editBio = signal('');
+  readonly editHourlyRate = signal<number>(0);
+  readonly editSubjects = signal<string[]>([]);
+  newEditSubjectInput = '';
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -120,8 +132,106 @@ export class TutorProfileComponent implements OnInit {
     this.isBookingOpen.set(false);
     this.selectedSlot.set(null);
     this.successMessage.set(null);
-    // The button that opened the dialog goes away with the reload, so keyboard users restart from the slots section.
     afterNextRender(() => this.slotsHeading()?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  openEditProfile(): void {
+    const t = this.tutor();
+    if (!t) return;
+    this.editName.set(t.name);
+    this.editBio.set(t.bio);
+    this.editHourlyRate.set(t.hourlyRate);
+    this.editSubjects.set(t.subjects ? [...t.subjects] : []);
+    this.newEditSubjectInput = '';
+    this.editErrorMessage.set(null);
+    this.isEditProfileOpen.set(true);
+  }
+
+  closeEditProfile(): void {
+    this.isEditProfileOpen.set(false);
+    this.editErrorMessage.set(null);
+  }
+
+  addEditSubject(): void {
+    const trimmed = this.newEditSubjectInput.trim();
+    if (!trimmed) return;
+    if (!this.editSubjects().some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+      this.editSubjects.update(list => [...list, trimmed]);
+    }
+    this.newEditSubjectInput = '';
+  }
+
+  removeEditSubject(index: number): void {
+    this.editSubjects.update(list => list.filter((_, i) => i !== index));
+  }
+
+  saveProfile(): void {
+    const t = this.tutor();
+    if (!t) return;
+
+    const name = this.editName().trim();
+    const bio = this.editBio().trim();
+    const hourlyRate = Number(this.editHourlyRate());
+    const subjects = this.editSubjects();
+
+    if (name.length < 2) {
+      this.editErrorMessage.set('Name must be at least 2 characters.');
+      return;
+    }
+    if (bio.length < 10) {
+      this.editErrorMessage.set('Bio must be at least 10 characters.');
+      return;
+    }
+    if (hourlyRate <= 0) {
+      this.editErrorMessage.set('Hourly rate must be greater than 0.');
+      return;
+    }
+    if (subjects.length === 0) {
+      this.editErrorMessage.set('Please add at least one subject.');
+      return;
+    }
+
+    this.isSavingProfile.set(true);
+    this.editErrorMessage.set(null);
+
+    if (this.isDemoTutor()) {
+      this.tutor.update(curr => curr ? {
+        ...curr,
+        name,
+        bio,
+        hourlyRate,
+        subjects
+      } : null);
+      this.isSavingProfile.set(false);
+      this.isEditProfileOpen.set(false);
+      this.successMessage.set('Profile and subjects updated successfully (demo mode).');
+      return;
+    }
+
+    this.tutorService.updateTutor(t.id, {
+      name,
+      bio,
+      hourlyRate,
+      subjects
+    }).subscribe({
+      next: () => {
+        this.tutor.update(curr => curr ? {
+          ...curr,
+          name,
+          bio,
+          hourlyRate,
+          subjects
+        } : null);
+        this.isSavingProfile.set(false);
+        this.isEditProfileOpen.set(false);
+        this.successMessage.set('Profile and subjects updated successfully.');
+      },
+      error: (err: { error?: { detail?: string; title?: string } }) => {
+        this.isSavingProfile.set(false);
+        const detail = err?.error?.detail || err?.error?.title || 'Failed to update profile.';
+        this.editErrorMessage.set(detail);
+      }
+    });
   }
 
   loadDemoTutor(): void {

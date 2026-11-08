@@ -1,4 +1,3 @@
-﻿using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
@@ -18,9 +17,14 @@ namespace TutorMatch.Tests.Features.Sessions.BookSession;
 
 public class BookSessionEndpointTests : IDisposable
 {
+    private static readonly Guid StaticTutorId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid StaticStudentId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid StaticStudent2Id = Guid.Parse("33333333-3333-3333-3333-333333333333");
+    private static readonly Guid StaticMissingTutorId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+
+    private readonly SqliteConnection _connection;
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
-    private readonly DbConnection _connection;
 
     public BookSessionEndpointTests()
     {
@@ -54,8 +58,8 @@ public class BookSessionEndpointTests : IDisposable
     [Fact]
     public async Task Given_ValidRequest_When_BookingSession_Then_ReturnsCreatedAndSavesToDb()
     {
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticTutorId;
+        var studentId = StaticStudentId;
         var startTime = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
         var endTime = startTime.AddHours(2);
 
@@ -90,11 +94,48 @@ public class BookSessionEndpointTests : IDisposable
     }
 
     [Fact]
+    public async Task Given_ValidRequestWithSubjectAndNotes_When_BookingSessionViaV2Endpoint_Then_ReturnsCreatedAndSavesSubjectAndNotes()
+    {
+        var tutorId = Guid.Parse("aaaaaaaa-1111-2222-3333-444444444444");
+        var studentId = Guid.Parse("bbbbbbbb-1111-2222-3333-444444444444");
+        var startTime = DateTime.UtcNow.Date.AddDays(1).AddHours(12);
+        var endTime = startTime.AddHours(1);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+            var tutor = new Tutor("Tutor V2", "tutor_v2@test.com", "Bio", 95, tutorId);
+            tutor.AddAvailability(new DateRange(startTime.AddHours(-1), endTime.AddHours(1)));
+            db.Tutors.Add(tutor);
+            var student = new Student(studentId, "Student V2", "student_v2@test.com");
+            db.Students.Add(student);
+            await db.SaveChangesAsync();
+        }
+
+        var request = new BookSessionRequest(tutorId, startTime, endTime, "Programare Functionala", "Pregatire laborator Haskell");
+
+        var response = await BookAsync(studentId, request, "/api/v2/sessions");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.Content.ReadFromJsonAsync<BookSessionResponse>();
+        result.Should().NotBeNull();
+        result!.Subject.Should().Be("Programare Functionala");
+        result.Notes.Should().Be("Pregatire laborator Haskell");
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+        var sessionInDb = await verifyDb.Sessions.FirstOrDefaultAsync(s => s.Id == result.Id);
+        sessionInDb.Should().NotBeNull();
+        sessionInDb!.Subject.Should().Be("Programare Functionala");
+        sessionInDb.Notes.Should().Be("Pregatire laborator Haskell");
+    }
+
+    [Fact]
     public async Task Given_DuplicateBookingOnSameSlot_When_BookingSecondTime_Then_ReturnsConflict()
     {
-        var tutorId = Guid.NewGuid();
-        var student1Id = Guid.NewGuid();
-        var student2Id = Guid.NewGuid();
+        var tutorId = Guid.Parse("12345678-aaaa-bbbb-cccc-111111111111");
+        var student1Id = Guid.Parse("12345678-aaaa-bbbb-cccc-222222222222");
+        var student2Id = Guid.Parse("12345678-aaaa-bbbb-cccc-333333333333");
         var startTime = DateTime.UtcNow.Date.AddDays(1).AddHours(14);
         var endTime = startTime.AddHours(1);
 
@@ -127,8 +168,8 @@ public class BookSessionEndpointTests : IDisposable
     [Fact]
     public async Task Given_RequestOutsideTutorAvailability_When_BookingSession_Then_ReturnsBadRequest()
     {
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = Guid.Parse("87654321-aaaa-bbbb-cccc-111111111111");
+        var studentId = Guid.Parse("87654321-aaaa-bbbb-cccc-222222222222");
         var availableStart = DateTime.UtcNow.Date.AddDays(1).AddHours(9);
         var requestedStart = DateTime.UtcNow.Date.AddDays(1).AddHours(15);
         var requestedEnd = requestedStart.AddHours(1);
@@ -156,8 +197,8 @@ public class BookSessionEndpointTests : IDisposable
     [Fact]
     public async Task Given_NonExistentTutor_When_BookingSession_Then_ReturnsNotFound()
     {
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticMissingTutorId;
+        var studentId = StaticStudentId;
         var startTime = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
         var endTime = startTime.AddHours(1);
 
@@ -181,8 +222,8 @@ public class BookSessionEndpointTests : IDisposable
     [Fact]
     public async Task Given_StudentWithTwoSessionsThatDay_When_BookingThirdSession_Then_ReturnsBadRequestWithDailyLimitCode()
     {
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = Guid.Parse("99999999-aaaa-bbbb-cccc-111111111111");
+        var studentId = Guid.Parse("99999999-aaaa-bbbb-cccc-222222222222");
         var day = DateTime.UtcNow.Date.AddDays(1);
         var requestedStart = day.AddHours(14);
 
@@ -193,8 +234,8 @@ public class BookSessionEndpointTests : IDisposable
             tutor.AddAvailability(new DateRange(day.AddHours(8), day.AddHours(18)));
             db.Tutors.Add(tutor);
             db.Students.Add(new Student(studentId, "Student Limit", "student_limit@test.com"));
-            db.Sessions.Add(Session.Create(tutorId, studentId, new DateRange(day.AddHours(9), day.AddHours(10))));
-            db.Sessions.Add(Session.Create(tutorId, studentId, new DateRange(day.AddHours(11), day.AddHours(12))));
+            db.Sessions.Add(new Session(Guid.Parse("99999999-aaaa-bbbb-cccc-333333333333"), tutorId, studentId, new DateRange(day.AddHours(9), day.AddHours(10))));
+            db.Sessions.Add(new Session(Guid.Parse("99999999-aaaa-bbbb-cccc-444444444444"), tutorId, studentId, new DateRange(day.AddHours(11), day.AddHours(12))));
             await db.SaveChangesAsync();
         }
 
@@ -218,7 +259,7 @@ public class BookSessionEndpointTests : IDisposable
     [Fact]
     public async Task Given_EmptyTutorId_When_BookingSession_Then_ReturnsBadRequestWithValidationCode()
     {
-        var studentId = Guid.NewGuid();
+        var studentId = StaticStudentId;
         var startTime = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
         var request = new BookSessionRequest(Guid.Empty, startTime, startTime.AddHours(1));
 
@@ -238,16 +279,16 @@ public class BookSessionEndpointTests : IDisposable
     public async Task Given_MissingStudentHeader_When_BookingSession_Then_ReturnsBadRequest()
     {
         var startTime = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
-        var request = new BookSessionRequest(Guid.NewGuid(), startTime, startTime.AddHours(1));
+        var request = new BookSessionRequest(StaticTutorId, startTime, startTime.AddHours(1));
 
         var response = await _client.PostAsJsonAsync("/api/sessions", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    private Task<HttpResponseMessage> BookAsync(Guid studentId, BookSessionRequest request)
+    private Task<HttpResponseMessage> BookAsync(Guid studentId, BookSessionRequest request, string url = "/api/sessions")
     {
-        var message = new HttpRequestMessage(HttpMethod.Post, "/api/sessions") { Content = JsonContent.Create(request) };
+        var message = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(request) };
         message.Headers.Add("X-Student-Id", studentId.ToString());
         return _client.SendAsync(message);
     }

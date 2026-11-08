@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { AvailabilityEditorComponent } from '../../../../../src/app/features/tutors/components/availability-editor/availability-editor.component';
+import { AvailabilityEditorComponent, parseUtc } from '../../../../../src/app/features/tutors/components/availability-editor/availability-editor.component';
 import { TutorService } from '../../../../../src/app/core/services/tutor.service';
 import { TutorDetailsResponse } from '../../../../../src/app/core/models/tutor.models';
 
@@ -54,6 +54,16 @@ describe('AvailabilityEditorComponent', () => {
     expect(error).toContain('Slot overlaps with existing interval');
   });
 
+  it('Given_IntervalWithoutZSuffix_When_ValidatingNewSlot_Then_ParsesCorrectlyAndDetectsOverlap', () => {
+    // Existing slot loaded without Z from SQLite
+    component.slots.set([
+      { start: '2026-11-04T10:00:00', end: '2026-11-04T12:00:00' }
+    ]);
+
+    const error = component.validateNewSlot('2026-11-04T10:30:00Z', '2026-11-04T11:30:00Z');
+    expect(error).toContain('Slot overlaps with existing interval');
+  });
+
   it('Given_ValidNonOverlappingInterval_When_ValidatingNewSlot_Then_Passes', () => {
     component.slots.set([
       { start: '2026-11-04T10:00:00Z', end: '2026-11-04T12:00:00Z' }
@@ -64,7 +74,7 @@ describe('AvailabilityEditorComponent', () => {
     expect(error).toBeNull();
   });
 
-  it('Given_ValidInputs_When_AddingSlot_Then_SlotIsAddedAndSorted', () => {
+  it('Given_ValidInputs_When_AddingSlot_Then_SlotIsAddedAndSortedAndSetsUnsavedChanges', () => {
     component.slots.set([]);
     component.newStart = '2026-11-05T14:00';
     component.newEnd = '2026-11-05T16:00';
@@ -73,9 +83,10 @@ describe('AvailabilityEditorComponent', () => {
 
     expect(component.slots().length).toBe(1);
     expect(component.validationError()).toBeNull();
+    expect(component.hasUnsavedChanges()).toBe(true);
   });
 
-  it('Given_ExistingSlots_When_RemovingSlot_Then_SlotIsDeleted', () => {
+  it('Given_ExistingSlots_When_RemovingSlot_Then_SlotIsDeletedAndSetsUnsavedChanges', () => {
     component.slots.set([
       { start: '2026-11-04T10:00:00Z', end: '2026-11-04T12:00:00Z' },
       { start: '2026-11-04T14:00:00Z', end: '2026-11-04T16:00:00Z' }
@@ -85,13 +96,15 @@ describe('AvailabilityEditorComponent', () => {
 
     expect(component.slots().length).toBe(1);
     expect(component.slots()[0].start).toBe('2026-11-04T14:00:00Z');
+    expect(component.hasUnsavedChanges()).toBe(true);
   });
 
-  it('Given_TutorId_When_SavingAvailability_Then_CallsTutorService', () => {
+  it('Given_TutorId_When_SavingAvailability_Then_CallsTutorServiceAndClearsUnsavedChanges', () => {
     component.tutorId = 'tutor-123';
     component.slots.set([
       { start: '2026-11-04T10:00:00Z', end: '2026-11-04T12:00:00Z' }
     ]);
+    component.hasUnsavedChanges.set(true);
 
     const updateSpy = vi.spyOn(tutorService, 'updateAvailability').mockReturnValue(of(undefined as unknown as void));
 
@@ -101,6 +114,32 @@ describe('AvailabilityEditorComponent', () => {
       availability: component.slots()
     });
     expect(component.successMessage()).toContain('updated and saved successfully');
+    expect(component.hasUnsavedChanges()).toBe(false);
+  });
+
+  it('Given_ServerOverlapError_When_SavingAvailability_Then_FormatsDescriptionNicelyInErrorMessage', () => {
+    component.tutorId = 'tutor-123';
+    component.slots.set([
+      { start: '2026-11-04T10:00:00Z', end: '2026-11-04T12:00:00Z' }
+    ]);
+
+    const errorBody = {
+      code: 'Tutor.Validation',
+      description: 'Intervalele [2026-11-04 10:00 - 2026-11-04 12:00) si [2026-11-04 11:00 - 2026-11-04 13:00) se suprapun.'
+    };
+    vi.spyOn(tutorService, 'updateAvailability').mockReturnValue(throwError(() => ({ error: errorBody })));
+
+    component.saveAvailability();
+
+    expect(component.isSaving()).toBe(false);
+    expect(component.errorMessage()).toContain('Overlapping intervals detected on server');
+    expect(component.errorMessage()).toContain('se suprapun');
+  });
+
+  it('Given_StringWithAndWithoutZ_When_CallingParseUtc_Then_ParsesCorrectly', () => {
+    const withZ = parseUtc('2026-11-04T10:00:00Z');
+    const withoutZ = parseUtc('2026-11-04T10:00:00');
+    expect(withZ).toBe(withoutZ);
   });
 
   describe('Student Role Restrictions', () => {

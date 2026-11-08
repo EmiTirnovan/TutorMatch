@@ -97,10 +97,11 @@ describe('App navigation', () => {
     expect(discover?.classList.contains('active')).toBe(false);
   });
 
-  it('Given_RoleToggle_When_Clicking_Then_SwitchesBetweenTutorAndStudentView', () => {
+  it('Given_Header_When_Rendering_Then_ShowsAdminTestModeBadge', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.admin-badge')?.textContent).toContain('Admin / Test Mode');
     expect(compiled.querySelector('.role-indicator')?.textContent).toContain('Student View');
 
     (compiled.querySelector('.user-control button') as HTMLButtonElement).click();

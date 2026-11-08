@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using FluentAssertions;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Common;
@@ -55,6 +55,8 @@ public class BookSessionConcurrencyTests
 
         public bool Delete(Guid id) =>
             _tutors.TryRemove(id, out _);
+
+        public Subject GetOrCreateSubject(string name) => new Subject(name);
     }
 
     private sealed class ThreadSafeStudentRepository : IStudentRepository

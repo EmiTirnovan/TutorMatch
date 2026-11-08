@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
-  SEARCH_DEBOUNCE_MS,
   SEARCH_PLACEHOLDER,
   SemanticSearchBarComponent
 } from '../../../../../src/app/features/tutors/components/semantic-search-bar/semantic-search-bar.component';
@@ -73,41 +72,25 @@ describe('SemanticSearchBarComponent', () => {
     expect(button().disabled).toBe(true);
   });
 
-  it('Given_TypedQuery_When_PausingLongerThanDebounce_Then_EmitsOnce', () => {
+  it('Given_TypedQuery_When_TypingAndPausing_Then_DoesNotEmitAutomatically', () => {
     type('baze de date');
 
-    vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS - 1);
+    vi.advanceTimersByTime(2000);
     expect(emitted).toEqual([]);
 
-    vi.advanceTimersByTime(1);
+    submit();
     expect(emitted).toEqual(['baze de date']);
   });
 
-  it('Given_RapidTyping_When_Debouncing_Then_EmitsOnlyLatestValue', () => {
+  it('Given_RapidTyping_When_Typing_Then_DoesNotEmitUntilExplicitSubmit', () => {
     type('poi');
-    vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS - 100);
+    vi.advanceTimersByTime(500);
     type('pointeri');
-
-    vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
-
-    expect(emitted).toEqual(['pointeri']);
-  });
-
-  it('Given_TooShortQuery_When_Debouncing_Then_DoesNotEmit', () => {
-    type('ab');
-
-    vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
+    vi.advanceTimersByTime(500);
 
     expect(emitted).toEqual([]);
-  });
 
-  it('Given_SameQueryTwice_When_Debouncing_Then_EmitsOnlyOnce', () => {
-    type('pointeri');
-    vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
-
-    type('pointeri ');
-    vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
-
+    submit();
     expect(emitted).toEqual(['pointeri']);
   });
 
@@ -121,7 +104,7 @@ describe('SemanticSearchBarComponent', () => {
     fixture.componentInstance.query.set('Pointeri în C');
     fixture.detectChanges();
 
-    vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
+    vi.advanceTimersByTime(1000);
 
     expect(input().value).toBe('Pointeri în C');
     expect(emitted).toEqual([]);
@@ -160,14 +143,5 @@ describe('SemanticSearchBarComponent', () => {
     expect(input().disabled).toBe(false);
     expect(button().disabled).toBe(false);
     expect(element().querySelector('.spinner')).toBeNull();
-  });
-
-  it('Given_PendingDebounce_When_ComponentIsDestroyed_Then_DoesNotEmit', () => {
-    type('pointeri');
-
-    fixture.destroy();
-    vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
-
-    expect(emitted).toEqual([]);
   });
 });

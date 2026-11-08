@@ -11,8 +11,8 @@
 
 .modal-dialog {
   width: 100%;
-  max-width: 440px;
-  max-height: 100%;
+  max-width: 460px;
+  max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
 }
@@ -29,7 +29,9 @@
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: 0.5rem 1rem;
-  margin-top: 1.25rem;
+  margin-top: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--slate-100);
   font-size: 0.9375rem;
 }
 
@@ -39,6 +41,29 @@
 
 .modal-summary dd {
   font-weight: 500;
+}
+
+.booking-form-section {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--slate-700);
+  margin-bottom: 0.375rem;
+}
+
+.custom-subject-input {
+  margin-top: 0.5rem;
 }
 
 .modal-actions {

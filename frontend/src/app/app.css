@@ -88,15 +88,27 @@
   line-height: 1.25;
 }
 
+.role-indicator {
+  font-size: 0.8125rem;
+  color: var(--slate-500);
+}
+
 .user-name {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--primary-700);
 }
 
-.role-indicator {
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.8125rem;
-  color: var(--slate-500);
+  padding: 0.35rem 0.65rem;
+  background-color: var(--slate-100);
+  color: var(--slate-600);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
 }
 
 .btn-sm {
@@ -138,7 +150,8 @@
     display: none;
   }
 
-  .role-indicator {
-    display: none;
+  .admin-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
   }
 }

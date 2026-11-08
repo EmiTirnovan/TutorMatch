@@ -36,6 +36,18 @@ public class CreateTutorCommandHandler : ICommandHandler<CreateTutorCommand, Res
                 }
             }
 
+            if (command.Subjects is not null)
+            {
+                foreach (var subjectName in command.Subjects)
+                {
+                    if (!string.IsNullOrWhiteSpace(subjectName))
+                    {
+                        var subject = _repository.GetOrCreateSubject(subjectName);
+                        tutor.AddSubject(subject);
+                    }
+                }
+            }
+
             if (command.Availability is not null)
             {
                 foreach (var slot in command.Availability)

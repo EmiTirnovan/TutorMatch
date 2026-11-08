@@ -29,10 +29,16 @@ public class SessionConfiguration : IEntityTypeConfiguration<Session>
         {
             intervalBuilder.Property(d => d.Start)
                 .HasColumnName("StartTime")
+                .HasConversion(
+                    v => v.ToUniversalTime(),
+                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
                 .IsRequired();
 
             intervalBuilder.Property(d => d.End)
                 .HasColumnName("EndTime")
+                .HasConversion(
+                    v => v.ToUniversalTime(),
+                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
                 .IsRequired();
         });
 
@@ -46,6 +52,14 @@ public class SessionConfiguration : IEntityTypeConfiguration<Session>
             .HasConversion<string>()
             .HasMaxLength(50)
             .IsRequired();
+
+        builder.Property(s => s.Subject)
+            .HasMaxLength(200)
+            .IsRequired(false);
+
+        builder.Property(s => s.Notes)
+            .HasMaxLength(1000)
+            .IsRequired(false);
 
         // Concurrency token for optimistic concurrency control
         builder.Property(s => s.Version)

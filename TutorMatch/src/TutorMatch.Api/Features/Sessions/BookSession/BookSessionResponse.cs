@@ -1,4 +1,4 @@
-﻿using TutorMatch.Api.Domain.Sessions;
+using TutorMatch.Api.Domain.Sessions;
 
 namespace TutorMatch.Api.Features.Sessions.BookSession;
 
@@ -11,4 +11,6 @@ public record BookSessionResponse(
     DateTime StartTime,
     DateTime EndTime,
     SessionStatus Status,
-    int Version);
+    int Version,
+    string? Subject = null,
+    string? Notes = null);

@@ -137,6 +137,21 @@ public class Tutor
         return _tutorSubjects.Remove(item);
     }
 
+    public void ClearSubjects()
+    {
+        _tutorSubjects.Clear();
+    }
+
+    public void UpdateSubjects(IEnumerable<Subject> subjects)
+    {
+        ArgumentNullException.ThrowIfNull(subjects);
+        _tutorSubjects.Clear();
+        foreach (var subject in subjects)
+        {
+            AddSubject(subject);
+        }
+    }
+
     // Appends a domain event to the internal collection
     public void AddDomainEvent(object domainEvent)
     {

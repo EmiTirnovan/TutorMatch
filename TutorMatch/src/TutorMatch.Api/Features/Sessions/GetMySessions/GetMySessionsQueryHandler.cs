@@ -62,6 +62,8 @@ public class GetMySessionsQueryHandler : IQueryHandler<GetMySessionsQuery, Resul
                     s.EndTime,
                     s.Status,
                     s.Version,
+                    s.Subject,
+                    s.Notes,
                     tutorName,
                     studentName);
             })
@@ -71,4 +73,3 @@ public class GetMySessionsQueryHandler : IQueryHandler<GetMySessionsQuery, Resul
         return Task.FromResult(Result<GetMySessionsResponse>.Success(response));
     }
 }
-

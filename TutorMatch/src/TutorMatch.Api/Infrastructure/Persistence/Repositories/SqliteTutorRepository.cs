@@ -37,6 +37,7 @@ public class SqliteTutorRepository : ITutorRepository
         return _context.Tutors
             .Include(t => t.Availability)
             .Include(t => t.TutorSubjects)
+                .ThenInclude(ts => ts.Subject)
             .AsSplitQuery()
             .FirstOrDefault(t => t.Id == id);
     }
@@ -46,6 +47,7 @@ public class SqliteTutorRepository : ITutorRepository
         return _context.Tutors
             .Include(t => t.Availability)
             .Include(t => t.TutorSubjects)
+                .ThenInclude(ts => ts.Subject)
             .AsSplitQuery()
             .ToList()
             .AsReadOnly();
@@ -61,6 +63,7 @@ public class SqliteTutorRepository : ITutorRepository
             var existing = _context.Tutors
                 .Include(t => t.Availability)
                 .Include(t => t.TutorSubjects)
+                    .ThenInclude(ts => ts.Subject)
                 .FirstOrDefault(t => t.Id == tutor.Id);
 
             if (existing is null)
@@ -70,6 +73,7 @@ public class SqliteTutorRepository : ITutorRepository
 
             existing.UpdateProfile(tutor.Name, tutor.Bio, tutor.HourlyRate);
             existing.UpdateAvailability(tutor.Availability);
+            existing.UpdateSubjects(tutor.TutorSubjects.Select(ts => ts.Subject).Where(s => s is not null));
         }
         else
         {
@@ -94,5 +98,21 @@ public class SqliteTutorRepository : ITutorRepository
         _context.Tutors.Remove(tutor);
         _context.SaveChanges();
         return true;
+    }
+
+    public Subject GetOrCreateSubject(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        var trimmed = name.Trim();
+        var existing = _context.Subjects.FirstOrDefault(s => s.Name.ToLower() == trimmed.ToLower());
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var newSubject = new Subject(trimmed);
+        _context.Subjects.Add(newSubject);
+        _context.SaveChanges();
+        return newSubject;
     }
 }

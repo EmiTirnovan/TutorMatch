@@ -5,6 +5,7 @@ export interface CreateTutorRequest {
   email: string;
   bio: string;
   hourlyRate: number;
+  subjects?: string[];
   subjectIds?: string[];
   availability?: DateRangeDto[];
 }
@@ -21,6 +22,7 @@ export interface UpdateTutorRequest {
   name: string;
   bio: string;
   hourlyRate: number;
+  subjects?: string[];
 }
 
 export interface UpdateAvailabilityRequest {
@@ -33,7 +35,6 @@ export interface TutorDetailsResponse {
   email: string;
   bio: string;
   hourlyRate: number;
-  // Absent on real API responses: GET /api/tutors/{id} returns subjectIds only.
   subjects?: string[];
   availability: DateRangeDto[];
   rating?: number;

@@ -15,6 +15,8 @@ export interface BookSessionRequest {
   tutorId: string;
   startTime: string;
   endTime: string;
+  subject?: string;
+  notes?: string;
 }
 
 export interface CancelSessionRequest {
@@ -33,6 +35,8 @@ export interface SessionResponse {
   endTime: string;
   status: SessionStatus | number | string;
   version: number;
+  subject?: string;
+  notes?: string;
   tutorName?: string;
   studentName?: string;
 }

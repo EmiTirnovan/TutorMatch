@@ -37,7 +37,24 @@
         <line x1="12" y1="8" x2="12" y2="12"/>
         <line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
-      <div>{{ errorMessage() }}</div>
+      <div>
+        <strong>Save Failed:</strong>
+        <p style="margin: 0.25rem 0 0 0;">{{ errorMessage() }}</p>
+      </div>
+    </div>
+  }
+
+  @if (hasUnsavedChanges()) {
+    <div class="alert alert-warning" role="status">
+      <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>
+        <strong>Unsaved changes:</strong>
+        <span> You have modified your availability slots. Click <em>Save Availability</em> to apply and publish them to students.</span>
+      </div>
     </div>
   }
 
@@ -47,7 +64,17 @@
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
         <polyline points="22 4 12 14.01 9 11.01"/>
       </svg>
-      <div>{{ successMessage() }}</div>
+      <div>
+        <strong>Saved Successfully:</strong>
+        <span> {{ successMessage() }}</span>
+        @if (!isEmbedded && tutorId) {
+          <div style="margin-top: 0.6rem;">
+            <a [routerLink]="['/tutors', tutorId]" class="btn btn-secondary btn-sm">
+              &larr; Return to Profile to View & Book Slots
+            </a>
+          </div>
+        }
+      </div>
     </div>
   }
 
@@ -186,6 +213,22 @@
             </div>
           }
         </div>
+
+        @if (!isEmbedded && tutorId) {
+          <div class="slots-footer-actions" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <a [routerLink]="['/tutors', tutorId]" class="btn btn-secondary">
+              Back to Profile
+            </a>
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="saveAvailability()"
+              [disabled]="isSaving() || isLoading()"
+            >
+              {{ isSaving() ? 'Saving Changes...' : 'Save Availability' }}
+            </button>
+          </div>
+        }
       }
     </div>
   </div>

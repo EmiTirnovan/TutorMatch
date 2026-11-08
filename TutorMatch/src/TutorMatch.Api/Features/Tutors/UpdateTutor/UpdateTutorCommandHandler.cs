@@ -27,6 +27,15 @@ public class UpdateTutorCommandHandler : ICommandHandler<UpdateTutorCommand>
         {
             tutor.UpdateProfile(command.Name, command.Bio, command.HourlyRate);
 
+            if (command.Subjects is not null)
+            {
+                var subjects = command.Subjects
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Select(s => _repository.GetOrCreateSubject(s))
+                    .ToList();
+                tutor.UpdateSubjects(subjects);
+            }
+
             // Record domain event on aggregate prior to persistence
             var notification = tutor.CreateTutorSavedNotification();
             tutor.AddDomainEvent(notification);

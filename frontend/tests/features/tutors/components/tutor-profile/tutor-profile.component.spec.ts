@@ -37,7 +37,7 @@ describe('TutorProfileComponent', () => {
 
     fixture = TestBed.createComponent(TutorProfileComponent);
     component = fixture.componentInstance;
-    tutorService = TestBed.inject(TutorService);
+    tutorService = TestBed.inject(TestBed.inject(TutorService) ? TutorService : TutorService);
   });
 
   it('should create the profile component', () => {
@@ -96,7 +96,7 @@ describe('TutorProfileComponent', () => {
       fixture.detectChanges();
       query('app-book-session-modal .btn-accent').click();
       TestBed.inject(HttpTestingController)
-        .expectOne('/api/sessions')
+        .expectOne('/api/v2/sessions')
         .flush(status === 201 ? { id: 'session-1' } : {}, { status, statusText: 'Status' });
       fixture.detectChanges();
     };
@@ -137,7 +137,7 @@ describe('TutorProfileComponent', () => {
       fixture.detectChanges();
       query('app-book-session-modal .btn-accent').click();
       TestBed.inject(HttpTestingController)
-        .expectOne('/api/sessions')
+        .expectOne('/api/v2/sessions')
         .flush({ code: 'Session.DailyLimit', description: 'limit' }, { status: 400, statusText: 'Bad Request' });
       fixture.detectChanges();
 
@@ -207,6 +207,66 @@ describe('TutorProfileComponent', () => {
       fixture.detectChanges();
 
       expect(query('.slot-button')).toBeTruthy();
+    });
+  });
+
+  describe('editing profile & subjects', () => {
+    beforeEach(() => {
+      component.tutor.set({
+        id: 'tutor-xyz',
+        name: 'Maria Dragomir',
+        email: 'maria@test.ro',
+        bio: 'Initial bio for mathematics tutor.',
+        hourlyRate: 75,
+        subjects: ['Discrete Math', 'Algebra'],
+        availability: []
+      });
+      component.isLoading.set(false);
+      fixture.detectChanges();
+    });
+
+    it('Given_OpenEditProfile_When_Triggered_Then_PopulatesEditFormAndOpensModal', () => {
+      component.openEditProfile();
+
+      expect(component.isEditProfileOpen()).toBe(true);
+      expect(component.editName()).toBe('Maria Dragomir');
+      expect(component.editBio()).toBe('Initial bio for mathematics tutor.');
+      expect(component.editHourlyRate()).toBe(75);
+      expect(component.editSubjects()).toEqual(['Discrete Math', 'Algebra']);
+    });
+
+    it('Given_EditingSubjects_When_AddingAndRemovingSubject_Then_UpdatesList', () => {
+      component.openEditProfile();
+      component.newEditSubjectInput = 'Calculus';
+      component.addEditSubject();
+
+      expect(component.editSubjects()).toEqual(['Discrete Math', 'Algebra', 'Calculus']);
+      expect(component.newEditSubjectInput).toBe('');
+
+      component.removeEditSubject(1); // remove Algebra
+      expect(component.editSubjects()).toEqual(['Discrete Math', 'Calculus']);
+    });
+
+    it('Given_ValidEditForm_When_Saved_Then_CallsUpdateTutorAndUpdatesState', () => {
+      component.openEditProfile();
+      component.editName.set('Maria Pop');
+      component.editBio.set('Updated bio with sufficient length.');
+      component.editHourlyRate.set(90);
+      component.editSubjects.set(['Geometrie']);
+
+      const updateSpy = vi.spyOn(tutorService, 'updateTutor').mockReturnValue(of(undefined as unknown as void));
+
+      component.saveProfile();
+
+      expect(updateSpy).toHaveBeenCalledWith('tutor-xyz', {
+        name: 'Maria Pop',
+        bio: 'Updated bio with sufficient length.',
+        hourlyRate: 90,
+        subjects: ['Geometrie']
+      });
+      expect(component.isEditProfileOpen()).toBe(false);
+      expect(component.tutor()?.name).toBe('Maria Pop');
+      expect(component.tutor()?.subjects).toEqual(['Geometrie']);
     });
   });
 

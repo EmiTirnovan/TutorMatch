@@ -1,10 +1,8 @@
 import { ChangeDetectionStrategy, Component, effect, input, model, output } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs';
 
 export const SEARCH_PLACEHOLDER = 'Descrie problema la care ai nevoie de ajutor...';
-export const SEARCH_DEBOUNCE_MS = 400;
 export const MIN_QUERY_LENGTH = 3;
 
 @Component({
@@ -20,7 +18,7 @@ export class SemanticSearchBarComponent {
   readonly query = model('');
   readonly loading = input(false);
 
-  /** Emitted on Enter / button click, and after the user pauses typing a query of at least 3 characters. */
+  /** Emitted exclusively on Enter / button click (form submission). */
   readonly searchRequested = output<string>();
 
   readonly placeholder = SEARCH_PLACEHOLDER;
@@ -43,16 +41,6 @@ export class SemanticSearchBarComponent {
     });
 
     this.control.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => this.query.set(value));
-
-    this.control.valueChanges
-      .pipe(
-        debounceTime(SEARCH_DEBOUNCE_MS),
-        map((value) => value.trim()),
-        filter((value) => value.length >= MIN_QUERY_LENGTH),
-        distinctUntilChanged(),
-        takeUntilDestroyed()
-      )
-      .subscribe((value) => this.searchRequested.emit(value));
   }
 
   onSubmit(event: Event): void {

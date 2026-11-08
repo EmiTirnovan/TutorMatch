@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Common;
@@ -12,6 +12,14 @@ namespace TutorMatch.Tests.Features.Sessions.BookSession;
 
 public class BookSessionCommandHandlerTests
 {
+    private static readonly Guid StaticTutorId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid StaticStudentId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid StaticOtherStudentId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+    private static readonly Guid StaticNonExistentTutorId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+    private static readonly Guid StaticNonExistentStudentId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+    private static readonly Guid StaticPastSession1Id = Guid.Parse("66666666-6666-6666-6666-666666666666");
+    private static readonly Guid StaticPastSession2Id = Guid.Parse("77777777-7777-7777-7777-777777777777");
+
     private sealed class FakeSessionRepository : ISessionRepository
     {
         public Action<Session>? AddBehavior { get; set; }
@@ -54,18 +62,16 @@ public class BookSessionCommandHandlerTests
 
         public bool Delete(Guid id) =>
             _tutors.Remove(id);
+
+        public Subject GetOrCreateSubject(string name) => new Subject(name);
     }
 
     private sealed class FakeStudentRepository : IStudentRepository
     {
-        public Action<Student>? AddBehavior { get; set; }
         private readonly Dictionary<Guid, Student> _students = new();
 
-        public void Add(Student student)
-        {
-            AddBehavior?.Invoke(student);
+        public void Add(Student student) =>
             _students[student.Id] = student;
-        }
 
         public Student? GetById(Guid id) =>
             _students.TryGetValue(id, out var student) ? student : null;
@@ -87,8 +93,8 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticTutorId;
+        var studentId = StaticStudentId;
         var start = new DateTime(2026, 11, 2, 10, 0, 0);
         var end = new DateTime(2026, 11, 2, 11, 0, 0);
         var tutor = new Tutor("Tutor Name", "tutor@test.com", "Bio", 50, tutorId);
@@ -110,13 +116,43 @@ public class BookSessionCommandHandlerTests
     }
 
     [Fact]
+    public async Task Given_validCommandWithSubjectAndNotes_When_handlingBookSession_Then_returnsSessionWithSubjectAndNotes()
+    {
+        var sessionRepo = new FakeSessionRepository();
+        var tutorRepo = new FakeTutorRepository();
+        var studentRepo = new FakeStudentRepository();
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var tutorId = StaticTutorId;
+        var studentId = StaticStudentId;
+        var start = new DateTime(2026, 11, 2, 10, 0, 0);
+        var end = new DateTime(2026, 11, 2, 11, 0, 0);
+        var tutor = new Tutor("Tutor Name", "tutor@test.com", "Bio", 50, tutorId);
+        tutor.AddAvailability(new DateRange(start, end));
+        tutorRepo.Add(tutor);
+        var student = new Student(studentId, "Student Name", "student@test.com");
+        studentRepo.Add(student);
+        var command = new BookSessionCommand(tutorId, studentId, start, end, "Algoritmi Avansati", "Pregatire examen grafuri si arbori");
+
+        var result = await handler.HandleAsync(command);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Subject.Should().Be("Algoritmi Avansati");
+        result.Value.Notes.Should().Be("Pregatire examen grafuri si arbori");
+
+        var savedSession = sessionRepo.GetById(result.Value.Id);
+        savedSession.Should().NotBeNull();
+        savedSession!.Subject.Should().Be("Algoritmi Avansati");
+        savedSession.Notes.Should().Be("Pregatire examen grafuri si arbori");
+    }
+
+    [Fact]
     public async Task Given_emptyTutorId_When_handlingBookSession_Then_returnsValidationError()
     {
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var command = new BookSessionCommand(Guid.Empty, Guid.NewGuid(), new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 0, 0));
+        var command = new BookSessionCommand(Guid.Empty, StaticStudentId, new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 0, 0));
 
         var result = await handler.HandleAsync(command);
 
@@ -132,7 +168,7 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var command = new BookSessionCommand(Guid.NewGuid(), Guid.Empty, new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 0, 0));
+        var command = new BookSessionCommand(StaticTutorId, Guid.Empty, new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 0, 0));
 
         var result = await handler.HandleAsync(command);
 
@@ -148,7 +184,7 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var id = Guid.NewGuid();
+        var id = StaticTutorId;
         var start = new DateTime(2026, 11, 2, 10, 0, 0);
         var end = new DateTime(2026, 11, 2, 11, 0, 0);
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, id);
@@ -172,7 +208,7 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var command = new BookSessionCommand(Guid.NewGuid(), Guid.NewGuid(), new DateTime(2026, 11, 2, 11, 0, 0), new DateTime(2026, 11, 2, 10, 0, 0));
+        var command = new BookSessionCommand(StaticTutorId, StaticStudentId, new DateTime(2026, 11, 2, 11, 0, 0), new DateTime(2026, 11, 2, 10, 0, 0));
 
         var result = await handler.HandleAsync(command);
 
@@ -188,8 +224,8 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticNonExistentTutorId;
+        var studentId = StaticStudentId;
         var student = new Student(studentId, "Student", "student@test.com");
         studentRepo.Add(student);
         var command = new BookSessionCommand(tutorId, studentId, new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 0, 0));
@@ -208,8 +244,8 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticTutorId;
+        var studentId = StaticNonExistentStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
         tutor.AddAvailability(new DateRange(new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 12, 0, 0)));
         tutorRepo.Add(tutor);
@@ -229,8 +265,8 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticTutorId;
+        var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
         tutor.AddAvailability(new DateRange(new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 0, 0)));
         tutorRepo.Add(tutor);
@@ -252,15 +288,15 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticTutorId;
+        var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
         tutor.AddAvailability(new DateRange(new DateTime(2026, 11, 2, 8, 0, 0), new DateTime(2026, 11, 2, 18, 0, 0)));
         tutorRepo.Add(tutor);
         var student = new Student(studentId, "Student", "student@test.com");
         studentRepo.Add(student);
-        var s1 = Session.Create(Guid.NewGuid(), studentId, new DateRange(new DateTime(2026, 11, 2, 9, 0, 0), new DateTime(2026, 11, 2, 10, 0, 0)));
-        var s2 = Session.Create(Guid.NewGuid(), studentId, new DateRange(new DateTime(2026, 11, 2, 11, 0, 0), new DateTime(2026, 11, 2, 12, 0, 0)));
+        var s1 = new Session(StaticPastSession1Id, StaticTutorId, studentId, new DateRange(new DateTime(2026, 11, 2, 9, 0, 0), new DateTime(2026, 11, 2, 10, 0, 0)));
+        var s2 = new Session(StaticPastSession2Id, StaticTutorId, studentId, new DateRange(new DateTime(2026, 11, 2, 11, 0, 0), new DateTime(2026, 11, 2, 12, 0, 0)));
         sessionRepo.Add(s1);
         sessionRepo.Add(s2);
         var command = new BookSessionCommand(tutorId, studentId, new DateTime(2026, 11, 2, 14, 0, 0), new DateTime(2026, 11, 2, 15, 0, 0));
@@ -280,14 +316,14 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticTutorId;
+        var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
         tutor.AddAvailability(new DateRange(new DateTime(2026, 11, 2, 8, 0, 0), new DateTime(2026, 11, 2, 18, 0, 0)));
         tutorRepo.Add(tutor);
         var student = new Student(studentId, "Student", "student@test.com");
         studentRepo.Add(student);
-        var existingSession = Session.Create(Guid.NewGuid(), studentId, new DateRange(new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 30, 0)));
+        var existingSession = new Session(StaticPastSession1Id, StaticTutorId, studentId, new DateRange(new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 30, 0)));
         sessionRepo.Add(existingSession);
         var command = new BookSessionCommand(tutorId, studentId, new DateTime(2026, 11, 2, 11, 0, 0), new DateTime(2026, 11, 2, 12, 0, 0));
 
@@ -305,9 +341,9 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var tutorId = Guid.NewGuid();
-        var student1Id = Guid.NewGuid();
-        var student2Id = Guid.NewGuid();
+        var tutorId = StaticTutorId;
+        var student1Id = StaticStudentId;
+        var student2Id = StaticOtherStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
         tutor.AddAvailability(new DateRange(new DateTime(2026, 11, 2, 8, 0, 0), new DateTime(2026, 11, 2, 18, 0, 0)));
         tutorRepo.Add(tutor);
@@ -315,7 +351,7 @@ public class BookSessionCommandHandlerTests
         var student2 = new Student(student2Id, "Student 2", "student2@test.com");
         studentRepo.Add(student1);
         studentRepo.Add(student2);
-        var existingSession = Session.Create(tutorId, student1Id, new DateRange(new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 0, 0)));
+        var existingSession = new Session(StaticPastSession1Id, tutorId, student1Id, new DateRange(new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 0, 0)));
         sessionRepo.Add(existingSession);
         var command = new BookSessionCommand(tutorId, student2Id, new DateTime(2026, 11, 2, 10, 30, 0), new DateTime(2026, 11, 2, 11, 30, 0));
 
@@ -333,13 +369,13 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticTutorId;
+        var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
         tutor.AddAvailability(new DateRange(new DateTime(2026, 11, 2, 8, 0, 0), new DateTime(2026, 11, 2, 18, 0, 0)));
         tutorRepo.Add(tutor);
         var student = new Student(studentId, "Student", "student@test.com");
-        var pastSession = Session.Create(Guid.NewGuid(), studentId, new DateRange(new DateTime(2026, 11, 1, 10, 0, 0), new DateTime(2026, 11, 1, 11, 0, 0)));
+        var pastSession = new Session(StaticPastSession1Id, StaticTutorId, studentId, new DateRange(new DateTime(2026, 11, 1, 10, 0, 0), new DateTime(2026, 11, 1, 11, 0, 0)));
         student.AddSession(pastSession);
         sessionRepo.Add(pastSession);
         studentRepo.Add(student);
@@ -361,8 +397,8 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticTutorId;
+        var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
         tutor.AddAvailability(new DateRange(new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 12, 0, 0)));
         tutorRepo.Add(tutor);
@@ -387,8 +423,8 @@ public class BookSessionCommandHandlerTests
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
         var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
-        var tutorId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
+        var tutorId = StaticTutorId;
+        var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
         tutor.AddAvailability(new DateRange(new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 12, 0, 0)));
         tutorRepo.Add(tutor);

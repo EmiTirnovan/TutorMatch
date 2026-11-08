@@ -1,4 +1,4 @@
-﻿using TutorMatch.Api.Common.Cqrs;
+using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Sessions;
 
@@ -29,7 +29,9 @@ public class GetSessionByIdQueryHandler : IQueryHandler<GetSessionByIdQuery, Res
             session.StartTime,
             session.EndTime,
             session.Status,
-            session.Version);
+            session.Version,
+            session.Subject,
+            session.Notes);
 
         return Task.FromResult(Result<GetSessionByIdResponse>.Success(response));
     }

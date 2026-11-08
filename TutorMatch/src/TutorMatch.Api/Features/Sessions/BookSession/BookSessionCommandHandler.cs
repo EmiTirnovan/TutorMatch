@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Common;
@@ -98,7 +98,7 @@ public class BookSessionCommandHandler : ICommandHandler<BookSessionCommand, Res
             Session session;
             try
             {
-                session = student.BookSession(command.TutorId, interval);
+                session = student.BookSession(command.TutorId, interval, command.Subject, command.Notes);
             }
             catch (ArgumentException ex)
             {
@@ -139,7 +139,9 @@ public class BookSessionCommandHandler : ICommandHandler<BookSessionCommand, Res
                 session.StartTime,
                 session.EndTime,
                 session.Status,
-                session.Version);
+                session.Version,
+                session.Subject,
+                session.Notes);
 
             return Result<BookSessionResponse>.Success(response);
         }

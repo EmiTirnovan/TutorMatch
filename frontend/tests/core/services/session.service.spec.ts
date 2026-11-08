@@ -37,7 +37,7 @@ describe('SessionService', () => {
     let result: SessionResponse | undefined;
 
     service.bookSession('student-1', request).subscribe(response => (result = response));
-    const req = httpMock.expectOne('/api/sessions');
+    const req = httpMock.expectOne('/api/v2/sessions');
     req.flush(session);
 
     expect(req.request.method).toBe('POST');
@@ -50,7 +50,7 @@ describe('SessionService', () => {
     let result: SessionResponse[] | undefined;
 
     service.getBookedSessionsForTutor('tutor-1').subscribe(response => (result = response));
-    const req = httpMock.expectOne(r => r.url === '/api/sessions/my');
+    const req = httpMock.expectOne(r => r.url === '/api/v2/sessions/my');
     req.flush({ sessions: [session] });
 
     expect(req.request.params.get('userId')).toBe('tutor-1');
@@ -63,7 +63,7 @@ describe('SessionService', () => {
     let result: SessionResponse[] | undefined;
 
     service.getMySessions('student-1', 'Student').subscribe(response => (result = response));
-    const req = httpMock.expectOne(r => r.url === '/api/sessions/my');
+    const req = httpMock.expectOne(r => r.url === '/api/v2/sessions/my');
     req.flush({ sessions: [session] });
 
     expect(req.request.method).toBe('GET');
@@ -77,7 +77,7 @@ describe('SessionService', () => {
     let result: SessionResponse[] | undefined;
 
     service.getMySessions('tutor-1', 'Tutor', 'Upcoming').subscribe(response => (result = response));
-    const req = httpMock.expectOne(r => r.url === '/api/sessions/my');
+    const req = httpMock.expectOne(r => r.url === '/api/v2/sessions/my');
     req.flush({ sessions: [session] });
 
     expect(req.request.method).toBe('GET');
@@ -91,7 +91,7 @@ describe('SessionService', () => {
     let completed = false;
 
     service.cancelSession('session-1', 'student-1').subscribe(() => (completed = true));
-    const req = httpMock.expectOne('/api/sessions/session-1/cancel');
+    const req = httpMock.expectOne('/api/v2/sessions/session-1/cancel');
     req.flush(null);
 
     expect(req.request.method).toBe('POST');
@@ -103,7 +103,7 @@ describe('SessionService', () => {
     let completed = false;
 
     service.completeSession('session-1', 'tutor-1').subscribe(() => (completed = true));
-    const req = httpMock.expectOne('/api/sessions/session-1/complete');
+    const req = httpMock.expectOne('/api/v2/sessions/session-1/complete');
     req.flush(null);
 
     expect(req.request.method).toBe('POST');

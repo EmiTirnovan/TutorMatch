@@ -8,4 +8,5 @@ public interface ITutorRepository
     IReadOnlyList<Tutor> GetAll();
     void Update(Tutor tutor);
     bool Delete(Guid id);
+    Subject GetOrCreateSubject(string name);
 }

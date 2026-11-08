@@ -31,7 +31,7 @@ public class Student
         Email = email.Trim();
     }
 
-    public Session BookSession(Guid tutorId, DateRange interval)
+    public Session BookSession(Guid tutorId, DateRange interval, string? subject = null, string? notes = null)
     {
         if (tutorId == Guid.Empty)
         {
@@ -56,7 +56,7 @@ public class Student
             throw new DailySessionLimitExceededException("Student already has 2 booked sessions today, which is the max.");
         }
 
-        var session = Session.Create(tutorId, Id, interval);
+        var session = Session.Create(tutorId, Id, interval, subject, notes);
         _sessions.Add(session);
         return session;
     }

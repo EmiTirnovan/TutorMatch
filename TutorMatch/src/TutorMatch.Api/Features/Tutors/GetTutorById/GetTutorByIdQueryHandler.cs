@@ -23,6 +23,12 @@ public class GetTutorByIdQueryHandler : IQueryHandler<GetTutorByIdQuery, Result<
                 Error.NotFound("Tutor.NotFound", $"Tutor with ID '{query.Id}' was not found.")));
         }
 
+        var subjects = tutor.TutorSubjects
+            .Select(ts => ts.Subject?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
+            .ToList();
+
         var response = new GetTutorByIdResponse(
             tutor.Id,
             tutor.Name,
@@ -30,7 +36,8 @@ public class GetTutorByIdQueryHandler : IQueryHandler<GetTutorByIdQuery, Result<
             tutor.Bio,
             tutor.HourlyRate,
             tutor.TutorSubjects.Select(ts => ts.SubjectId).ToList(),
-            tutor.Availability.Select(a => new DateRangeDto(a.Start, a.End)).ToList()
+            tutor.Availability.Select(a => new DateRangeDto(a.Start, a.End)).ToList(),
+            subjects
         );
 
         return Task.FromResult(Result<GetTutorByIdResponse>.Success(response));
