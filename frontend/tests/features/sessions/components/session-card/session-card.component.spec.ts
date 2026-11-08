@@ -127,6 +127,20 @@ describe('SessionCardComponent', () => {
       expect(body?.textContent).toContain('Student');
       expect(body?.textContent).toContain('student-abc');
     });
+
+    it('Given_StudentRoleWithTutorName_When_Rendering_Then_DisplaysTutorName', () => {
+      setup({ tutorName: 'Emi Tirnovan' }, 'student');
+
+      const body = fixture.nativeElement.querySelector('.card-body');
+      expect(body?.textContent).toContain('Emi Tirnovan');
+    });
+
+    it('Given_TutorRoleWithStudentName_When_Rendering_Then_DisplaysStudentName', () => {
+      setup({ studentName: 'Alex Radu' }, 'tutor');
+
+      const body = fixture.nativeElement.querySelector('.card-body');
+      expect(body?.textContent).toContain('Alex Radu');
+    });
   });
 
   describe('Actions', () => {

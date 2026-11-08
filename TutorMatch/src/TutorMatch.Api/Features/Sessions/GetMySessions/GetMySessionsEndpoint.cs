@@ -13,7 +13,9 @@ public static class GetMySessionsEndpoint
 {
     public static IEndpointRouteBuilder MapGetMySessions(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/my", HandleAsync);
+        group.MapGet("/my", HandleAsync)
+            .Produces<GetMySessionsResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest);
         return group;
     }
 

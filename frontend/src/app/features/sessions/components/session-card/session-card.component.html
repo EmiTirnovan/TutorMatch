@@ -15,13 +15,13 @@
     <div class="participant-info">
       @if (userRole() === 'student') {
         <span class="participant-label">Tutor</span>
-        <span class="participant-id" title="{{ session().tutorId }}">
-          {{ session().tutorId }}
+        <span class="participant-name" [title]="session().tutorId" data-testid="participant-name">
+          {{ session().tutorName || session().tutorId }}
         </span>
       } @else {
         <span class="participant-label">Student</span>
-        <span class="participant-id" title="{{ session().studentId }}">
-          {{ session().studentId }}
+        <span class="participant-name" [title]="session().studentId" data-testid="participant-name">
+          {{ session().studentName || session().studentId }}
         </span>
       }
     </div>

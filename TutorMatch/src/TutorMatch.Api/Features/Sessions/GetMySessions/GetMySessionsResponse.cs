@@ -14,5 +14,7 @@ public record MySessionDto(
     DateTime StartTime,
     DateTime EndTime,
     SessionStatus Status,
-    int Version);
+    int Version,
+    string? TutorName = null,
+    string? StudentName = null);
 

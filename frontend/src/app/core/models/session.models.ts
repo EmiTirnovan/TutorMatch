@@ -33,6 +33,8 @@ export interface SessionResponse {
   endTime: string;
   status: SessionStatus | number | string;
   version: number;
+  tutorName?: string;
+  studentName?: string;
 }
 
 export interface MySessionsResponse {

@@ -69,6 +69,15 @@
   font-weight: 600;
 }
 
+.participant-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--primary-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .participant-id {
   font-family: monospace;
   font-size: 0.8125rem;
