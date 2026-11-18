@@ -452,4 +452,34 @@ public class SessionTests
 
         action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("type");
     }
+
+    [Fact]
+    public void Given_onlineSession_When_attachingMeetingLink_Then_storesTrimmedLink()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval(), type: SessionType.Online);
+
+        session.AttachMeetingLink(" https://meet.google.com/abc-defg-hij ");
+
+        session.MeetingLink.Should().Be("https://meet.google.com/abc-defg-hij");
+    }
+
+    [Fact]
+    public void Given_physicalSession_When_attachingMeetingLink_Then_throwsInvalidOperationException()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval(), type: SessionType.Physical, locationName: "Sala B224");
+
+        var action = () => session.AttachMeetingLink("https://meet.google.com/abc-defg-hij");
+
+        action.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Given_emptyLink_When_attachingMeetingLink_Then_throwsArgumentException()
+    {
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval(), type: SessionType.Online);
+
+        var action = () => session.AttachMeetingLink("  ");
+
+        action.Should().Throw<ArgumentException>();
+    }
 }

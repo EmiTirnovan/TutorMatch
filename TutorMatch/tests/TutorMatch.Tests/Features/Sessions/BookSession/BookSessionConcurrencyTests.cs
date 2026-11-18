@@ -6,6 +6,7 @@ using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features.Sessions.BookSession;
+using TutorMatch.Tests.Common.Fakes;
 using Xunit;
 
 namespace TutorMatch.Tests.Features.Sessions.BookSession;
@@ -85,7 +86,7 @@ public class BookSessionConcurrencyTests
         var sessionRepo = new ThreadSafeSessionRepository();
         var tutorRepo = new ThreadSafeTutorRepository();
         var studentRepo = new ThreadSafeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = Guid.NewGuid();
         var student1Id = Guid.NewGuid();
         var student2Id = Guid.NewGuid();
@@ -116,7 +117,7 @@ public class BookSessionConcurrencyTests
         var sessionRepo = new ThreadSafeSessionRepository();
         var tutorRepo = new ThreadSafeTutorRepository();
         var studentRepo = new ThreadSafeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutor1Id = Guid.NewGuid();
         var tutor2Id = Guid.NewGuid();
         var studentId = Guid.NewGuid();

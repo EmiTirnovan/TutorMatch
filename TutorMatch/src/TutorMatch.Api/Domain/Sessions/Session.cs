@@ -121,8 +121,24 @@ public class Session
             longitude);
     }
 
-    // shortcut: an Online session may have no MeetingLink (legacy rows, direct construction);
-    // no link is generated yet (pending IMeetingService). Make it mandatory once that lands and legacy rows are backfilled.
+    // Booking saves the session first, then attaches the link from IMeetingService (it needs the saved session ID).
+    public void AttachMeetingLink(string meetingLink)
+    {
+        if (Type != SessionType.Online)
+        {
+            throw new InvalidOperationException("Only online sessions can have a meeting link.");
+        }
+
+        if (string.IsNullOrWhiteSpace(meetingLink))
+        {
+            throw new ArgumentException("Meeting link cannot be empty.", nameof(meetingLink));
+        }
+
+        MeetingLink = meetingLink.Trim();
+    }
+
+    // shortcut: an Online session may exist without MeetingLink (legacy rows, and between save and AttachMeetingLink);
+    // make it mandatory once legacy rows are backfilled.
     private void SetMode(SessionType type, string? meetingLink, string? locationName, double? latitude, double? longitude)
     {
         if (!Enum.IsDefined(type))

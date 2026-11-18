@@ -1,10 +1,12 @@
 using System.Data.Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Infrastructure.Meetings;
 using TutorMatch.Api.Infrastructure.Persistence;
 using TutorMatch.Api.Infrastructure.Persistence.Repositories;
 using TutorMatch.Api.Infrastructure.Sessions;
@@ -31,6 +33,24 @@ public static class DependencyInjection
         services.AddScoped<ISessionRepository, SqliteSessionRepository>();
         services.AddScoped<IStudentRepository, SqliteStudentRepository>();
 
+        return services;
+    }
+
+    // Google Meet when credentials are configured (user-secrets / env vars), otherwise the Jitsi fallback.
+    public static IServiceCollection AddMeetingService(this IServiceCollection services, IConfiguration configuration)
+    {
+        var section = configuration.GetSection(GoogleMeetOptions.SectionName);
+        var options = section.Get<GoogleMeetOptions>() ?? new GoogleMeetOptions();
+
+        if (!options.IsConfigured)
+        {
+            services.AddSingleton<IMeetingService, JitsiMeetingService>();
+            return services;
+        }
+
+        services.Configure<GoogleMeetOptions>(section);
+        services.AddHttpClient(GoogleMeetService.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(15));
+        services.AddScoped<IMeetingService, GoogleMeetService>();
         return services;
     }
 

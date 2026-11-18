@@ -32,6 +32,7 @@ public static class ResultExtensions
         {
             ErrorType.NotFound => TypedResults.NotFound(new { error.Code, error.Description }),
             ErrorType.Conflict => TypedResults.Conflict(new { error.Code, error.Description }),
+            ErrorType.Failure => TypedResults.Json(new { error.Code, error.Description }, statusCode: StatusCodes.Status500InternalServerError),
             _ => TypedResults.BadRequest(new { error.Code, error.Description })
         };
     }
