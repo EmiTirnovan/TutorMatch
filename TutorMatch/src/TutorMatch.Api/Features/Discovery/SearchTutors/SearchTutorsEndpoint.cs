@@ -11,7 +11,10 @@ public static class SearchTutorsEndpoint
 {
     public static IEndpointRouteBuilder MapSearchTutors(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/search", HandleAsync);
+        group.MapGet("/search", HandleAsync)
+            .WithSummary("Search tutors with filters")
+            .WithDescription("Filters by subject, price range and available date, with paging and sorting.")
+            .Produces<SearchTutorsResponse>(StatusCodes.Status200OK);
         return group;
     }
 

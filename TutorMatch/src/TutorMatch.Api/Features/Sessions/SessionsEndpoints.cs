@@ -17,15 +17,15 @@ public static class SessionsEndpoints
     public static IEndpointRouteBuilder MapSessionEndpoints(this IEndpointRouteBuilder app)
     {
         // Version 2 (Current / Next Version) - with Subject selection & Details
-        var v2Group = app.MapGroup("/api/v2/sessions").WithTags("Sessions v2");
+        var v2Group = app.MapGroup("/api/v2/sessions").WithTags("Sessions").WithGroupName("v2");
         MapRoutes(v2Group);
 
         // Version 1 (Previous Version)
-        var v1Group = app.MapGroup("/api/v1/sessions").WithTags("Sessions v1");
+        var v1Group = app.MapGroup("/api/v1/sessions").WithTags("Sessions").WithGroupName("v1");
         MapRoutes(v1Group);
 
-        // Legacy / Unversioned fallback
-        var legacyGroup = app.MapGroup("/api/sessions").WithTags("Sessions");
+        // Legacy / Unversioned fallback, documented next to v1 (same contract)
+        var legacyGroup = app.MapGroup("/api/sessions").WithTags("Sessions (unversioned)").WithGroupName("v1");
         MapRoutes(legacyGroup);
 
         return app;

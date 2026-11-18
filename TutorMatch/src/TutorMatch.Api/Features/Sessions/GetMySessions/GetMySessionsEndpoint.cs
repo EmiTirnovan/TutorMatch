@@ -14,8 +14,10 @@ public static class GetMySessionsEndpoint
     public static IEndpointRouteBuilder MapGetMySessions(this IEndpointRouteBuilder group)
     {
         group.MapGet("/my", HandleAsync)
+            .WithSummary("List my sessions")
+            .WithDescription("Lists the sessions of a student or tutor (role), optionally filtered by status: Upcoming, Booked, Cancelled, LateCancelled, Completed.")
             .Produces<GetMySessionsResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesErrors(StatusCodes.Status400BadRequest);
         return group;
     }
 

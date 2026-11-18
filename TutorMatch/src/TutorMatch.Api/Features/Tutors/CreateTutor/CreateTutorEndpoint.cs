@@ -11,7 +11,10 @@ public static class CreateTutorEndpoint
 {
     public static IEndpointRouteBuilder MapCreateTutor(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync);
+        group.MapPost("/", HandleAsync)
+            .WithSummary("Create a tutor")
+            .Produces<CreateTutorResponse>(StatusCodes.Status201Created)
+            .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status409Conflict);
         return group;
     }
 

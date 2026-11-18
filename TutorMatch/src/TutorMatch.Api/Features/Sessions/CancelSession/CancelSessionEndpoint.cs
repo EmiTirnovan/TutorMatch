@@ -12,7 +12,11 @@ public static class CancelSessionEndpoint
 {
     public static IEndpointRouteBuilder MapCancelSession(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/{id:guid}/cancel", HandleAsync);
+        group.MapPost("/{id:guid}/cancel", HandleAsync)
+            .WithSummary("Cancel a session")
+            .WithDescription("The requester id can be sent in the body or as the requesterId query parameter.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict);
         return group;
     }
 

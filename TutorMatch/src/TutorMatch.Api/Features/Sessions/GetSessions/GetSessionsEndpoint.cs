@@ -11,7 +11,9 @@ public static class GetSessionsEndpoint
 {
     public static IEndpointRouteBuilder MapGetSessions(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync);
+        group.MapGet("/", HandleAsync)
+            .WithSummary("List all sessions")
+            .Produces<List<GetSessionsResponse>>(StatusCodes.Status200OK);
         return group;
     }
 
