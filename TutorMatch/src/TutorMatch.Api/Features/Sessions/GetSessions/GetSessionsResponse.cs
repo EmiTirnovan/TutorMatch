@@ -13,4 +13,9 @@ public record GetSessionsResponse(
     SessionStatus Status,
     int Version,
     string? Subject = null,
-    string? Notes = null);
+    string? Notes = null,
+    SessionType Type = SessionType.Online,
+    string? MeetingLink = null,
+    string? LocationName = null,
+    double? Latitude = null,
+    double? Longitude = null);

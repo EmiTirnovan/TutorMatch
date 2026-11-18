@@ -18,4 +18,9 @@ public record MySessionDto(
     string? Subject = null,
     string? Notes = null,
     string? TutorName = null,
-    string? StudentName = null);
+    string? StudentName = null,
+    SessionType Type = SessionType.Online,
+    string? MeetingLink = null,
+    string? LocationName = null,
+    double? Latitude = null,
+    double? Longitude = null);

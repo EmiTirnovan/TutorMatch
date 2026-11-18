@@ -31,7 +31,12 @@ public class GetSessionByIdQueryHandler : IQueryHandler<GetSessionByIdQuery, Res
             session.Status,
             session.Version,
             session.Subject,
-            session.Notes);
+            session.Notes,
+            session.Type,
+            session.MeetingLink,
+            session.LocationName,
+            session.Latitude,
+            session.Longitude);
 
         return Task.FromResult(Result<GetSessionByIdResponse>.Success(response));
     }

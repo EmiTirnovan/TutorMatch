@@ -61,6 +61,22 @@ public class SessionConfiguration : IEntityTypeConfiguration<Session>
             .HasMaxLength(1000)
             .IsRequired(false);
 
+        builder.Property(s => s.Type)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired();
+
+        builder.Property(s => s.MeetingLink)
+            .HasMaxLength(500)
+            .IsRequired(false);
+
+        builder.Property(s => s.LocationName)
+            .HasMaxLength(200)
+            .IsRequired(false);
+
+        builder.Property(s => s.Latitude).IsRequired(false);
+        builder.Property(s => s.Longitude).IsRequired(false);
+
         // Concurrency token for optimistic concurrency control
         builder.Property(s => s.Version)
             .IsConcurrencyToken()

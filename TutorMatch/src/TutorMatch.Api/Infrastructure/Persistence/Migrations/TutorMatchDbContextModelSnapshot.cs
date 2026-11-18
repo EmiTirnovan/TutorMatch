@@ -22,6 +22,20 @@ namespace TutorMatch.Api.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("LocationName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("MeetingLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
@@ -39,6 +53,11 @@ namespace TutorMatch.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("TutorId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Version")

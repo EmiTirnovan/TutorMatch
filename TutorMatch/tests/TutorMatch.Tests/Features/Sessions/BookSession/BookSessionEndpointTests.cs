@@ -299,4 +299,79 @@ public class BookSessionEndpointTests : IDisposable
         _factory.Dispose();
         _client.Dispose();
     }
+
+    private async Task<(Guid TutorId, Guid StudentId, DateTime Start, DateTime End)> SeedBookableAsync(string suffix)
+    {
+        var tutorId = Guid.NewGuid();
+        var studentId = Guid.NewGuid();
+        var start = DateTime.UtcNow.Date.AddDays(1).AddHours(9);
+        var end = start.AddHours(1);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+        var tutor = new Tutor($"Tutor {suffix}", $"tutor_{suffix}@test.com", "Bio", 70, tutorId);
+        tutor.AddAvailability(new DateRange(start.AddHours(-1), end.AddHours(1)));
+        db.Tutors.Add(tutor);
+        db.Students.Add(new Student(studentId, $"Student {suffix}", $"student_{suffix}@test.com"));
+        await db.SaveChangesAsync();
+
+        return (tutorId, studentId, start, end);
+    }
+
+    [Fact]
+    public async Task Given_PhysicalSessionWithoutLocation_When_BookingSession_Then_ReturnsBadRequestAndSavesNothing()
+    {
+        var (tutorId, studentId, start, end) = await SeedBookableAsync("phys_noloc");
+        var request = new BookSessionRequest(tutorId, start, end, Type: SessionType.Physical);
+
+        var response = await BookAsync(studentId, request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("Session.Validation");
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+        (await db.Sessions.AnyAsync(s => s.StudentId == studentId)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_PhysicalSessionWithLocation_When_BookingSession_Then_ReturnsCreatedAndPersistsLocation()
+    {
+        var (tutorId, studentId, start, end) = await SeedBookableAsync("phys_loc");
+        var request = new BookSessionRequest(tutorId, start, end,
+            Type: SessionType.Physical, LocationName: "Campus UPT Corp B, Sala B224", Latitude: 45.7472, Longitude: 21.2264);
+
+        var response = await BookAsync(studentId, request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.Content.ReadFromJsonAsync<BookSessionResponse>();
+        result!.Type.Should().Be(SessionType.Physical);
+        result.LocationName.Should().Be("Campus UPT Corp B, Sala B224");
+        result.MeetingLink.Should().BeNull();
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+        var saved = await db.Sessions.SingleAsync(s => s.Id == result.Id);
+        saved.Type.Should().Be(SessionType.Physical);
+        saved.LocationName.Should().Be("Campus UPT Corp B, Sala B224");
+        saved.Latitude.Should().Be(45.7472);
+        saved.Longitude.Should().Be(21.2264);
+    }
+
+    [Fact]
+    public async Task Given_OnlineSession_When_BookingSession_Then_ReturnsCreatedAndPersistsOnlineType()
+    {
+        var (tutorId, studentId, start, end) = await SeedBookableAsync("online");
+        var request = new BookSessionRequest(tutorId, start, end, Type: SessionType.Online);
+
+        var response = await BookAsync(studentId, request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.Content.ReadFromJsonAsync<BookSessionResponse>();
+        result!.Type.Should().Be(SessionType.Online);
+        result.LocationName.Should().BeNull();
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+        (await db.Sessions.SingleAsync(s => s.Id == result.Id)).Type.Should().Be(SessionType.Online);
+    }
 }

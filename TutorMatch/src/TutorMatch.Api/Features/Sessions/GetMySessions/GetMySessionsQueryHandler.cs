@@ -65,7 +65,12 @@ public class GetMySessionsQueryHandler : IQueryHandler<GetMySessionsQuery, Resul
                     s.Subject,
                     s.Notes,
                     tutorName,
-                    studentName);
+                    studentName,
+                    s.Type,
+                    s.MeetingLink,
+                    s.LocationName,
+                    s.Latitude,
+                    s.Longitude);
             })
             .ToList();
 

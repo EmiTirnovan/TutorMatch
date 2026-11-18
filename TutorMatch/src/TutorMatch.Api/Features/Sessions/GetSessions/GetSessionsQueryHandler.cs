@@ -25,7 +25,12 @@ public class GetSessionsQueryHandler : IQueryHandler<GetSessionsQuery, Result<Li
                 session.Status,
                 session.Version,
                 session.Subject,
-                session.Notes))
+                session.Notes,
+                session.Type,
+                session.MeetingLink,
+                session.LocationName,
+                session.Latitude,
+                session.Longitude))
             .ToList();
 
         return Task.FromResult(Result<List<GetSessionsResponse>>.Success(sessions));
