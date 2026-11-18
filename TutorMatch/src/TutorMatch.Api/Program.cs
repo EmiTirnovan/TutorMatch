@@ -53,6 +53,7 @@ public class Program
 
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddCqrs();
+        builder.Services.AddMeetingService(builder.Configuration);
 
         var app = builder.Build();
 

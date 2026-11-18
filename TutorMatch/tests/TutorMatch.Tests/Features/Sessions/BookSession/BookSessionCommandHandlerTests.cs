@@ -6,6 +6,7 @@ using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features.Sessions.BookSession;
+using TutorMatch.Tests.Common.Fakes;
 using Xunit;
 
 namespace TutorMatch.Tests.Features.Sessions.BookSession;
@@ -92,7 +93,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticTutorId;
         var studentId = StaticStudentId;
         var start = new DateTime(2026, 11, 2, 10, 0, 0);
@@ -121,7 +122,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticTutorId;
         var studentId = StaticStudentId;
         var start = new DateTime(2026, 11, 2, 10, 0, 0);
@@ -151,7 +152,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var command = new BookSessionCommand(Guid.Empty, StaticStudentId, new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 0, 0));
 
         var result = await handler.HandleAsync(command);
@@ -167,7 +168,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var command = new BookSessionCommand(StaticTutorId, Guid.Empty, new DateTime(2026, 11, 2, 10, 0, 0), new DateTime(2026, 11, 2, 11, 0, 0));
 
         var result = await handler.HandleAsync(command);
@@ -183,7 +184,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var id = StaticTutorId;
         var start = new DateTime(2026, 11, 2, 10, 0, 0);
         var end = new DateTime(2026, 11, 2, 11, 0, 0);
@@ -207,7 +208,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var command = new BookSessionCommand(StaticTutorId, StaticStudentId, new DateTime(2026, 11, 2, 11, 0, 0), new DateTime(2026, 11, 2, 10, 0, 0));
 
         var result = await handler.HandleAsync(command);
@@ -223,7 +224,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticNonExistentTutorId;
         var studentId = StaticStudentId;
         var student = new Student(studentId, "Student", "student@test.com");
@@ -243,7 +244,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticTutorId;
         var studentId = StaticNonExistentStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
@@ -264,7 +265,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticTutorId;
         var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
@@ -287,7 +288,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticTutorId;
         var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
@@ -315,7 +316,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticTutorId;
         var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
@@ -340,7 +341,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticTutorId;
         var student1Id = StaticStudentId;
         var student2Id = StaticOtherStudentId;
@@ -368,7 +369,7 @@ public class BookSessionCommandHandlerTests
         var sessionRepo = new FakeSessionRepository();
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticTutorId;
         var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
@@ -396,7 +397,7 @@ public class BookSessionCommandHandlerTests
         };
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticTutorId;
         var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
@@ -422,7 +423,7 @@ public class BookSessionCommandHandlerTests
         };
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
-        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo);
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, new FakeMeetingService());
         var tutorId = StaticTutorId;
         var studentId = StaticStudentId;
         var tutor = new Tutor("Tutor", "tutor@test.com", "Bio", 50, tutorId);
@@ -439,7 +440,7 @@ public class BookSessionCommandHandlerTests
         result.Error.Code.Should().Be("Session.Conflict");
     }
 
-    private static (BookSessionCommandHandler Handler, DateTime Start, DateTime End) CreateBookableSetup()
+    private static (BookSessionCommandHandler Handler, FakeSessionRepository Sessions, FakeMeetingService Meetings, DateTime Start, DateTime End) CreateBookableSetup()
     {
         var tutorRepo = new FakeTutorRepository();
         var studentRepo = new FakeStudentRepository();
@@ -449,27 +450,32 @@ public class BookSessionCommandHandlerTests
         tutor.AddAvailability(new DateRange(start, end));
         tutorRepo.Add(tutor);
         studentRepo.Add(new Student(StaticStudentId, "Student Name", "student@test.com"));
-        var handler = new BookSessionCommandHandler(new FakeSessionRepository(), tutorRepo, studentRepo);
-        return (handler, start, end);
+        var sessionRepo = new FakeSessionRepository();
+        var meetings = new FakeMeetingService();
+        var handler = new BookSessionCommandHandler(sessionRepo, tutorRepo, studentRepo, meetings);
+        return (handler, sessionRepo, meetings, start, end);
     }
 
     [Fact]
-    public async Task Given_onlineCommand_When_handlingBookSession_Then_returnsOnlineSessionWithoutLocation()
+    public async Task Given_onlineCommand_When_handlingBookSession_Then_attachesGeneratedMeetingLink()
     {
-        var (handler, start, end) = CreateBookableSetup();
-        var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end, Type: SessionType.Online);
+        var (handler, sessions, meetings, start, end) = CreateBookableSetup();
+        var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end, Subject: "Algebra", Type: SessionType.Online);
 
         var result = await handler.HandleAsync(command);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Type.Should().Be(SessionType.Online);
+        result.Value.MeetingLink.Should().Be(FakeMeetingService.LinkFor(result.Value.Id));
+        sessions.GetById(result.Value.Id)!.MeetingLink.Should().Be(result.Value.MeetingLink);
+        meetings.Calls.Should().ContainSingle().Which.Should().Be((result.Value.Id, "TutorMatch: Algebra", start, end));
         result.Value.LocationName.Should().BeNull();
     }
 
     [Fact]
     public async Task Given_physicalCommandWithLocation_When_handlingBookSession_Then_returnsLocationWithoutMeetingLink()
     {
-        var (handler, start, end) = CreateBookableSetup();
+        var (handler, _, meetings, start, end) = CreateBookableSetup();
         var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end,
             Type: SessionType.Physical, LocationName: "Campus UPT Corp B, Sala B224", Latitude: 45.7472, Longitude: 21.2264);
 
@@ -481,12 +487,13 @@ public class BookSessionCommandHandlerTests
         result.Value.Latitude.Should().Be(45.7472);
         result.Value.Longitude.Should().Be(21.2264);
         result.Value.MeetingLink.Should().BeNull();
+        meetings.Calls.Should().BeEmpty();
     }
 
     [Fact]
     public async Task Given_physicalCommandWithoutLocation_When_handlingBookSession_Then_returnsValidationError()
     {
-        var (handler, start, end) = CreateBookableSetup();
+        var (handler, _, _, start, end) = CreateBookableSetup();
         var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end, Type: SessionType.Physical);
 
         var result = await handler.HandleAsync(command);
@@ -499,7 +506,7 @@ public class BookSessionCommandHandlerTests
     [Fact]
     public async Task Given_physicalCommandWithInvalidCoordinates_When_handlingBookSession_Then_returnsValidationError()
     {
-        var (handler, start, end) = CreateBookableSetup();
+        var (handler, _, _, start, end) = CreateBookableSetup();
         var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end,
             Type: SessionType.Physical, LocationName: "Sala B224", Latitude: 200, Longitude: 21);
 
@@ -507,5 +514,20 @@ public class BookSessionCommandHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Type.Should().Be(ErrorType.Validation);
+    }
+
+    [Fact]
+    public async Task Given_meetingServiceFails_When_handlingOnlineBooking_Then_returnsFailureAndRemovesSession()
+    {
+        var (handler, sessions, meetings, start, end) = CreateBookableSetup();
+        meetings.FailWith = new HttpRequestException("Google unavailable");
+        var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end, Type: SessionType.Online);
+
+        var result = await handler.HandleAsync(command);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Type.Should().Be(ErrorType.Failure);
+        result.Error.Code.Should().Be("Session.MeetingLinkFailed");
+        sessions.GetAll().Should().BeEmpty();
     }
 }

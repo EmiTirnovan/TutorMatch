@@ -5,12 +5,14 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features.Sessions.BookSession;
 using TutorMatch.Api.Infrastructure.Persistence;
+using TutorMatch.Tests.Common.Fakes;
 using Xunit;
 
 namespace TutorMatch.Tests.Features.Sessions.BookSession;
@@ -25,6 +27,7 @@ public class BookSessionEndpointTests : IDisposable
     private readonly SqliteConnection _connection;
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
+    private readonly FakeMeetingService _meetingService = new();
 
     public BookSessionEndpointTests()
     {
@@ -45,6 +48,10 @@ public class BookSessionEndpointTests : IDisposable
                 {
                     options.UseSqlite(_connection);
                 });
+
+                // Never call Google (or any external service) from the test suite.
+                services.RemoveAll<IMeetingService>();
+                services.AddSingleton<IMeetingService>(_meetingService);
             });
         });
 
@@ -358,7 +365,7 @@ public class BookSessionEndpointTests : IDisposable
     }
 
     [Fact]
-    public async Task Given_OnlineSession_When_BookingSession_Then_ReturnsCreatedAndPersistsOnlineType()
+    public async Task Given_OnlineSession_When_BookingSession_Then_ReturnsCreatedWithPersistedMeetingLink()
     {
         var (tutorId, studentId, start, end) = await SeedBookableAsync("online");
         var request = new BookSessionRequest(tutorId, start, end, Type: SessionType.Online);
@@ -369,9 +376,25 @@ public class BookSessionEndpointTests : IDisposable
         var result = await response.Content.ReadFromJsonAsync<BookSessionResponse>();
         result!.Type.Should().Be(SessionType.Online);
         result.LocationName.Should().BeNull();
+        result.MeetingLink.Should().Be(FakeMeetingService.LinkFor(result.Id));
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
-        (await db.Sessions.SingleAsync(s => s.Id == result.Id)).Type.Should().Be(SessionType.Online);
+        (await db.Sessions.SingleAsync(s => s.Id == result.Id)).MeetingLink.Should().Be(result.MeetingLink);
+    }
+
+    [Fact]
+    public async Task Given_MeetingServiceFails_When_BookingOnlineSession_Then_ReturnsServerErrorAndFreesTheSlot()
+    {
+        var (tutorId, studentId, start, end) = await SeedBookableAsync("meet_fail");
+        _meetingService.FailWith = new HttpRequestException("Google unavailable");
+
+        var response = await BookAsync(studentId, new BookSessionRequest(tutorId, start, end, Type: SessionType.Online));
+
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("Session.MeetingLinkFailed");
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+        (await db.Sessions.AnyAsync(s => s.StudentId == studentId)).Should().BeFalse();
     }
 }
