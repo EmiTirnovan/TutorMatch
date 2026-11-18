@@ -438,4 +438,74 @@ public class BookSessionCommandHandlerTests
         result.Error.Type.Should().Be(ErrorType.Conflict);
         result.Error.Code.Should().Be("Session.Conflict");
     }
+
+    private static (BookSessionCommandHandler Handler, DateTime Start, DateTime End) CreateBookableSetup()
+    {
+        var tutorRepo = new FakeTutorRepository();
+        var studentRepo = new FakeStudentRepository();
+        var start = new DateTime(2026, 11, 2, 10, 0, 0);
+        var end = start.AddHours(1);
+        var tutor = new Tutor("Tutor Name", "tutor@test.com", "Bio", 50, StaticTutorId);
+        tutor.AddAvailability(new DateRange(start, end));
+        tutorRepo.Add(tutor);
+        studentRepo.Add(new Student(StaticStudentId, "Student Name", "student@test.com"));
+        var handler = new BookSessionCommandHandler(new FakeSessionRepository(), tutorRepo, studentRepo);
+        return (handler, start, end);
+    }
+
+    [Fact]
+    public async Task Given_onlineCommand_When_handlingBookSession_Then_returnsOnlineSessionWithoutLocation()
+    {
+        var (handler, start, end) = CreateBookableSetup();
+        var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end, Type: SessionType.Online);
+
+        var result = await handler.HandleAsync(command);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Type.Should().Be(SessionType.Online);
+        result.Value.LocationName.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Given_physicalCommandWithLocation_When_handlingBookSession_Then_returnsLocationWithoutMeetingLink()
+    {
+        var (handler, start, end) = CreateBookableSetup();
+        var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end,
+            Type: SessionType.Physical, LocationName: "Campus UPT Corp B, Sala B224", Latitude: 45.7472, Longitude: 21.2264);
+
+        var result = await handler.HandleAsync(command);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Type.Should().Be(SessionType.Physical);
+        result.Value.LocationName.Should().Be("Campus UPT Corp B, Sala B224");
+        result.Value.Latitude.Should().Be(45.7472);
+        result.Value.Longitude.Should().Be(21.2264);
+        result.Value.MeetingLink.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Given_physicalCommandWithoutLocation_When_handlingBookSession_Then_returnsValidationError()
+    {
+        var (handler, start, end) = CreateBookableSetup();
+        var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end, Type: SessionType.Physical);
+
+        var result = await handler.HandleAsync(command);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Type.Should().Be(ErrorType.Validation);
+        result.Error.Code.Should().Be("Session.Validation");
+    }
+
+    [Fact]
+    public async Task Given_physicalCommandWithInvalidCoordinates_When_handlingBookSession_Then_returnsValidationError()
+    {
+        var (handler, start, end) = CreateBookableSetup();
+        var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end,
+            Type: SessionType.Physical, LocationName: "Sala B224", Latitude: 200, Longitude: 21);
+
+        var result = await handler.HandleAsync(command);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Type.Should().Be(ErrorType.Validation);
+    }
 }

@@ -1,5 +1,6 @@
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
+using TutorMatch.Api.Domain.Sessions;
 
 namespace TutorMatch.Api.Features.Sessions.BookSession;
 
@@ -11,5 +12,9 @@ public record BookSessionCommand(
     DateTime StartTime,
     DateTime EndTime,
     string? Subject = null,
-    string? Notes = null
+    string? Notes = null,
+    SessionType Type = SessionType.Online,
+    string? LocationName = null,
+    double? Latitude = null,
+    double? Longitude = null
 ) : ICommand<Result<BookSessionResponse>>;

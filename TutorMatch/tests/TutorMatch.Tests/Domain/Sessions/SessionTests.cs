@@ -382,4 +382,74 @@ public class SessionTests
 
         action.Should().Throw<InvalidOperationException>();
     }
+
+    [Fact]
+    public void Given_physicalTypeWithoutLocation_When_creatingSession_Then_throwsArgumentException()
+    {
+        var action = () => Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval(), type: SessionType.Physical, locationName: "  ");
+
+        action.Should().Throw<ArgumentException>().WithParameterName("locationName");
+    }
+
+    [Fact]
+    public void Given_physicalTypeWithLocationAndCoordinates_When_creatingSession_Then_storesLocationAndNoMeetingLink()
+    {
+        var session = Session.Create(
+            Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval(),
+            type: SessionType.Physical,
+            meetingLink: "https://meet.google.com/abc-defg-hij",
+            locationName: " Campus UPT Corp B, Sala B224 ",
+            latitude: 45.7472,
+            longitude: 21.2264);
+
+        session.Type.Should().Be(SessionType.Physical);
+        session.LocationName.Should().Be("Campus UPT Corp B, Sala B224");
+        session.Latitude.Should().Be(45.7472);
+        session.Longitude.Should().Be(21.2264);
+        session.MeetingLink.Should().BeNull();
+    }
+
+    [Fact]
+    public void Given_onlineTypeWithLink_When_creatingSession_Then_storesLinkAndNoLocation()
+    {
+        var session = Session.Create(
+            Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval(),
+            type: SessionType.Online,
+            meetingLink: "https://meet.google.com/abc-defg-hij",
+            locationName: "Sala B224",
+            latitude: 45.7,
+            longitude: 21.2);
+
+        session.Type.Should().Be(SessionType.Online);
+        session.MeetingLink.Should().Be("https://meet.google.com/abc-defg-hij");
+        session.LocationName.Should().BeNull();
+        session.Latitude.Should().BeNull();
+        session.Longitude.Should().BeNull();
+    }
+
+    [Fact]
+    public void Given_latitudeWithoutLongitude_When_creatingPhysicalSession_Then_throwsArgumentException()
+    {
+        var action = () => Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval(), type: SessionType.Physical, locationName: "Sala B224", latitude: 45.7);
+
+        action.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData(91, 21)]
+    [InlineData(45, 181)]
+    public void Given_coordinatesOutOfRange_When_creatingPhysicalSession_Then_throwsArgumentOutOfRangeException(double latitude, double longitude)
+    {
+        var action = () => Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval(), type: SessionType.Physical, locationName: "Sala B224", latitude: latitude, longitude: longitude);
+
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void Given_undefinedSessionType_When_creatingSession_Then_throwsArgumentOutOfRangeException()
+    {
+        var action = () => Session.Create(Guid.NewGuid(), Guid.NewGuid(), CreateSampleInterval(), type: (SessionType)99);
+
+        action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("type");
+    }
 }

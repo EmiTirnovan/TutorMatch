@@ -10,6 +10,12 @@ public enum SessionStatus
     Completed
 }
 
+public enum SessionType
+{
+    Online,
+    Physical
+}
+
 public class Session
 {
     public Guid Id { get; private set; }
@@ -23,6 +29,11 @@ public class Session
     public int Version { get; private set; } = 1;
     public string? Subject { get; private set; }
     public string? Notes { get; private set; }
+    public SessionType Type { get; private set; } = SessionType.Online;
+    public string? MeetingLink { get; private set; }
+    public string? LocationName { get; private set; }
+    public double? Latitude { get; private set; }
+    public double? Longitude { get; private set; }
 
     // Private constructor for persistence/framework deserialization
     private Session()
@@ -37,7 +48,12 @@ public class Session
         SessionStatus status = SessionStatus.Booked,
         int version = 1,
         string? subject = null,
-        string? notes = null)
+        string? notes = null,
+        SessionType type = SessionType.Online,
+        string? meetingLink = null,
+        string? locationName = null,
+        double? latitude = null,
+        double? longitude = null)
     {
         ArgumentNullException.ThrowIfNull(interval);
 
@@ -60,8 +76,9 @@ public class Session
         Version = version;
         Subject = string.IsNullOrWhiteSpace(subject) ? null : subject.Trim();
         Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+        SetMode(type, meetingLink, locationName, latitude, longitude);
     }
-    
+
     public Session(
         Guid id,
         Guid tutorId,
@@ -81,7 +98,12 @@ public class Session
         Guid studentId,
         DateRange interval,
         string? subject = null,
-        string? notes = null)
+        string? notes = null,
+        SessionType type = SessionType.Online,
+        string? meetingLink = null,
+        string? locationName = null,
+        double? latitude = null,
+        double? longitude = null)
     {
         return new Session(
             Guid.NewGuid(),
@@ -91,7 +113,49 @@ public class Session
             SessionStatus.Booked,
             1,
             subject,
-            notes);
+            notes,
+            type,
+            meetingLink,
+            locationName,
+            latitude,
+            longitude);
+    }
+
+    // shortcut: an Online session may have no MeetingLink (legacy rows, direct construction);
+    // no link is generated yet (pending IMeetingService). Make it mandatory once that lands and legacy rows are backfilled.
+    private void SetMode(SessionType type, string? meetingLink, string? locationName, double? latitude, double? longitude)
+    {
+        if (!Enum.IsDefined(type))
+        {
+            throw new ArgumentOutOfRangeException(nameof(type), "Invalid session type.");
+        }
+
+        if (type == SessionType.Online)
+        {
+            Type = type;
+            MeetingLink = string.IsNullOrWhiteSpace(meetingLink) ? null : meetingLink.Trim();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(locationName))
+        {
+            throw new ArgumentException("LocationName is required for physical sessions.", nameof(locationName));
+        }
+
+        if (latitude.HasValue != longitude.HasValue)
+        {
+            throw new ArgumentException("Latitude and Longitude must be provided together.", nameof(latitude));
+        }
+
+        if (latitude is < -90 or > 90 || longitude is < -180 or > 180)
+        {
+            throw new ArgumentOutOfRangeException(nameof(latitude), "GPS coordinates are out of range.");
+        }
+
+        Type = type;
+        LocationName = locationName.Trim();
+        Latitude = latitude;
+        Longitude = longitude;
     }
 
     public void UpdateDetails(string? subject, string? notes)

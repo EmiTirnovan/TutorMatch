@@ -28,7 +28,11 @@ public static class BookSessionEndpoint
             request.StartTime,
             request.EndTime,
             request.Subject,
-            request.Notes);
+            request.Notes,
+            request.Type,
+            request.LocationName,
+            request.Latitude,
+            request.Longitude);
 
         var result = await handler.HandleAsync(command, cancellationToken);
 
