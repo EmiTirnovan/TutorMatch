@@ -7,6 +7,7 @@ using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features;
+using TutorMatch.Api.Features.SemanticSearch;
 using TutorMatch.Api.Features.SemanticSearch.Notifications;
 using TutorMatch.Api.Features.Sessions;
 using TutorMatch.Api.Features.Tutors;
@@ -54,6 +55,7 @@ public class Program
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddCqrs();
         builder.Services.AddMeetingService(builder.Configuration);
+        builder.Services.AddSemanticSearchRateLimiting();
 
         var app = builder.Build();
 
@@ -82,6 +84,9 @@ public class Program
 
             await next();
         });
+
+        // After the response-body compatibility shim, so 429 bodies are written through the wrapped writer.
+        app.UseRateLimiter();
 
         if (app.Environment.IsDevelopment())
         {
@@ -124,7 +129,10 @@ public class Program
         }
 
         // Register in-process subscriber for AI embedding generation
-        TutorSavedNotificationHandler.RegisterSubscriber(app.Services.GetRequiredService<IServiceScopeFactory>());
+        // Unsubscribe on shutdown so stopped hosts (e.g. test servers) stop receiving notifications.
+        var embeddingSubscription = TutorSavedNotificationHandler.RegisterSubscriber(
+            app.Services.GetRequiredService<IServiceScopeFactory>());
+        app.Lifetime.ApplicationStopping.Register(embeddingSubscription.Dispose);
 
         app.Run();
 

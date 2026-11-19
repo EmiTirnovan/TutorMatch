@@ -13,7 +13,8 @@ public static class SemanticSearchEndpoint
     public static IEndpointRouteBuilder MapSemanticSearchEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/tutors/semantic-search", HandleAsync)
-           .WithTags("Tutors");
+           .WithTags("Tutors")
+           .RequireRateLimiting(SemanticSearchRateLimiting.PolicyName);
 
         return app;
     }
@@ -21,7 +22,8 @@ public static class SemanticSearchEndpoint
     public static IEndpointRouteBuilder MapSemanticSearch(this IEndpointRouteBuilder group)
     {
         group.MapGet("/semantic-search", HandleAsync)
-             .WithTags("Tutors");
+             .WithTags("Tutors")
+             .RequireRateLimiting(SemanticSearchRateLimiting.PolicyName);
 
         return group;
     }
