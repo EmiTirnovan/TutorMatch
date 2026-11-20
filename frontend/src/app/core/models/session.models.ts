@@ -11,12 +11,22 @@ export enum SessionStatus {
   Completed = 3
 }
 
+// Mirrors the backend SessionType enum (serialized as a number).
+export enum SessionType {
+  Online = 0,
+  Physical = 1
+}
+
 export interface BookSessionRequest {
   tutorId: string;
   startTime: string;
   endTime: string;
   subject?: string;
   notes?: string;
+  type?: SessionType;
+  locationName?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface CancelSessionRequest {
@@ -39,6 +49,11 @@ export interface SessionResponse {
   notes?: string;
   tutorName?: string;
   studentName?: string;
+  type?: SessionType;
+  meetingLink?: string | null;
+  locationName?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface MySessionsResponse {

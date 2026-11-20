@@ -15,15 +15,16 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DateRangeDto } from '../../../../core/models/date-range.dto';
 import { TutorDetailsResponse } from '../../../../core/models/tutor.models';
-import { ApiError, SessionResponse } from '../../../../core/models/session.models';
+import { ApiError, SessionResponse, SessionType } from '../../../../core/models/session.models';
 import { SessionService } from '../../../../core/services/session.service';
 import { UserContextService } from '../../../../core/services/user-context.service';
+import { LatLng, LocationMapComponent } from '../../../sessions/components/location-map/location-map.component';
 import { keepTabFocusInside, restoreFocusOnDestroy } from '../../../../core/utils/modal-focus';
 
 @Component({
   selector: 'app-book-session-modal',
   standalone: true,
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, LocationMapComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './book-session-modal.component.html',
   styleUrl: './book-session-modal.component.css'
@@ -47,6 +48,13 @@ export class BookSessionModalComponent implements OnInit, AfterViewInit {
   readonly selectedSubjectType = signal<string>('__custom__');
   readonly customSubject = signal<string>('');
   readonly notes = signal<string>('');
+
+  // Online vs physical meeting
+  readonly SessionType = SessionType;
+  readonly sessionType = signal<SessionType>(SessionType.Online);
+  readonly locationName = signal<string>('');
+  readonly pickedPoint = signal<LatLng | null>(null);
+  readonly locationMissing = signal(false);
 
   constructor() {
     restoreFocusOnDestroy();
@@ -84,6 +92,15 @@ export class BookSessionModalComponent implements OnInit, AfterViewInit {
     const isCustom = this.selectedSubjectType() === '__custom__' || !this.tutor().subjects?.length;
     const finalSubject = (isCustom ? this.customSubject() : this.selectedSubjectType()).trim();
     const finalNotes = this.notes().trim();
+    const isPhysical = this.sessionType() === SessionType.Physical;
+    const finalLocation = this.locationName().trim();
+    const point = this.pickedPoint();
+
+    // The backend rejects physical sessions without a location; catch it before the round trip.
+    this.locationMissing.set(isPhysical && !finalLocation);
+    if (this.locationMissing()) {
+      return;
+    }
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
@@ -94,7 +111,13 @@ export class BookSessionModalComponent implements OnInit, AfterViewInit {
         startTime: this.slot().start,
         endTime: this.slot().end,
         subject: finalSubject || undefined,
-        notes: finalNotes || undefined
+        notes: finalNotes || undefined,
+        type: this.sessionType(),
+        ...(isPhysical && {
+          locationName: finalLocation,
+          latitude: point?.lat,
+          longitude: point?.lng
+        })
       })
       .subscribe({
         next: session => this.booked.emit(session),

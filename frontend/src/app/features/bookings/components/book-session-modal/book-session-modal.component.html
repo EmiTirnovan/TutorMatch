@@ -52,6 +52,61 @@
         }
       </div>
 
+      <fieldset class="form-group session-type-group">
+        <legend class="form-label">Session format</legend>
+        <div class="session-type-options">
+          <label class="session-type-option" [class.is-selected]="sessionType() === SessionType.Online">
+            <input
+              type="radio"
+              name="booking-session-type"
+              data-testid="type-online"
+              [checked]="sessionType() === SessionType.Online"
+              (change)="sessionType.set(SessionType.Online)"
+            />
+            Online (Google Meet)
+          </label>
+          <label class="session-type-option" [class.is-selected]="sessionType() === SessionType.Physical">
+            <input
+              type="radio"
+              name="booking-session-type"
+              data-testid="type-physical"
+              [checked]="sessionType() === SessionType.Physical"
+              (change)="sessionType.set(SessionType.Physical)"
+            />
+            Fizic (Fata in fata)
+          </label>
+        </div>
+
+        @if (sessionType() === SessionType.Online) {
+          <p class="session-type-info" data-testid="online-info">
+            A Google Meet link will be generated automatically and shown in My Sessions after booking.
+          </p>
+        } @else {
+          <label for="booking-location" class="form-label location-label">Address / room</label>
+          <input
+            id="booking-location"
+            type="text"
+            class="form-control"
+            placeholder="e.g. Corp C, sala C309"
+            [class.is-invalid]="locationMissing()"
+            [attr.aria-invalid]="locationMissing()"
+            [attr.aria-describedby]="locationMissing() ? 'booking-location-error' : null"
+            [ngModel]="locationName()"
+            (ngModelChange)="locationName.set($event)"
+          />
+          @if (locationMissing()) {
+            <span id="booking-location-error" class="field-error" role="alert">Enter the address or room for the meeting.</span>
+          }
+          <span class="session-type-info">Optional: click the map to pin the exact spot.</span>
+          <app-location-map
+            [editable]="true"
+            [latitude]="pickedPoint()?.lat"
+            [longitude]="pickedPoint()?.lng"
+            (picked)="pickedPoint.set($event)"
+          />
+        }
+      </fieldset>
+
       <div class="form-group">
         <label for="booking-notes" class="form-label">Session Details & Goals (optional)</label>
         <textarea

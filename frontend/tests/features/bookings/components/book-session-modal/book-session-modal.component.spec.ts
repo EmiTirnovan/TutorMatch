@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import type { Mock } from 'vitest';
 import { BookSessionModalComponent } from '../../../../../src/app/features/bookings/components/book-session-modal/book-session-modal.component';
 import { TutorDetailsResponse } from '../../../../../src/app/core/models/tutor.models';
-import { DEMO_STUDENT_ID } from '../../../../../src/app/core/models/session.models';
+import { DEMO_STUDENT_ID, SessionType } from '../../../../../src/app/core/models/session.models';
 
 const TUTOR: TutorDetailsResponse = {
   id: 'tutor-1',
@@ -87,7 +87,8 @@ describe('BookSessionModalComponent', () => {
       tutorId: 'tutor-1',
       startTime: SLOT.start,
       endTime: SLOT.end,
-      subject: 'Discrete Math'
+      subject: 'Discrete Math',
+      type: SessionType.Online
     });
     req.flush({ id: 'session-1', subject: 'Discrete Math' });
 
@@ -107,7 +108,8 @@ describe('BookSessionModalComponent', () => {
       startTime: SLOT.start,
       endTime: SLOT.end,
       subject: 'Teoria Grafurilor',
-      notes: 'Ajutor la tema 2 si arbori minimi'
+      notes: 'Ajutor la tema 2 si arbori minimi',
+      type: SessionType.Online
     });
     req.flush({ id: 'session-2', subject: 'Teoria Grafurilor', notes: 'Ajutor la tema 2 si arbori minimi' });
   });
@@ -220,5 +222,72 @@ describe('BookSessionModalComponent', () => {
 
     expect(text()).toContain('Please try again');
     expect(confirmButton()?.disabled).toBe(false);
+  });
+
+  describe('session format', () => {
+    const query = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
+    const choosePhysical = (): void => {
+      (query('[data-testid="type-physical"]') as HTMLInputElement).click();
+      fixture.detectChanges();
+    };
+
+    it('Given_DefaultFormat_When_Opened_Then_OnlineSelectedWithMeetInfo', () => {
+      expect((query('[data-testid="type-online"]') as HTMLInputElement).checked).toBe(true);
+      expect(query('[data-testid="online-info"]')?.textContent).toContain('Google Meet link will be generated automatically');
+      expect(query('#booking-location')).toBeNull();
+      expect(query('app-location-map')).toBeNull();
+    });
+
+    it('Given_PhysicalSelected_When_Rendering_Then_ShowsLocationInputAndMapPicker', () => {
+      choosePhysical();
+
+      expect(component.sessionType()).toBe(SessionType.Physical);
+      expect(query('[data-testid="online-info"]')).toBeNull();
+      expect(query('#booking-location')).not.toBeNull();
+      expect(query('app-location-map')).not.toBeNull();
+    });
+
+    it('Given_PhysicalWithoutLocation_When_Confirming_Then_ShowsErrorAndSendsNothing', () => {
+      choosePhysical();
+
+      confirmButton()?.click();
+      fixture.detectChanges();
+
+      httpMock.expectNone('/api/v2/sessions');
+      expect(text()).toContain('Enter the address or room');
+      expect(query('#booking-location')?.getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('Given_PhysicalWithLocationAndPin_When_Confirming_Then_SendsLocationAndCoordinates', () => {
+      choosePhysical();
+      component.locationName.set('  Corp C, sala C309 ');
+      component.pickedPoint.set({ lat: 47.17, lng: 27.57 });
+
+      confirmButton()?.click();
+      const req = httpMock.expectOne('/api/v2/sessions');
+      expect(req.request.body).toEqual({
+        tutorId: 'tutor-1',
+        startTime: SLOT.start,
+        endTime: SLOT.end,
+        subject: 'Discrete Math',
+        type: SessionType.Physical,
+        locationName: 'Corp C, sala C309',
+        latitude: 47.17,
+        longitude: 27.57
+      });
+      req.flush({ id: 'session-3' });
+    });
+
+    it('Given_PhysicalWithLocationOnly_When_Confirming_Then_SendsNoCoordinates', () => {
+      choosePhysical();
+      component.locationName.set('Biblioteca Centrala');
+
+      confirmButton()?.click();
+      const req = httpMock.expectOne('/api/v2/sessions');
+      expect(req.request.body.locationName).toBe('Biblioteca Centrala');
+      expect(req.request.body.latitude).toBeUndefined();
+      expect(req.request.body.longitude).toBeUndefined();
+      req.flush({ id: 'session-4' });
+    });
   });
 });
