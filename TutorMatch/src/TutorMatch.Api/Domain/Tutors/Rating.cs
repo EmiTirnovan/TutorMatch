@@ -15,10 +15,10 @@ public class Rating
     public Rating(Guid sessionId, Guid tutorId, Guid studentId, int score, string? notes = null)
     {
         if (score < 1 || score > 5)
-            throw new ArgumentException("Scorul trebuie să fie intre 1 și 5.", nameof(score));
+            throw new ArgumentException("Score must be between 1 and 5.", nameof(score));
 
         if (sessionId == Guid.Empty || tutorId == Guid.Empty || studentId == Guid.Empty)
-            throw new ArgumentException("ID-urile pentru sesiune, tutore si student sunt obligatorii.");
+            throw new ArgumentException("Session, tutor and student IDs are required.");
 
         Id = Guid.NewGuid();
         SessionId = sessionId;

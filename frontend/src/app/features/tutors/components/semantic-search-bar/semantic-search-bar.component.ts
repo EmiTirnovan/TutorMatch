@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, effect, input, model, output } from
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
-export const SEARCH_PLACEHOLDER = 'Descrie problema la care ai nevoie de ajutor...';
+export const SEARCH_PLACEHOLDER = 'Describe what you need help with...';
 export const MIN_QUERY_LENGTH = 3;
 
 @Component({

@@ -23,17 +23,17 @@ public class RateSessionCommandHandler : ICommandHandler<RateSessionCommand, Res
 
         if (session is null)
         {
-            return Result.Failure(Error.NotFound("Session.NotFound", "Sesiunea nu a fost găsită."));
+            return Result.Failure(Error.NotFound("Session.NotFound", "Session not found."));
         }
 
         if (session.StudentId != command.StudentId)
         {
-            return Result.Failure(Error.Conflict("Session.Conflict", "Doar studentul participant poate evalua sesiunea."));
+            return Result.Failure(Error.Conflict("Session.Conflict", "Only the student who attended can rate this session."));
         }
 
         if (session.Status != SessionStatus.Completed)
         {
-            return Result.Failure(Error.Conflict("Session.Conflict", "Sesiunea poate fi evaluată doar după ce a fost finalizată."));
+            return Result.Failure(Error.Conflict("Session.Conflict", "A session can only be rated after it has been completed."));
         }
 
         // Verificăm dacă există deja un rating pentru această sesiune
@@ -42,7 +42,7 @@ public class RateSessionCommandHandler : ICommandHandler<RateSessionCommand, Res
             
         if (ratingExists)
         {
-            return Result.Failure(Error.Conflict("Rating.Conflict", "Această sesiune a fost deja evaluată."));
+            return Result.Failure(Error.Conflict("Rating.Conflict", "This session has already been rated."));
         }
 
         try

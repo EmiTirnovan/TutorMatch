@@ -37,10 +37,10 @@ describe('SemanticSearchBarComponent', () => {
   });
 
   it('Given_EmptyBar_When_Rendering_Then_ShowsPlaceholderAndDisabledSearchButton', () => {
-    expect(input().placeholder).toBe('Descrie problema la care ai nevoie de ajutor...');
+    expect(input().placeholder).toBe('Describe what you need help with...');
     expect(SEARCH_PLACEHOLDER).toBe(input().placeholder);
     expect(button().disabled).toBe(true);
-    expect(button().textContent).toContain('Caută');
+    expect(button().textContent).toContain('Search');
   });
 
   it('Given_TypedQuery_When_Submitting_Then_EmitsTrimmedQuery', () => {
@@ -119,7 +119,7 @@ describe('SemanticSearchBarComponent', () => {
     expect(input().disabled).toBe(true);
     expect(button().disabled).toBe(true);
     expect(element().querySelector('.spinner')).not.toBeNull();
-    expect(button().textContent).toContain('Se caută');
+    expect(button().textContent).toContain('Searching');
   });
 
   it('Given_Loading_When_Submitting_Then_DoesNotEmit', () => {

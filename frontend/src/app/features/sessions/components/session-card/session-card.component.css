@@ -143,7 +143,7 @@
 .map-popover {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 0.5rem;
   margin-top: 0.5rem;
   padding: 0.5rem;
@@ -154,4 +154,8 @@
 
 .meet-btn {
   text-decoration: none;
+}
+
+.map-popover > button {
+  align-self: flex-end;
 }

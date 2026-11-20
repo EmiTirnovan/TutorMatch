@@ -234,7 +234,7 @@ describe('SessionCardComponent', () => {
       setup({ type: SessionType.Online, meetingLink: 'https://meet.google.com/abc-defg-hij' });
 
       const meet = query('meet-btn') as HTMLAnchorElement;
-      expect(meet.textContent?.trim()).toBe('Alatura-te pe Google Meet');
+      expect(meet.textContent?.trim()).toBe('Join on Google Meet');
       expect(meet.href).toBe('https://meet.google.com/abc-defg-hij');
       expect(meet.target).toBe('_blank');
       expect(meet.rel).toContain('noopener');
@@ -263,7 +263,7 @@ describe('SessionCardComponent', () => {
       expect(query('map-popover')).toBeNull();
 
       const mapBtn = query('map-btn') as HTMLButtonElement;
-      expect(mapBtn.textContent?.trim()).toBe('Vezi pe harta');
+      expect(mapBtn.textContent?.trim()).toBe('View on map');
       mapBtn.click();
       fixture.detectChanges();
       expect(query('map-popover')).not.toBeNull();

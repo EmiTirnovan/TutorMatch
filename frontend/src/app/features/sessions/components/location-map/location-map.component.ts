@@ -24,7 +24,7 @@ const DEFAULT_CENTER: LatLng = { lat: 47.1585, lng: 27.6014 };
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div #map class="location-map" role="application" [attr.aria-label]="editable() ? 'Map: click to pick the meeting point' : 'Map showing the meeting point'"></div>`,
-  styles: `.location-map { height: 220px; width: 100%; border-radius: 8px; border: 1px solid var(--slate-200); }`
+  styles: `:host { display: block; width: 100%; } .location-map { height: 220px; width: 100%; border-radius: 8px; border: 1px solid var(--slate-200); }`
 })
 export class LocationMapComponent implements OnDestroy {
   readonly latitude = input<number | null | undefined>(null);

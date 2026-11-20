@@ -31,7 +31,7 @@ export class GeocodingService {
       .set('format', 'jsonv2')
       .set('countrycodes', 'ro')
       .set('limit', 5)
-      .set('accept-language', 'ro');
+      .set('accept-language', 'en');
     return this.http
       .get<NominatimPlace[]>(`${NOMINATIM_URL}/search`, { params })
       .pipe(map(places => places.map(toPlace)));
@@ -43,7 +43,7 @@ export class GeocodingService {
       .set('lat', lat)
       .set('lon', lng)
       .set('format', 'jsonv2')
-      .set('accept-language', 'ro');
+      .set('accept-language', 'en');
     return this.http
       .get<NominatimPlace | { error: string }>(`${NOMINATIM_URL}/reverse`, { params })
       .pipe(map(place => ('display_name' in place ? toPlace(place) : null)));
