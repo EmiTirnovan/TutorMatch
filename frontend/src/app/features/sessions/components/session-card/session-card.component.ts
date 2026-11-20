@@ -16,13 +16,13 @@ import {
   isLateCancelled,
   isUpcoming
 } from '../../../../core/models/session.models';
-import { LocationMapComponent } from '../location-map/location-map.component';
+import { LocationViewerMapComponent } from '../../../locations/components/location-viewer-map/location-viewer-map.component';
 import { TimeProvider } from '../../../../core/services/time-provider.service';
 
 @Component({
   selector: 'app-session-card',
   standalone: true,
-  imports: [CommonModule, DatePipe, LocationMapComponent],
+  imports: [CommonModule, DatePipe, LocationViewerMapComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './session-card.component.html',
   styleUrl: './session-card.component.css'
