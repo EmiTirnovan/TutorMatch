@@ -119,7 +119,7 @@ public class Program
             var studentRepo = scope.ServiceProvider.GetRequiredService<IStudentRepository>();
             if (studentRepo.GetById(demoStudentId) is null)
             {
-                studentRepo.Add(new Student(demoStudentId, "Alex Radu", "alex.radu@student.upt.ro"));
+                studentRepo.Add(new Student(demoStudentId, "Alex Radu", "alex.radu@example.com"));
             }
         }
 

@@ -1,5 +1,5 @@
 <form class="search-bar" role="search" (submit)="onSubmit($event)">
-  <label class="visually-hidden" for="semantic-search-input">Căutare după problemă</label>
+  <label class="visually-hidden" for="semantic-search-input">Search by problem</label>
   <input
     id="semantic-search-input"
     type="search"
@@ -11,9 +11,9 @@
   <button type="submit" class="btn btn-accent search-button" [disabled]="loading() || !query().trim()">
     @if (loading()) {
       <span class="spinner" aria-hidden="true"></span>
-      <span>Se caută...</span>
+      <span>Searching...</span>
     } @else {
-      <span>Caută</span>
+      <span>Search</span>
     }
   </button>
 </form>

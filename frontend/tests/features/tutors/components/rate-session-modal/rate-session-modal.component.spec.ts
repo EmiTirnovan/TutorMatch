@@ -79,13 +79,13 @@ describe('RateSessionModalComponent', () => {
   });
 
   it('Given_ServerReportsDuplicate_When_Submitting_Then_ShowsErrorAndLocksForm', () => {
-    const conflict = new HttpErrorResponse({ status: 409, error: { detail: 'Această sesiune a fost deja evaluată.' } });
+    const conflict = new HttpErrorResponse({ status: 409, error: { detail: 'This session has already been rated.' } });
     createModal('Completed', throwError(() => conflict));
 
     component.selectScore(2);
     component.submit();
 
-    expect(component.errorMessage()).toBe('Această sesiune a fost deja evaluată.');
+    expect(component.errorMessage()).toBe('This session has already been rated.');
     expect(component.isRated()).toBe(true);
     component.submit();
     expect(rateSpy).toHaveBeenCalledTimes(1);
@@ -305,13 +305,13 @@ describe('RateSessionModalComponent', () => {
   });
 
   it('Given_ServerReportsDuplicate_When_SubmittingFromDom_Then_ShowsServerMessageWithoutSuccessAlert', () => {
-    const conflict = new HttpErrorResponse({ status: 409, error: { detail: 'Această sesiune a fost deja evaluată.' } });
+    const conflict = new HttpErrorResponse({ status: 409, error: { detail: 'This session has already been rated.' } });
     createModal('Completed', throwError(() => conflict));
     stars()[1].click();
 
     submitForm();
 
-    expect(query('.alert-danger').textContent).toContain('Această sesiune a fost deja evaluată.');
+    expect(query('.alert-danger').textContent).toContain('This session has already been rated.');
     expect(query('.alert-success')).toBeNull();
     expect(query<HTMLButtonElement>('button[type="submit"]').disabled).toBe(true);
     expect(stars().every((star) => star.disabled)).toBe(true);

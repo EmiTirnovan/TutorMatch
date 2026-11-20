@@ -491,6 +491,21 @@ public class BookSessionCommandHandlerTests
     }
 
     [Fact]
+    public async Task Given_physicalCommandWithoutCoordinates_When_handlingBookSession_Then_returnsValidationErrorAndSavesNothing()
+    {
+        var (handler, sessions, _, start, end) = CreateBookableSetup();
+        var command = new BookSessionCommand(StaticTutorId, StaticStudentId, start, end,
+            Type: SessionType.Physical, LocationName: "Sala B224");
+
+        var result = await handler.HandleAsync(command);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be("Session.Validation");
+        result.Error.Description.Should().Contain("Latitude and Longitude");
+        sessions.GetAll().Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Given_physicalCommandWithoutLocation_When_handlingBookSession_Then_returnsValidationError()
     {
         var (handler, _, _, start, end) = CreateBookableSetup();

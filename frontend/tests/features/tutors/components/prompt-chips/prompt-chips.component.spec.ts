@@ -66,6 +66,6 @@ describe('PromptChipsComponent', () => {
   });
 
   it('Given_Chips_When_Rendering_Then_ExposesAccessibleList', () => {
-    expect(element().querySelector('.chips')?.getAttribute('aria-label')).toBe('Căutări sugerate');
+    expect(element().querySelector('.chips')?.getAttribute('aria-label')).toBe('Suggested searches');
   });
 });

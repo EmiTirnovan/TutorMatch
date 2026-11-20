@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SessionCardComponent } from '../../../../../src/app/features/sessions/components/session-card/session-card.component';
 import { TimeProvider } from '../../../../../src/app/core/services/time-provider.service';
-import { SessionResponse, SessionStatus } from '../../../../../src/app/core/models/session.models';
+import { SessionResponse, SessionStatus, SessionType } from '../../../../../src/app/core/models/session.models';
 
 describe('SessionCardComponent', () => {
   let component: SessionCardComponent;
@@ -224,6 +224,61 @@ describe('SessionCardComponent', () => {
       rateBtn.click();
 
       expect(emitted).toEqual(expect.objectContaining({ id: 'session-1' }));
+    });
+  });
+
+  describe('Online vs Physical', () => {
+    const query = (id: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-testid="${id}"]`);
+
+    it('Given_UpcomingOnlineSessionWithLink_When_Rendering_Then_ShowsMeetButtonOpeningNewTab', () => {
+      setup({ type: SessionType.Online, meetingLink: 'https://meet.google.com/abc-defg-hij' });
+
+      const meet = query('meet-btn') as HTMLAnchorElement;
+      expect(meet.textContent?.trim()).toBe('Join on Google Meet');
+      expect(meet.href).toBe('https://meet.google.com/abc-defg-hij');
+      expect(meet.target).toBe('_blank');
+      expect(meet.rel).toContain('noopener');
+      expect(query('location-info')).toBeNull();
+    });
+
+    it('Given_TutorRole_When_RenderingOnlineSession_Then_TutorAlsoGetsMeetButton', () => {
+      setup({ type: SessionType.Online, meetingLink: 'https://meet.google.com/abc-defg-hij' }, 'tutor');
+
+      expect(query('meet-btn')).not.toBeNull();
+    });
+
+    it('Given_CancelledOrLinklessOnlineSession_When_Rendering_Then_HidesMeetButton', () => {
+      setup({ type: SessionType.Online, meetingLink: 'https://meet.google.com/x', status: SessionStatus.Cancelled });
+      expect(query('meet-btn')).toBeNull();
+
+      setup({ type: SessionType.Online, meetingLink: null });
+      expect(query('meet-btn')).toBeNull();
+    });
+
+    it('Given_PhysicalSessionWithCoordinates_When_ClickingViewOnMap_Then_TogglesMapPopover', () => {
+      setup({ type: SessionType.Physical, locationName: 'Corp C, sala C309', latitude: 47.17, longitude: 27.57 });
+
+      expect(query('location-info')?.textContent).toContain('Corp C, sala C309');
+      expect(query('meet-btn')).toBeNull();
+      expect(query('map-popover')).toBeNull();
+
+      const mapBtn = query('map-btn') as HTMLButtonElement;
+      expect(mapBtn.textContent?.trim()).toBe('View on map');
+      mapBtn.click();
+      fixture.detectChanges();
+      expect(query('map-popover')).not.toBeNull();
+      expect(mapBtn.getAttribute('aria-expanded')).toBe('true');
+
+      query('map-popover')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      fixture.detectChanges();
+      expect(query('map-popover')).toBeNull();
+    });
+
+    it('Given_PhysicalSessionWithoutCoordinates_When_Rendering_Then_ShowsAddressWithoutMapButton', () => {
+      setup({ type: SessionType.Physical, locationName: 'Biblioteca Centrala' });
+
+      expect(query('location-info')?.textContent).toContain('Biblioteca Centrala');
+      expect(query('map-btn')).toBeNull();
     });
   });
 });

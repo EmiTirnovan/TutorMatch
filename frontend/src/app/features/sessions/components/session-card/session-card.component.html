@@ -26,6 +26,38 @@
       }
     </div>
 
+    @if (isPhysical()) {
+      <div class="location-info" data-testid="location-info">
+        <span class="participant-label">Location</span>
+        <span class="location-name">{{ session().locationName }}</span>
+        @if (hasCoordinates()) {
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            data-testid="map-btn"
+            aria-controls="map-popover"
+            [attr.aria-expanded]="mapOpen()"
+            (click)="mapOpen.set(!mapOpen())"
+          >
+            View on map
+          </button>
+        }
+      </div>
+      @if (mapOpen()) {
+        <div
+          id="map-popover"
+          class="map-popover"
+          role="dialog"
+          aria-label="Session location"
+          data-testid="map-popover"
+          (keydown.escape)="mapOpen.set(false)"
+        >
+          <app-location-map [latitude]="session().latitude" [longitude]="session().longitude" />
+          <button type="button" class="btn btn-secondary btn-sm" (click)="mapOpen.set(false)">Close map</button>
+        </div>
+      }
+    }
+
     @if (isLateCancelledSession()) {
       <div class="late-cancellation-note">
         <svg
@@ -73,6 +105,18 @@
   </div>
 
   <div class="card-actions">
+    @if (meetingLink(); as link) {
+      <a
+        class="btn btn-primary btn-sm meet-btn"
+        data-testid="meet-btn"
+        [href]="link"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Join on Google Meet
+      </a>
+    }
+
     @if (canCancel()) {
       <button
         type="button"

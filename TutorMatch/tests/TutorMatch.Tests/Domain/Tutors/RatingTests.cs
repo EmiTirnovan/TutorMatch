@@ -37,7 +37,7 @@ public class RatingTests
         var action = () => new Rating(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), invalidScore);
         
         // Assert
-        action.Should().Throw<ArgumentException>().WithMessage("*Scorul trebuie să fie intre 1 și 5*");
+        action.Should().Throw<ArgumentException>().WithMessage("*Score must be between 1 and 5*");
     }
 
     [Fact]

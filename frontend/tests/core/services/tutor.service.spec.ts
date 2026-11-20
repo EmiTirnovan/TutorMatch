@@ -215,9 +215,9 @@ describe('TutorService', () => {
     });
     httpMock
       .expectOne('/api/tutors/tutor-1/sessions/session-1/rate')
-      .flush({ detail: 'Această sesiune a fost deja evaluată.' }, { status: 409, statusText: 'Conflict' });
+      .flush({ detail: 'This session has already been rated.' }, { status: 409, statusText: 'Conflict' });
 
     expect(status).toBe(409);
-    expect(detail).toBe('Această sesiune a fost deja evaluată.');
+    expect(detail).toBe('This session has already been rated.');
   });
 });
