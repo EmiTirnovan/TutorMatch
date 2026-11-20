@@ -11,7 +11,10 @@ public static class DeleteSessionEndpoint
 {
     public static IEndpointRouteBuilder MapDeleteSession(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{id:guid}", HandleAsync);
+        group.MapDelete("/{id:guid}", HandleAsync)
+            .WithSummary("Delete a session")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesErrors(StatusCodes.Status404NotFound);
         return group;
     }
 

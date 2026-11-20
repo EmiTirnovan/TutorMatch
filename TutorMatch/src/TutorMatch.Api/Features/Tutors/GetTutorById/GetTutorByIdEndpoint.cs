@@ -11,7 +11,10 @@ public static class GetTutorByIdEndpoint
 {
     public static IEndpointRouteBuilder MapGetTutorById(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/{id:guid}", HandleAsync);
+        group.MapGet("/{id:guid}", HandleAsync)
+            .WithSummary("Get a tutor by id")
+            .Produces<GetTutorByIdResponse>(StatusCodes.Status200OK)
+            .ProducesErrors(StatusCodes.Status404NotFound);
         return group;
     }
 

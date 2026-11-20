@@ -11,7 +11,10 @@ public static class GetSessionByIdEndpoint
 {
     public static IEndpointRouteBuilder MapGetSessionById(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/{id:guid}", HandleAsync);
+        group.MapGet("/{id:guid}", HandleAsync)
+            .WithSummary("Get a session by id")
+            .Produces<GetSessionByIdResponse>(StatusCodes.Status200OK)
+            .ProducesErrors(StatusCodes.Status404NotFound);
         return group;
     }
 

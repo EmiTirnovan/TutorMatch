@@ -93,7 +93,7 @@ public class Program
             });
         }
 
-        app.MapGet("/", () => "TutorMatch API is running.");
+        app.MapGet("/", () => "TutorMatch API is running.").ExcludeFromDescription();
 
         app.MapTutorEndpoints();
         app.MapSessionEndpoints();

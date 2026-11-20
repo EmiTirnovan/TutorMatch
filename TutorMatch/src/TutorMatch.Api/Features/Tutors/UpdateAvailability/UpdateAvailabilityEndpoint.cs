@@ -12,7 +12,10 @@ public static class UpdateAvailabilityEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateAvailability(this IEndpointRouteBuilder group)
     {
-        group.MapPut("/{id:guid}/availability", HandleAsync);
+        group.MapPut("/{id:guid}/availability", HandleAsync)
+            .WithSummary("Replace a tutor's availability")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound);
         return group;
     }
 

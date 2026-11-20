@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Routing;
-using TutorMatch.Api.Features.SemanticSearch;
 using TutorMatch.Api.Features.Tutors.CreateTutor;
 using TutorMatch.Api.Features.Tutors.DeleteTutor;
 using TutorMatch.Api.Features.Tutors.GetTutorById;
@@ -15,13 +14,13 @@ public static class TutorsEndpoints
 {
     public static IEndpointRouteBuilder MapTutorEndpoints(this IEndpointRouteBuilder app)
     {
-        var v2Group = app.MapGroup("/api/v2/tutors").WithTags("Tutors v2");
+        var v2Group = app.MapGroup("/api/v2/tutors").WithTags("Tutors").WithGroupName("v2");
         MapRoutes(v2Group);
 
-        var v1Group = app.MapGroup("/api/v1/tutors").WithTags("Tutors v1");
+        var v1Group = app.MapGroup("/api/v1/tutors").WithTags("Tutors").WithGroupName("v1");
         MapRoutes(v1Group);
 
-        var legacyGroup = app.MapGroup("/api/tutors").WithTags("Tutors");
+        var legacyGroup = app.MapGroup("/api/tutors").WithTags("Tutors (unversioned)").WithGroupName("v1");
         MapRoutes(legacyGroup);
 
         return app;
@@ -35,6 +34,5 @@ public static class TutorsEndpoints
         group.MapUpdateTutor();
         group.MapUpdateAvailability();
         group.MapDeleteTutor();
-        group.MapSemanticSearch();
     }
 }
