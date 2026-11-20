@@ -267,6 +267,7 @@ describe('SessionCardComponent', () => {
       mapBtn.click();
       fixture.detectChanges();
       expect(query('map-popover')).not.toBeNull();
+      expect(query('viewer-address')?.textContent).toBe('Corp C, sala C309');
       expect(mapBtn.getAttribute('aria-expanded')).toBe('true');
 
       query('map-popover')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));

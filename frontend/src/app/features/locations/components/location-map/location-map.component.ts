@@ -7,7 +7,7 @@ import {
   effect,
   input,
   output,
-  viewChild
+  viewChild,
 } from '@angular/core';
 import type * as Leaflet from 'leaflet';
 
@@ -23,8 +23,26 @@ const DEFAULT_CENTER: LatLng = { lat: 47.1585, lng: 27.6014 };
   selector: 'app-location-map',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div #map class="location-map" role="application" [attr.aria-label]="editable() ? 'Map: click to pick the meeting point' : 'Map showing the meeting point'"></div>`,
-  styles: `:host { display: block; width: 100%; } .location-map { height: 220px; width: 100%; border-radius: 8px; border: 1px solid var(--slate-200); }`
+  template: `<div
+    #map
+    class="location-map"
+    role="application"
+    [attr.aria-label]="
+      editable() ? 'Map: click to pick the meeting point' : 'Map showing the meeting point'
+    "
+  ></div>`,
+  styles: `
+    :host {
+      display: block;
+      width: 100%;
+    }
+    .location-map {
+      height: 220px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--slate-200);
+    }
+  `,
 })
 export class LocationMapComponent implements OnDestroy {
   readonly latitude = input<number | null | undefined>(null);
@@ -58,11 +76,11 @@ export class LocationMapComponent implements OnDestroy {
     this.map = L.map(this.host().nativeElement).setView(DEFAULT_CENTER, 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
+      attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this.map);
 
     if (this.editable()) {
-      this.map.on('click', e => this.picked.emit({ lat: e.latlng.lat, lng: e.latlng.lng }));
+      this.map.on('click', (e) => this.picked.emit({ lat: e.latlng.lat, lng: e.latlng.lng }));
     }
     this.showPoint(this.latitude(), this.longitude());
   }
