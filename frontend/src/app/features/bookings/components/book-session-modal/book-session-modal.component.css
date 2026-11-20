@@ -122,3 +122,49 @@
   font-size: 0.8125rem;
   color: #b91c1c;
 }
+
+.address-search {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.address-search .form-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.location-verified {
+  font-size: 0.8125rem;
+  color: #15803d;
+}
+
+.address-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.address-result {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--slate-100);
+  background: none;
+  text-align: left;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.address-result:hover,
+.address-result:focus-visible {
+  background-color: var(--slate-50);
+}
+
+.location-hint {
+  font-size: 0.8125rem;
+  color: #b45309;
+}

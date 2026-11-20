@@ -4,11 +4,12 @@ import {
   ElementRef,
   OnDestroy,
   afterNextRender,
+  effect,
   input,
   output,
   viewChild
 } from '@angular/core';
-import type { CircleMarker, Map as LeafletMap } from 'leaflet';
+import type * as Leaflet from 'leaflet';
 
 export interface LatLng {
   lat: number;
@@ -32,11 +33,15 @@ export class LocationMapComponent implements OnDestroy {
   readonly picked = output<LatLng>();
 
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('map');
-  private map?: LeafletMap;
+  private L?: typeof Leaflet;
+  private map?: Leaflet.Map;
+  private marker?: Leaflet.CircleMarker;
   private destroyed = false;
 
   constructor() {
     afterNextRender(() => void this.init());
+    // The parent owns the point: the marker follows the inputs (search result, verified click, or cleared).
+    effect(() => this.showPoint(this.latitude(), this.longitude()));
   }
 
   ngOnDestroy(): void {
@@ -49,27 +54,31 @@ export class LocationMapComponent implements OnDestroy {
     const L = await import('leaflet');
     if (this.destroyed) return;
 
-    const lat = this.latitude();
-    const lng = this.longitude();
-    const hasPoint = lat != null && lng != null;
-    const center: LatLng = hasPoint ? { lat, lng } : DEFAULT_CENTER;
-
-    const map = L.map(this.host().nativeElement).setView(center, hasPoint ? 16 : 13);
-    this.map = map;
+    this.L = L;
+    this.map = L.map(this.host().nativeElement).setView(DEFAULT_CENTER, 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    // circleMarker avoids Leaflet's default icon images, which need extra asset config.
-    let marker: CircleMarker | undefined = hasPoint ? L.circleMarker(center, { radius: 9 }).addTo(map) : undefined;
+    }).addTo(this.map);
 
     if (this.editable()) {
-      map.on('click', e => {
-        marker ??= L.circleMarker(e.latlng, { radius: 9 }).addTo(map);
-        marker.setLatLng(e.latlng);
-        this.picked.emit({ lat: e.latlng.lat, lng: e.latlng.lng });
-      });
+      this.map.on('click', e => this.picked.emit({ lat: e.latlng.lat, lng: e.latlng.lng }));
     }
+    this.showPoint(this.latitude(), this.longitude());
+  }
+
+  private showPoint(lat: number | null | undefined, lng: number | null | undefined): void {
+    const { L, map } = this;
+    if (!L || !map) return;
+
+    if (lat == null || lng == null) {
+      this.marker?.remove();
+      this.marker = undefined;
+      return;
+    }
+    // circleMarker avoids Leaflet's default icon images, which need extra asset config.
+    this.marker ??= L.circleMarker([lat, lng], { radius: 9 }).addTo(map);
+    this.marker.setLatLng([lat, lng]);
+    map.setView([lat, lng], Math.max(map.getZoom(), 16));
   }
 }

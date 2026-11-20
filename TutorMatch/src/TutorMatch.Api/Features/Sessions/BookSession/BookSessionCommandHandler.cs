@@ -45,6 +45,13 @@ public class BookSessionCommandHandler : ICommandHandler<BookSessionCommand, Res
                 Error.Validation("Session.Validation", "LocationName is required for physical sessions."));
         }
 
+        // The frontend pins every physical address on the map; requiring the pin here stops API callers skipping it.
+        if (command.Type == SessionType.Physical && (command.Latitude is null || command.Longitude is null))
+        {
+            return Result<BookSessionResponse>.Failure(
+                Error.Validation("Session.Validation", "Latitude and Longitude are required for physical sessions."));
+        }
+
         DateRange interval;
         try
         {
