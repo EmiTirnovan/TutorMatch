@@ -1,8 +1,16 @@
-// Parts of a Romanian address that OpenStreetMap never stores (apartment, floor, staircase, intercom, room).
-// The value must hold a digit (C309, 18A), be a single letter, or be "parter"/"mansarda" so street names such as
+// Parts of an address that OpenStreetMap never stores (apartment, floor, staircase, intercom, room),
+// in Romanian (with or without diacritics) and English.
+// The value must hold a digit (C309, 18A), be a single letter, or be a named floor so street names such as
 // "Strada Scolii" or "Sala Palatului" are not mistaken for "sc." / "sala".
-const UNIT_PATTERN =
-  /\b(?:ap(?:artament)?|apt|et(?:aj)?|sc(?:ara)?|interfon|cam(?:era)?|sala)(?:\.\s*|\s+)(?:[a-z]?\d+[a-z]?\b|[a-z]\b|parter\b|mansarda\b)/giu;
+// JS \b only knows ASCII letters, so boundaries are Unicode lookarounds (otherwise "mansardă" would not end a word).
+const START = String.raw`(?<![\p{L}\p{N}])`;
+const END = String.raw`(?![\p{L}\p{N}])`;
+const UNIT_WORDS = String.raw`ap|apt|apartament(?:ul)?|apartment|et|etaj(?:ul)?|sc|scar[aă]|interfon|cam|camer[aă]|sal[aă]|flat|floor|fl|room|rm|unit|suite`;
+const UNIT_VALUES = String.raw`[a-z]?\d+[a-z]?|[a-z]|parter|mansard[aă]|ground`;
+const UNIT_PATTERN = new RegExp(
+  `${START}(?:(?:${UNIT_WORDS})(?:\\.\\s*|\\s+)(?:${UNIT_VALUES})|\\d+(?:st|nd|rd|th)\\s+floor|ground\\s+floor)${END}`,
+  'giu'
+);
 const BLOCK_PATTERN = /\bbl(?:oc)?(?:\.\s*|\s+)[a-z0-9-]+/giu;
 const NUMBER_PATTERN = /\b(?:nr\.?\s*)?\d{1,4}[a-z]?\b/giu;
 

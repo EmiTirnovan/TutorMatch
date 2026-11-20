@@ -22,9 +22,31 @@ describe('splitAddress', () => {
     });
   });
 
+  it('Given_DiacriticsAndArticledForms_When_Splitting_Then_RecognisesThem', () => {
+    expect(splitAddress('Str. Păcurari 5, Scară B, etajul mansardă, apartamentul 18, Cameră 2, Sală C309, Iași')).toEqual({
+      query: 'Str. Păcurari 5, Iași',
+      details: 'Scară B, etajul mansardă, apartamentul 18, Cameră 2, Sală C309'
+    });
+  });
+
+  it('Given_EnglishUnitWords_When_Splitting_Then_RecognisesThem', () => {
+    expect(splitAddress('Carol I Blvd 11, Flat 18, Floor 4, Room C309, Unit 2B, Suite 5, Apartment 3, Iasi')).toEqual({
+      query: 'Carol I Blvd 11, Iasi',
+      details: 'Flat 18, Floor 4, Room C309, Unit 2B, Suite 5, Apartment 3'
+    });
+  });
+
+  it('Given_OrdinalAndGroundFloor_When_Splitting_Then_RecognisesThem', () => {
+    expect(splitAddress('Carol I Blvd 11, 4th floor, Iasi').details).toBe('4th floor');
+    expect(splitAddress('Carol I Blvd 11, ground floor, apt. 2, Iasi')).toEqual({
+      query: 'Carol I Blvd 11, Iasi',
+      details: 'ground floor, apt. 2'
+    });
+  });
+
   it('Given_StreetNamesStartingLikeUnits_When_Splitting_Then_LeavesThemAlone', () => {
-    expect(splitAddress('Strada Scolii 4, Sala Palatului, Strada Etajului 2')).toEqual({
-      query: 'Strada Scolii 4, Sala Palatului, Strada Etajului 2',
+    expect(splitAddress('Strada Școlii 4, Sala Palatului, Strada Etajului 2, Floreasca 7, United Business Center')).toEqual({
+      query: 'Strada Școlii 4, Sala Palatului, Strada Etajului 2, Floreasca 7, United Business Center',
       details: ''
     });
   });
