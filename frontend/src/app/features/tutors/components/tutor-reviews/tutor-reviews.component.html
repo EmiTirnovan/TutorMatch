@@ -1,0 +1,58 @@
+<section class="card reviews-card" aria-labelledby="reviews-heading" data-testid="reviews-section">
+  <h3 id="reviews-heading">Reviews from students</h3>
+
+  @if (!hasReviews()) {
+    <div class="reviews-empty" data-testid="reviews-empty">
+      <p class="empty-title">No reviews yet</p>
+      <p class="text-muted text-sm">
+        This tutor has not been rated yet. Reviews appear here after a student completes a session and rates it.
+      </p>
+    </div>
+  } @else {
+    <div class="reviews-summary">
+      <div class="summary-score">
+        <span class="score-value" data-testid="reviews-average">{{ averageRating().toFixed(1) }}</span>
+        <div class="score-details" role="img" [attr.aria-label]="averageRating().toFixed(1) + ' out of 5, ' + countLabel()">
+          <app-star-rating [value]="averageRating()" [size]="20" />
+          <span class="text-muted text-sm" data-testid="reviews-count">{{ countLabel() }}</span>
+        </div>
+      </div>
+
+      <ul class="distribution" aria-label="Rating distribution">
+        @for (row of breakdown(); track row.star) {
+          <li class="distribution-row" data-testid="distribution-row">
+            <span class="distribution-label">{{ row.star }} {{ row.star === 1 ? 'star' : 'stars' }}</span>
+            <div class="distribution-bar" role="presentation">
+              <div class="distribution-fill" [style.width.%]="row.percent"></div>
+            </div>
+            <span class="distribution-percent" data-testid="distribution-percent">{{ row.percent }}%</span>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <ul class="review-list" aria-label="Student reviews">
+      @for (review of reviewList(); track review.sessionId) {
+        <li class="review-item" data-testid="review-item">
+          <div class="review-head">
+            <strong class="review-author">{{ review.studentName || 'Anonymous student' }}</strong>
+            <time class="text-muted text-sm" [attr.datetime]="review.date">{{ review.date | date: 'mediumDate' }}</time>
+          </div>
+          <div class="review-rating" role="img" [attr.aria-label]="'Rated ' + review.score + ' out of 5'">
+            <app-star-rating [value]="review.score" [size]="14" />
+            <span class="text-sm" data-testid="review-score">{{ review.score }}/5</span>
+          </div>
+          @if (review.comment) {
+            <p class="review-comment" data-testid="review-comment">{{ review.comment }}</p>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (isTruncated()) {
+      <p class="text-muted text-sm reviews-note" data-testid="reviews-truncated">
+        Showing the {{ reviewList().length }} most recent of {{ ratingsCount() }} reviews.
+      </p>
+    }
+  }
+</section>

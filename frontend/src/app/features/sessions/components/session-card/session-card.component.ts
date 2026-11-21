@@ -19,6 +19,8 @@ import {
 import { LocationViewerMapComponent } from '../../../locations/components/location-viewer-map/location-viewer-map.component';
 import { TimeProvider } from '../../../../core/services/time-provider.service';
 
+const MAX_RATING = 5;
+
 @Component({
   selector: 'app-session-card',
   standalone: true,
@@ -99,12 +101,25 @@ export class SessionCardComponent {
     this.isParticipant()
   );
 
+  readonly hasRated = computed(() => this.session().hasRated === true);
+  readonly ratingScore = computed(() => this.session().ratingScore ?? null);
+  readonly ratingNotes = computed(() => this.session().ratingNotes?.trim() || null);
+
+  /** One entry per star, true when the star is filled. */
+  readonly ratingStars = computed(() =>
+    Array.from({ length: MAX_RATING }, (_, index) => index < (this.ratingScore() ?? 0))
+  );
+
+  /** The rating is shown on completed sessions that were already rated. */
+  readonly showRating = computed(() => this.isCompletedSession() && this.hasRated());
+
   /**
-   * Only the student can rate a completed session.
+   * Only the student can rate a completed session, and only once.
    */
   readonly canRate = computed(() =>
     this.userRole() === 'student' &&
     this.isCompletedSession() &&
+    !this.hasRated() &&
     this.isParticipant()
   );
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Infrastructure.Persistence;
@@ -41,11 +41,25 @@ public class SearchTutorsQueryHandler : IQueryHandler<SearchTutorsQuery, Result<
                 .Any(a => a.Start.Date <= targetDate && a.End.Date >= targetDate));
         }
 
+        // Unrated tutors have an average of 0, so they only pass when no minimum is requested.
+        if (query.MinRating is > 0)
+        {
+            var minRating = query.MinRating.Value;
+            queryable = queryable.Where(t => _dbContext.Ratings
+                .Where(r => r.TutorId == t.Id)
+                .Average(r => (double?)r.Score) >= minRating);
+        }
+
         var totalCount = await queryable.CountAsync(cancellationToken);
 
         queryable = query.SortBy?.ToLower() switch
         {
             "pricedesc" => queryable.OrderByDescending(t => (double)t.HourlyRate),
+            "rating_desc" => queryable
+                .OrderByDescending(t => _dbContext.Ratings
+                    .Where(r => r.TutorId == t.Id)
+                    .Average(r => (double?)r.Score) ?? 0)
+                .ThenBy(t => (double)t.HourlyRate),
             "priceasc" => queryable.OrderBy(t => (double)t.HourlyRate),
             _ => queryable.OrderBy(t => (double)t.HourlyRate)
         };

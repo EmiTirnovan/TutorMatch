@@ -242,7 +242,8 @@
       [sessionId]="session.id"
       [studentId]="userContext.studentId()"
       [sessionStatus]="'Completed'"
-      (rated)="onSessionRated()"
+      (rated)="onSessionRated($event)"
+      (alreadyRated)="onSessionAlreadyRated()"
       (closed)="closeRateModal()"
     />
   }

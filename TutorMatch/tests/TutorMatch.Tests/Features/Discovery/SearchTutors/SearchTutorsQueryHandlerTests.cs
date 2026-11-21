@@ -481,4 +481,173 @@ public class SearchTutorsQueryHandlerTests : IDisposable
         item.RatingCount.Should().Be(1);
         result.Value.TotalCount.Should().Be(2);
     }
+    [Fact]
+    public async Task Given_MinRating_When_Searching_Then_ReturnsOnlyTutorsWithAverageAtOrAboveMinimum()
+    {
+        var excellent = await SeedTutorAsync("Excellent", 10m);
+        var exactlyFour = await SeedTutorAsync("Exactly Four", 20m);
+        var belowFour = await SeedTutorAsync("Below Four", 30m);
+        await SeedRatingsAsync(excellent, 5, 5);
+        await SeedRatingsAsync(exactlyFour, 4, 4);
+        await SeedRatingsAsync(belowFour, 4, 3);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(MinRating: 4));
+
+        result.Value.Tutors.Select(t => t.Name).Should().Equal("Excellent", "Exactly Four");
+        result.Value.TotalCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Given_MinRating_When_Searching_Then_ExcludesUnratedTutors()
+    {
+        var rated = await SeedTutorAsync("Rated", 10m);
+        await SeedTutorAsync("Unrated", 20m);
+        await SeedRatingsAsync(rated, 5);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(MinRating: 1));
+
+        result.Value.Tutors.Select(t => t.Name).Should().Equal("Rated");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0d)]
+    [InlineData(-1d)]
+    public async Task Given_NoMeaningfulMinRating_When_Searching_Then_IgnoresRatingFilterAndKeepsUnratedTutors(double? minRating)
+    {
+        var rated = await SeedTutorAsync("Rated", 10m);
+        await SeedTutorAsync("Unrated", 20m);
+        await SeedRatingsAsync(rated, 2);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(MinRating: minRating));
+
+        result.Value.Tutors.Select(t => t.Name).Should().Equal("Rated", "Unrated");
+    }
+
+    [Fact]
+    public async Task Given_FractionalMinRating_When_Searching_Then_UsesExactAverageComparison()
+    {
+        var fourPointFive = await SeedTutorAsync("Four Point Five", 10m);
+        var fourPointThree = await SeedTutorAsync("Four Point Three", 20m);
+        await SeedRatingsAsync(fourPointFive, 5, 4);
+        await SeedRatingsAsync(fourPointThree, 5, 4, 4);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(MinRating: 4.4));
+
+        result.Value.Tutors.Select(t => t.Name).Should().Equal("Four Point Five");
+    }
+
+    [Fact]
+    public async Task Given_MinRatingAboveMaximumScore_When_Searching_Then_ReturnsEmptyResult()
+    {
+        var perfect = await SeedTutorAsync("Perfect", 10m);
+        await SeedRatingsAsync(perfect, 5);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(MinRating: 5.1));
+
+        result.Value.Tutors.Should().BeEmpty();
+        result.Value.TotalCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Given_MinRating_When_Paging_Then_TotalCountReflectsFilteredTutorsOnly()
+    {
+        var first = await SeedTutorAsync("First", 10m);
+        var second = await SeedTutorAsync("Second", 20m);
+        var third = await SeedTutorAsync("Third", 30m);
+        var low = await SeedTutorAsync("Low", 5m);
+        await SeedRatingsAsync(first, 5);
+        await SeedRatingsAsync(second, 5);
+        await SeedRatingsAsync(third, 5);
+        await SeedRatingsAsync(low, 1);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(MinRating: 4, Page: 2, PageSize: 2));
+
+        result.Value.Tutors.Select(t => t.Name).Should().Equal("Third");
+        result.Value.TotalCount.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Given_MinRatingSubjectAndMaxPrice_When_Searching_Then_AppliesAllFiltersTogether()
+    {
+        var matchingTutor = await SeedTutorAsync("Good Cheap Math", 50m, subjects: ["Matematica"]);
+        var expensiveTutor = await SeedTutorAsync("Good Expensive Math", 150m, subjects: ["Matematica"]);
+        var weakTutor = await SeedTutorAsync("Weak Cheap Math", 40m, subjects: ["Matematica"]);
+        var otherSubjectTutor = await SeedTutorAsync("Good Cheap Info", 45m, subjects: ["Informatica"]);
+        await SeedRatingsAsync(matchingTutor, 5, 4);
+        await SeedRatingsAsync(expensiveTutor, 5);
+        await SeedRatingsAsync(weakTutor, 2);
+        await SeedRatingsAsync(otherSubjectTutor, 5);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(Subject: "Matematica", MaxPrice: 100m, MinRating: 4));
+
+        result.Value.Tutors.Select(t => t.Name).Should().Equal("Good Cheap Math");
+        result.Value.TotalCount.Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData("rating_desc")]
+    [InlineData("RATING_DESC")]
+    public async Task Given_RatingDescendingSort_When_Searching_Then_OrdersByAverageRatingDescendingWithUnratedLast(string sortBy)
+    {
+        var average = await SeedTutorAsync("Average", 10m);
+        await SeedTutorAsync("Unrated", 20m);
+        var excellent = await SeedTutorAsync("Excellent", 30m);
+        var good = await SeedTutorAsync("Good", 40m);
+        await SeedRatingsAsync(average, 3, 2);
+        await SeedRatingsAsync(excellent, 5, 5);
+        await SeedRatingsAsync(good, 4);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(SortBy: sortBy));
+
+        result.Value.Tutors.Select(t => t.Name).Should().Equal("Excellent", "Good", "Average", "Unrated");
+    }
+
+    [Fact]
+    public async Task Given_RatingDescendingSortWithEqualAverages_When_Searching_Then_BreaksTiesByAscendingPrice()
+    {
+        var expensive = await SeedTutorAsync("Expensive", 90m);
+        var cheap = await SeedTutorAsync("Cheap", 30m);
+        var middle = await SeedTutorAsync("Middle", 60m);
+        await SeedRatingsAsync(expensive, 5);
+        await SeedRatingsAsync(cheap, 5);
+        await SeedRatingsAsync(middle, 5);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(SortBy: "rating_desc"));
+
+        result.Value.Tutors.Select(t => t.Name).Should().Equal("Cheap", "Middle", "Expensive");
+    }
+
+    [Fact]
+    public async Task Given_RatingDescendingSortAndPaging_When_Searching_Then_PagesFollowRatingOrder()
+    {
+        var best = await SeedTutorAsync("Best", 50m);
+        var second = await SeedTutorAsync("Second", 10m);
+        var third = await SeedTutorAsync("Third", 20m);
+        await SeedRatingsAsync(best, 5);
+        await SeedRatingsAsync(second, 4);
+        await SeedRatingsAsync(third, 3);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(Page: 2, PageSize: 2, SortBy: "rating_desc"));
+
+        result.Value.Tutors.Select(t => t.Name).Should().Equal("Third");
+        result.Value.TotalCount.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Given_MinRatingAndRatingDescendingSort_When_Searching_Then_FiltersThenOrdersByRating()
+    {
+        var best = await SeedTutorAsync("Best", 80m);
+        var good = await SeedTutorAsync("Good", 20m);
+        var weak = await SeedTutorAsync("Weak", 10m);
+        await SeedTutorAsync("Unrated", 5m);
+        await SeedRatingsAsync(best, 5);
+        await SeedRatingsAsync(good, 4);
+        await SeedRatingsAsync(weak, 2);
+
+        var result = await _handler.HandleAsync(new SearchTutorsQuery(MinRating: 3, SortBy: "rating_desc"));
+
+        result.Value.Tutors.Select(t => t.Name).Should().Equal("Best", "Good");
+        result.Value.TotalCount.Should().Be(2);
+    }
 }

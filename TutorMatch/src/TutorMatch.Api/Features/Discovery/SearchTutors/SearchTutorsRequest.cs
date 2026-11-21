@@ -1,4 +1,4 @@
-﻿namespace TutorMatch.Api.Features.Discovery.SearchTutors;
+namespace TutorMatch.Api.Features.Discovery.SearchTutors;
 
 [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public record SearchTutorsRequest(
@@ -8,4 +8,5 @@ public record SearchTutorsRequest(
     DateTime? Date = null,
     int Page = 1,
     int PageSize = 10,
-    string? SortBy = null);
+    string? SortBy = null,
+    double? MinRating = null);

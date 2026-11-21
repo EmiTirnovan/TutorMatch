@@ -159,3 +159,41 @@
 .map-popover > button {
   align-self: flex-end;
 }
+
+.rating-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.rating-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: var(--primary-900);
+}
+
+.rating-stars {
+  display: inline-flex;
+}
+
+.star {
+  color: var(--slate-200);
+}
+
+.star-filled {
+  color: var(--warning-600);
+}
+
+.rating-comment {
+  margin: 0.25rem 0 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--primary-800);
+  background: var(--slate-50);
+  border-left: 3px solid var(--accent-500);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  overflow-wrap: anywhere;
+}
