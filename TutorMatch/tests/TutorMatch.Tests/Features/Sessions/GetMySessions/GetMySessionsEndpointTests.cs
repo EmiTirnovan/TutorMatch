@@ -126,6 +126,42 @@ public class GetMySessionsEndpointTests : IDisposable
         body.Should().Contain("Session.Validation");
     }
 
+    [Fact]
+    public async Task Given_CompletedSessionsRatedAndUnrated_When_GettingMySessions_Then_ReturnsHasRatedPerSession()
+    {
+        var tutorId = Guid.NewGuid();
+        var studentId = Guid.NewGuid();
+        var ratedSessionId = Guid.NewGuid();
+        var unratedSessionId = Guid.NewGuid();
+        var start1 = DateTime.UtcNow.AddDays(-3);
+        var start2 = DateTime.UtcNow.AddDays(-2);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+            db.Tutors.Add(new Tutor("Tutor My4", "tutor_my4@test.com", "Bio", 50, tutorId));
+            db.Students.Add(new Student(studentId, "Student My4", "student_my4@test.com"));
+            db.Sessions.Add(new Session(ratedSessionId, tutorId, studentId, new DateRange(start1, start1.AddHours(1)), SessionStatus.Completed));
+            db.Sessions.Add(new Session(unratedSessionId, tutorId, studentId, new DateRange(start2, start2.AddHours(1)), SessionStatus.Completed));
+            await db.SaveChangesAsync();
+            db.Ratings.Add(new Rating(ratedSessionId, tutorId, studentId, 5, "Foarte bun"));
+            await db.SaveChangesAsync();
+        }
+
+        var response = await _client.GetAsync($"/api/sessions/my?userId={studentId}&role=Student");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<GetMySessionsResponse>();
+        var rated = result!.Sessions.Single(s => s.Id == ratedSessionId);
+        rated.HasRated.Should().BeTrue();
+        rated.RatingScore.Should().Be(5);
+        rated.RatingNotes.Should().Be("Foarte bun");
+        var unrated = result.Sessions.Single(s => s.Id == unratedSessionId);
+        unrated.HasRated.Should().BeFalse();
+        unrated.RatingScore.Should().BeNull();
+        unrated.RatingNotes.Should().BeNull();
+    }
+
     public void Dispose()
     {
         _connection.Dispose();

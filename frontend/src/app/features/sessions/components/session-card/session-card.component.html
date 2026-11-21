@@ -58,6 +58,29 @@
       }
     }
 
+    @if (showRating()) {
+      <div class="rating-summary" data-testid="rating-summary">
+        <span class="participant-label">{{ userRole() === 'student' ? 'Your rating' : 'Student rating' }}</span>
+        @if (ratingScore() !== null) {
+          <div class="rating-line" role="img" [attr.aria-label]="'Rated ' + ratingScore() + ' out of 5'">
+            <span class="rating-stars" aria-hidden="true">
+              @for (filled of ratingStars(); track $index) {
+                <svg class="star" [class.star-filled]="filled" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              }
+            </span>
+            <strong data-testid="rating-score">{{ ratingScore() }}/5</strong>
+          </div>
+        } @else {
+          <span class="rating-line" data-testid="rating-no-score">Rated</span>
+        }
+        @if (ratingNotes(); as notes) {
+          <blockquote class="rating-comment" data-testid="rating-comment">{{ notes }}</blockquote>
+        }
+      </div>
+    }
+
     @if (isLateCancelledSession()) {
       <div class="late-cancellation-note">
         <svg

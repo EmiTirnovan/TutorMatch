@@ -23,4 +23,7 @@ public record MySessionDto(
     string? MeetingLink = null,
     string? LocationName = null,
     double? Latitude = null,
-    double? Longitude = null);
+    double? Longitude = null,
+    bool HasRated = false,
+    int? RatingScore = null,
+    string? RatingNotes = null);

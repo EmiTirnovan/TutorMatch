@@ -282,4 +282,122 @@ describe('SessionCardComponent', () => {
       expect(query('map-btn')).toBeNull();
     });
   });
+
+  describe('Rating', () => {
+    const query = (id: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-testid="${id}"]`);
+    const filledStars = (): number => fixture.nativeElement.querySelectorAll('[data-testid="rating-summary"] .star-filled').length;
+    const allStars = (): number => fixture.nativeElement.querySelectorAll('[data-testid="rating-summary"] .star').length;
+
+    it('Given_CompletedSessionNotRated_When_RenderingAsStudent_Then_ShowsActiveRateButtonAndNoRatingSummary', () => {
+      setup({ status: SessionStatus.Completed, hasRated: false }, 'student');
+
+      const rateBtn = query('rate-btn') as HTMLButtonElement;
+      expect(rateBtn.textContent?.trim()).toBe('Rate Tutor');
+      expect(rateBtn.disabled).toBe(false);
+      expect(query('rating-summary')).toBeNull();
+    });
+
+    it('Given_CompletedSessionWithoutRatingInfo_When_RenderingAsStudent_Then_StillOffersRateButton', () => {
+      setup({ status: SessionStatus.Completed }, 'student');
+
+      expect(query('rate-btn')).not.toBeNull();
+      expect(query('rating-summary')).toBeNull();
+    });
+
+    it('Given_RatedCompletedSession_When_RenderingAsStudent_Then_HidesRateButtonAndShowsScoreStarsAndComment', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: 5, ratingNotes: 'Explains very clearly' }, 'student');
+
+      expect(query('rate-btn')).toBeNull();
+      expect(query('rating-score')?.textContent?.trim()).toBe('5/5');
+      expect(allStars()).toBe(5);
+      expect(filledStars()).toBe(5);
+      expect(query('rating-comment')?.textContent?.trim()).toBe('Explains very clearly');
+      expect(query('rating-summary')?.textContent).toContain('Your rating');
+    });
+
+    it.each([1, 2, 3, 4])('Given_RatingScoreOf_%s_When_Rendering_Then_FillsExactlyThatManyStars', (score) => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: score }, 'student');
+
+      expect(filledStars()).toBe(score);
+      expect(allStars()).toBe(5);
+      expect(query('rating-score')?.textContent?.trim()).toBe(`${score}/5`);
+      expect(query('rating-summary')?.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe(
+        `Rated ${score} out of 5`
+      );
+    });
+
+    it('Given_RatedSessionWithoutComment_When_Rendering_Then_ShowsStarsWithoutCommentBlock', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: 4, ratingNotes: null }, 'student');
+
+      expect(query('rating-score')).not.toBeNull();
+      expect(query('rating-comment')).toBeNull();
+    });
+
+    it('Given_RatedSessionWithBlankComment_When_Rendering_Then_HidesCommentBlock', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: 4, ratingNotes: '   ' }, 'student');
+
+      expect(query('rating-comment')).toBeNull();
+    });
+
+    it('Given_RatedSessionWithoutScore_When_Rendering_Then_ShowsRatedLabelAndNoRateButton', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: null }, 'student');
+
+      expect(query('rating-no-score')?.textContent?.trim()).toBe('Rated');
+      expect(query('rating-score')).toBeNull();
+      expect(query('rate-btn')).toBeNull();
+    });
+
+    it('Given_RatedCompletedSession_When_RenderingAsTutor_Then_ShowsStudentRatingWithoutRateButton', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: 3, ratingNotes: 'Good' }, 'tutor');
+
+      expect(query('rate-btn')).toBeNull();
+      expect(query('rating-summary')?.textContent).toContain('Student rating');
+      expect(query('rating-score')?.textContent?.trim()).toBe('3/5');
+      expect(query('rating-comment')?.textContent?.trim()).toBe('Good');
+    });
+
+    it('Given_RatedSession_When_RateIsRequestedProgrammatically_Then_DoesNotEmitRateRequested', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: 5 }, 'student');
+      const emitted: SessionResponse[] = [];
+      component.rateRequested.subscribe((session) => emitted.push(session));
+
+      component.onRate();
+
+      expect(component.canRate()).toBe(false);
+      expect(emitted).toEqual([]);
+    });
+
+    it('Given_UnratedCompletedSession_When_RateIsRequested_Then_EmitsRateRequested', () => {
+      setup({ status: SessionStatus.Completed, hasRated: false }, 'student');
+      const emitted: SessionResponse[] = [];
+      component.rateRequested.subscribe((session) => emitted.push(session));
+
+      component.onRate();
+
+      expect(emitted.map((session) => session.id)).toEqual(['session-1']);
+    });
+
+    it('Given_SessionThatIsNotCompleted_When_Rendering_Then_ShowsNoRatingSummary', () => {
+      setup({ status: SessionStatus.Booked, hasRated: true, ratingScore: 5 }, 'student');
+
+      expect(query('rating-summary')).toBeNull();
+    });
+
+    it('Given_SessionBecomesRated_When_InputUpdates_Then_SwitchesFromRateButtonToRatingSummary', () => {
+      setup({ status: SessionStatus.Completed, hasRated: false }, 'student');
+      expect(query('rate-btn')).not.toBeNull();
+
+      fixture.componentRef.setInput('session', {
+        ...baseSession,
+        status: SessionStatus.Completed,
+        hasRated: true,
+        ratingScore: 4,
+        ratingNotes: 'Great'
+      });
+      fixture.detectChanges();
+
+      expect(query('rate-btn')).toBeNull();
+      expect(query('rating-score')?.textContent?.trim()).toBe('4/5');
+    });
+  });
 });

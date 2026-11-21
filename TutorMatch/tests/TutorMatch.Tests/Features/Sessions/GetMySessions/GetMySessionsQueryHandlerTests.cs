@@ -2,6 +2,7 @@ using FluentAssertions;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Sessions;
+using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features.Sessions.GetMySessions;
 using Xunit;
 
@@ -50,6 +51,26 @@ public class GetMySessionsQueryHandlerTests
         }
     }
 
+    private sealed class FakeRatingRepository : IRatingRepository
+    {
+        private readonly List<Rating> _ratings = new();
+
+        public void Add(Rating rating)
+        {
+            _ratings.Add(rating);
+        }
+
+        public IReadOnlyList<Rating> GetByTutorId(Guid tutorId)
+        {
+            return _ratings.Where(r => r.TutorId == tutorId).ToList().AsReadOnly();
+        }
+
+        public IReadOnlyList<Rating> GetBySessionIds(IEnumerable<Guid> sessionIds)
+        {
+            var ids = sessionIds.ToHashSet();
+            return _ratings.Where(r => ids.Contains(r.SessionId)).ToList().AsReadOnly();
+        }
+    }
     [Fact]
     public async Task Given_emptyUserId_When_handlingGetMySessions_Then_returnsValidationError()
     {
@@ -177,5 +198,131 @@ public class GetMySessionsQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Sessions.Should().BeEmpty();
     }
-}
 
+    [Fact]
+    public async Task Given_ratedCompletedSession_When_handlingGetMySessions_Then_returnsHasRatedWithScoreAndNotes()
+    {
+        var studentId = Guid.NewGuid();
+        var tutorId = Guid.NewGuid();
+        var session = new Session(Guid.NewGuid(), tutorId, studentId, new DateRange(new DateTime(2026, 11, 3, 10, 0, 0), new DateTime(2026, 11, 3, 11, 0, 0)), SessionStatus.Completed);
+        var sessionRepository = new FakeSessionRepository();
+        sessionRepository.Add(session);
+        var ratingRepository = new FakeRatingRepository();
+        ratingRepository.Add(new Rating(session.Id, tutorId, studentId, 4, "Explica clar"));
+        var handler = new GetMySessionsQueryHandler(sessionRepository, ratingRepository: ratingRepository);
+
+        var result = await handler.HandleAsync(new GetMySessionsQuery(studentId, "Student"));
+
+        result.Value.Sessions.Should().ContainSingle();
+        result.Value.Sessions[0].HasRated.Should().BeTrue();
+        result.Value.Sessions[0].RatingScore.Should().Be(4);
+        result.Value.Sessions[0].RatingNotes.Should().Be("Explica clar");
+    }
+
+    [Fact]
+    public async Task Given_ratedCompletedSessionWithoutComment_When_handlingGetMySessions_Then_returnsScoreAndNullNotes()
+    {
+        var studentId = Guid.NewGuid();
+        var tutorId = Guid.NewGuid();
+        var session = new Session(Guid.NewGuid(), tutorId, studentId, new DateRange(new DateTime(2026, 11, 3, 10, 0, 0), new DateTime(2026, 11, 3, 11, 0, 0)), SessionStatus.Completed);
+        var sessionRepository = new FakeSessionRepository();
+        sessionRepository.Add(session);
+        var ratingRepository = new FakeRatingRepository();
+        ratingRepository.Add(new Rating(session.Id, tutorId, studentId, 5));
+        var handler = new GetMySessionsQueryHandler(sessionRepository, ratingRepository: ratingRepository);
+
+        var result = await handler.HandleAsync(new GetMySessionsQuery(studentId, "Student"));
+
+        result.Value.Sessions[0].HasRated.Should().BeTrue();
+        result.Value.Sessions[0].RatingScore.Should().Be(5);
+        result.Value.Sessions[0].RatingNotes.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Given_unratedCompletedSession_When_handlingGetMySessions_Then_returnsHasRatedFalseWithoutRatingData()
+    {
+        var studentId = Guid.NewGuid();
+        var tutorId = Guid.NewGuid();
+        var session = new Session(Guid.NewGuid(), tutorId, studentId, new DateRange(new DateTime(2026, 11, 3, 10, 0, 0), new DateTime(2026, 11, 3, 11, 0, 0)), SessionStatus.Completed);
+        var sessionRepository = new FakeSessionRepository();
+        sessionRepository.Add(session);
+        var handler = new GetMySessionsQueryHandler(sessionRepository, ratingRepository: new FakeRatingRepository());
+
+        var result = await handler.HandleAsync(new GetMySessionsQuery(studentId, "Student"));
+
+        result.Value.Sessions[0].HasRated.Should().BeFalse();
+        result.Value.Sessions[0].RatingScore.Should().BeNull();
+        result.Value.Sessions[0].RatingNotes.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Given_ratedAndUnratedSessions_When_handlingGetMySessions_Then_flagsEachSessionIndependently()
+    {
+        var studentId = Guid.NewGuid();
+        var tutorId = Guid.NewGuid();
+        var ratedSession = new Session(Guid.NewGuid(), tutorId, studentId, new DateRange(new DateTime(2026, 11, 3, 10, 0, 0), new DateTime(2026, 11, 3, 11, 0, 0)), SessionStatus.Completed);
+        var unratedSession = new Session(Guid.NewGuid(), tutorId, studentId, new DateRange(new DateTime(2026, 11, 4, 10, 0, 0), new DateTime(2026, 11, 4, 11, 0, 0)), SessionStatus.Completed);
+        var sessionRepository = new FakeSessionRepository();
+        sessionRepository.Add(ratedSession);
+        sessionRepository.Add(unratedSession);
+        var ratingRepository = new FakeRatingRepository();
+        ratingRepository.Add(new Rating(ratedSession.Id, tutorId, studentId, 3));
+        var handler = new GetMySessionsQueryHandler(sessionRepository, ratingRepository: ratingRepository);
+
+        var result = await handler.HandleAsync(new GetMySessionsQuery(studentId, "Student"));
+
+        result.Value.Sessions.Single(s => s.Id == ratedSession.Id).HasRated.Should().BeTrue();
+        result.Value.Sessions.Single(s => s.Id == unratedSession.Id).HasRated.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_ratingOfAnotherSession_When_handlingGetMySessions_Then_doesNotMarkSessionAsRated()
+    {
+        var studentId = Guid.NewGuid();
+        var tutorId = Guid.NewGuid();
+        var session = new Session(Guid.NewGuid(), tutorId, studentId, new DateRange(new DateTime(2026, 11, 3, 10, 0, 0), new DateTime(2026, 11, 3, 11, 0, 0)), SessionStatus.Completed);
+        var sessionRepository = new FakeSessionRepository();
+        sessionRepository.Add(session);
+        var ratingRepository = new FakeRatingRepository();
+        ratingRepository.Add(new Rating(Guid.NewGuid(), tutorId, studentId, 5));
+        var handler = new GetMySessionsQueryHandler(sessionRepository, ratingRepository: ratingRepository);
+
+        var result = await handler.HandleAsync(new GetMySessionsQuery(studentId, "Student"));
+
+        result.Value.Sessions[0].HasRated.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_duplicateRatingsForSameSession_When_handlingGetMySessions_Then_returnsFirstRatingWithoutFailing()
+    {
+        var studentId = Guid.NewGuid();
+        var tutorId = Guid.NewGuid();
+        var session = new Session(Guid.NewGuid(), tutorId, studentId, new DateRange(new DateTime(2026, 11, 3, 10, 0, 0), new DateTime(2026, 11, 3, 11, 0, 0)), SessionStatus.Completed);
+        var sessionRepository = new FakeSessionRepository();
+        sessionRepository.Add(session);
+        var ratingRepository = new FakeRatingRepository();
+        ratingRepository.Add(new Rating(session.Id, tutorId, studentId, 2));
+        ratingRepository.Add(new Rating(session.Id, tutorId, studentId, 5));
+        var handler = new GetMySessionsQueryHandler(sessionRepository, ratingRepository: ratingRepository);
+
+        var result = await handler.HandleAsync(new GetMySessionsQuery(studentId, "Student"));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Sessions[0].RatingScore.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Given_noRatingRepository_When_handlingGetMySessions_Then_returnsHasRatedFalse()
+    {
+        var studentId = Guid.NewGuid();
+        var session = new Session(Guid.NewGuid(), Guid.NewGuid(), studentId, new DateRange(new DateTime(2026, 11, 3, 10, 0, 0), new DateTime(2026, 11, 3, 11, 0, 0)), SessionStatus.Completed);
+        var sessionRepository = new FakeSessionRepository();
+        sessionRepository.Add(session);
+        var handler = new GetMySessionsQueryHandler(sessionRepository);
+
+        var result = await handler.HandleAsync(new GetMySessionsQuery(studentId, "Student"));
+
+        result.Value.Sessions[0].HasRated.Should().BeFalse();
+        result.Value.Sessions[0].RatingScore.Should().BeNull();
+    }
+}

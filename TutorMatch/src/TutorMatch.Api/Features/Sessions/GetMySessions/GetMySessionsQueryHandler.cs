@@ -11,15 +11,18 @@ public class GetMySessionsQueryHandler : IQueryHandler<GetMySessionsQuery, Resul
     private readonly ISessionRepository _repository;
     private readonly ITutorRepository? _tutorRepository;
     private readonly IStudentRepository? _studentRepository;
+    private readonly IRatingRepository? _ratingRepository;
 
     public GetMySessionsQueryHandler(
         ISessionRepository repository,
         ITutorRepository? tutorRepository = null,
-        IStudentRepository? studentRepository = null)
+        IStudentRepository? studentRepository = null,
+        IRatingRepository? ratingRepository = null)
     {
         _repository = repository;
         _tutorRepository = tutorRepository;
         _studentRepository = studentRepository;
+        _ratingRepository = ratingRepository;
     }
 
     public Task<Result<GetMySessionsResponse>> HandleAsync(GetMySessionsQuery query, CancellationToken cancellationToken = default)
@@ -48,10 +51,13 @@ public class GetMySessionsQueryHandler : IQueryHandler<GetMySessionsQuery, Resul
             sessions = sessions.Where(s => s.Status == query.Status.Value);
         }
 
-        var mappedSessions = sessions
-            .OrderBy(s => s.StartTime)
+        var orderedSessions = sessions.OrderBy(s => s.StartTime).ToList();
+        var ratingsBySession = LoadRatingsBySession(orderedSessions);
+
+        var mappedSessions = orderedSessions
             .Select(s =>
             {
+                ratingsBySession.TryGetValue(s.Id, out var rating);
                 var tutorName = _tutorRepository?.GetById(s.TutorId)?.Name;
                 var studentName = _studentRepository?.GetById(s.StudentId)?.Name;
                 return new MySessionDto(
@@ -70,11 +76,26 @@ public class GetMySessionsQueryHandler : IQueryHandler<GetMySessionsQuery, Resul
                     s.MeetingLink,
                     s.LocationName,
                     s.Latitude,
-                    s.Longitude);
+                    s.Longitude,
+                    rating is not null,
+                    rating?.Score,
+                    rating?.Notes);
             })
             .ToList();
 
         var response = new GetMySessionsResponse(mappedSessions);
         return Task.FromResult(Result<GetMySessionsResponse>.Success(response));
+    }
+
+    private Dictionary<Guid, Rating> LoadRatingsBySession(IReadOnlyCollection<Session> sessions)
+    {
+        if (_ratingRepository is null || sessions.Count == 0)
+        {
+            return new Dictionary<Guid, Rating>();
+        }
+
+        return _ratingRepository.GetBySessionIds(sessions.Select(s => s.Id))
+            .GroupBy(r => r.SessionId)
+            .ToDictionary(g => g.Key, g => g.First());
     }
 }

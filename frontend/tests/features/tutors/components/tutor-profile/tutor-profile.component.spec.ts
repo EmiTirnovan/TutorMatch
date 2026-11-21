@@ -52,8 +52,8 @@ describe('TutorProfileComponent', () => {
       bio: 'Math and Discrete Mathematics tutor.',
       hourlyRate: 75,
       subjects: ['Discrete Math'],
-      rating: 5.0,
-      ratingCount: 3,
+      averageRating: 5,
+      ratingsCount: 3,
       availability: []
     };
 
@@ -270,6 +270,112 @@ describe('TutorProfileComponent', () => {
     });
   });
 
+  describe('reviews', () => {
+    const BASE: TutorDetailsResponse = {
+      id: 'tutor-xyz',
+      name: 'Maria Dragomir',
+      email: 'maria@test.ro',
+      bio: 'Bio',
+      hourlyRate: 75,
+      availability: []
+    };
+
+    const query = (testId: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-testid="${testId}"]`);
+    const queryAll = (testId: string): HTMLElement[] => Array.from(fixture.nativeElement.querySelectorAll(`[data-testid="${testId}"]`));
+
+    const render = (tutor: TutorDetailsResponse): void => {
+      vi.spyOn(tutorService, 'getTutorById').mockReturnValue(of(tutor));
+      vi.spyOn(TestBed.inject(SessionService), 'getBookedSessionsForTutor').mockReturnValue(of([]));
+      fixture.detectChanges();
+    };
+
+    const rated: TutorDetailsResponse = {
+      ...BASE,
+      averageRating: 4.5,
+      ratingsCount: 4,
+      ratingDistribution: { '1': 0, '2': 0, '3': 0, '4': 2, '5': 2 },
+      reviews: [
+        { sessionId: 's2', date: '2026-11-05T10:00:00Z', score: 5, comment: 'Excellent', studentName: 'Ana Pop' },
+        { sessionId: 's1', date: '2026-10-01T10:00:00Z', score: 4, comment: null, studentName: 'Vlad Enache' }
+      ]
+    };
+
+    it('Given_TutorWithReviews_When_Rendering_Then_HeaderShowsStarsAverageAndReviewCount', () => {
+      render(rated);
+
+      const header = query('header-rating') as HTMLElement;
+      expect(header.querySelector('strong')?.textContent).toBe('4.5');
+      expect(header.textContent).toContain('(4 reviews)');
+      expect(header.querySelectorAll('.star').length).toBe(5);
+      expect(header.querySelectorAll('.star-filled').length).toBe(5);
+      expect(header.getAttribute('aria-label')).toBe('4.5 out of 5, 4 reviews');
+      expect(query('header-no-reviews')).toBeNull();
+    });
+
+    it('Given_TutorWithSingleReview_When_Rendering_Then_HeaderUsesSingularLabel', () => {
+      render({ ...rated, averageRating: 5, ratingsCount: 1 });
+
+      expect((query('header-rating') as HTMLElement).textContent).toContain('(1 review)');
+    });
+
+    it('Given_NewTutorWithoutReviews_When_Rendering_Then_HeaderSaysNoReviewsInsteadOfAFakeRating', () => {
+      render({ ...BASE, averageRating: 0, ratingsCount: 0, reviews: [] });
+
+      expect(query('header-rating')).toBeNull();
+      expect(query('header-no-reviews')?.textContent).toContain('No reviews yet');
+      expect(fixture.nativeElement.textContent).not.toContain('5.0');
+    });
+
+    it('Given_ResponseWithoutRatingFields_When_Rendering_Then_TreatsTutorAsUnrated', () => {
+      render(BASE);
+
+      expect(query('header-no-reviews')).not.toBeNull();
+      expect(query('reviews-empty')).not.toBeNull();
+    });
+
+    it('Given_TutorWithReviews_When_Rendering_Then_ReviewsSectionShowsSummaryDistributionAndList', () => {
+      render(rated);
+
+      expect(query('reviews-section')?.textContent).toContain('Reviews from students');
+      expect(query('reviews-average')?.textContent?.trim()).toBe('4.5');
+      expect(queryAll('distribution-percent').map((el) => el.textContent?.trim())).toEqual(['50%', '50%', '0%', '0%', '0%']);
+      const items = queryAll('review-item');
+      expect(items.length).toBe(2);
+      expect(items[0].textContent).toContain('Ana Pop');
+      expect(items[0].textContent).toContain('Excellent');
+      expect(items[0].textContent).toContain('Nov 5, 2026');
+      expect(items[1].textContent).toContain('Vlad Enache');
+      expect(items[1].textContent).toContain('4/5');
+    });
+
+    it('Given_NewTutorWithoutReviews_When_Rendering_Then_ReviewsSectionShowsEmptyState', () => {
+      render({ ...BASE, averageRating: 0, ratingsCount: 0, reviews: [] });
+
+      expect(query('reviews-section')).not.toBeNull();
+      expect(query('reviews-empty')?.textContent).toContain('No reviews yet');
+      expect(queryAll('review-item').length).toBe(0);
+    });
+
+    it('Given_DemoProfile_When_Rendering_Then_ShowsSampleReviewsConsistentWithHeader', () => {
+      vi.spyOn(tutorService, 'getTutorById').mockReturnValue(throwError(() => new Error('not found')));
+
+      fixture.detectChanges();
+
+      expect((query('header-rating') as HTMLElement).textContent).toContain('(5 reviews)');
+      expect(queryAll('review-item').length).toBe(5);
+      expect(queryAll('distribution-percent').map((el) => el.textContent?.trim())).toEqual(['80%', '20%', '0%', '0%', '0%']);
+      expect(query('reviews-truncated')).toBeNull();
+    });
+
+    it('Given_TutorProfile_When_Rendering_Then_ComputesRatingSignalsFromTheResponse', () => {
+      render(rated);
+
+      expect(component.ratingsCount()).toBe(4);
+      expect(component.averageRating()).toBe(4.5);
+      expect(component.hasReviews()).toBe(true);
+      expect(component.reviewsLabel()).toBe('4 reviews');
+    });
+  });
   it('Given_DemoProfile_When_Rendering_Then_ExplainsBookingIsUnavailable', () => {
     vi.spyOn(tutorService, 'getTutorById').mockReturnValue(throwError(() => new Error('not found')));
 

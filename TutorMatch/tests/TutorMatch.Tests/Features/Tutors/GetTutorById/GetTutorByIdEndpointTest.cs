@@ -1,4 +1,4 @@
-﻿using System.Data.Common;
+using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TutorMatch.Api.Domain.Common;
+using TutorMatch.Api.Domain.Sessions;
+using TutorMatch.Api.Domain.Students;
+using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features.Tutors.CreateTutor;
 using TutorMatch.Api.Features.Tutors.GetTutorById;
 using TutorMatch.Api.Infrastructure.Persistence;
@@ -138,6 +142,96 @@ public class GetTutorByIdEndpointTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task Given_TutorWithRatings_When_GettingTutorById_Then_ReturnsAverageCountAndReviews()
+    {
+        var tutorId = Guid.NewGuid();
+        var studentId = Guid.NewGuid();
+        var firstSessionId = Guid.NewGuid();
+        var secondSessionId = Guid.NewGuid();
+        var firstStart = DateTime.UtcNow.AddDays(-5);
+        var secondStart = DateTime.UtcNow.AddDays(-2);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+            db.Tutors.Add(new Tutor("Tutor Reviews", "tutor_reviews@test.com", "Bio", 80, tutorId));
+            db.Students.Add(new Student(studentId, "Maria Ionescu", "maria_reviews@test.com"));
+            db.Sessions.Add(new Session(firstSessionId, tutorId, studentId, new DateRange(firstStart, firstStart.AddHours(1)), SessionStatus.Completed));
+            db.Sessions.Add(new Session(secondSessionId, tutorId, studentId, new DateRange(secondStart, secondStart.AddHours(1)), SessionStatus.Completed));
+            await db.SaveChangesAsync();
+            db.Ratings.Add(new Rating(firstSessionId, tutorId, studentId, 4, "Bun"));
+            db.Ratings.Add(new Rating(secondSessionId, tutorId, studentId, 5, "Excelent"));
+            await db.SaveChangesAsync();
+        }
+
+        var response = await _client.GetAsync($"/api/tutors/{tutorId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<GetTutorByIdResponse>();
+        result!.AverageRating.Should().Be(4.5);
+        result.RatingsCount.Should().Be(2);
+        result.RatingDistribution![4].Should().Be(1);
+        result.RatingDistribution[5].Should().Be(1);
+        result.Reviews.Should().HaveCount(2);
+        result.Reviews![0].Score.Should().Be(5);
+        result.Reviews[0].Comment.Should().Be("Excelent");
+        result.Reviews[0].StudentName.Should().Be("Maria Ionescu");
+        result.Reviews[1].Score.Should().Be(4);
+    }
+
+    [Fact]
+    public async Task Given_TutorWithoutRatings_When_GettingTutorById_Then_ReturnsZeroRatingsAndEmptyReviews()
+    {
+        var tutorId = Guid.NewGuid();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+            db.Tutors.Add(new Tutor("Tutor New", "tutor_new@test.com", "Bio", 80, tutorId));
+            await db.SaveChangesAsync();
+        }
+
+        var response = await _client.GetAsync($"/api/tutors/{tutorId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<GetTutorByIdResponse>();
+        result!.AverageRating.Should().Be(0);
+        result.RatingsCount.Should().Be(0);
+        result.Reviews.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Given_TutorWithRating_When_GettingTutorById_Then_JsonExposesTheFieldNamesTheFrontendReads()
+    {
+        var tutorId = Guid.NewGuid();
+        var studentId = Guid.NewGuid();
+        var sessionId = Guid.NewGuid();
+        var start = DateTime.UtcNow.AddDays(-2);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+            db.Tutors.Add(new Tutor("Tutor Contract", "tutor_contract@test.com", "Bio", 80, tutorId));
+            db.Students.Add(new Student(studentId, "Maria Ionescu", "maria_contract@test.com"));
+            db.Sessions.Add(new Session(sessionId, tutorId, studentId, new DateRange(start, start.AddHours(1)), SessionStatus.Completed));
+            await db.SaveChangesAsync();
+            db.Ratings.Add(new Rating(sessionId, tutorId, studentId, 5, "Excelent"));
+            await db.SaveChangesAsync();
+        }
+
+        var json = await _client.GetStringAsync($"/api/tutors/{tutorId}");
+
+        json.Should().Contain("\"averageRating\":5");
+        json.Should().Contain("\"ratingsCount\":1");
+        json.Should().Contain("\"ratingDistribution\":{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":1}");
+        json.Should().Contain("\"reviews\":[{");
+        json.Should().Contain($"\"sessionId\":\"{sessionId}\"");
+        json.Should().Contain("\"score\":5");
+        json.Should().Contain("\"comment\":\"Excelent\"");
+        json.Should().Contain("\"studentName\":\"Maria Ionescu\"");
+        json.Should().Contain("\"date\":");
+    }
     public void Dispose()
     {
         _connection.Dispose();

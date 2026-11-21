@@ -84,7 +84,7 @@ export class SemanticEvaluationService {
   /** The classic subject filter fed with the raw natural-language query. */
   private keywordBaseline(query: string): Observable<TutorSearchItem[]> {
     return this.tutorService
-      .searchTutors({ subject: query, maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: TOP_K })
+      .searchTutors({ subject: query, maxPrice: null, minRating: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: TOP_K })
       .pipe(
         map((response) => response.tutors),
         catchError(() => of<TutorSearchItem[]>([]))
