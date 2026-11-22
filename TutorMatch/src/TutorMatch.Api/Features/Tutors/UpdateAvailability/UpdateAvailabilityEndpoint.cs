@@ -20,6 +20,7 @@ public static class UpdateAvailabilityEndpoint
             .ProducesErrors(StatusCodes.Status404NotFound);
 
         group.MapPut("/{id:guid}/availability", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("Replace a tutor's availability")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound);

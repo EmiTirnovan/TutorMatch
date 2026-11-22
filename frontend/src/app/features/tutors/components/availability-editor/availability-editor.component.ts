@@ -43,21 +43,46 @@ export class AvailabilityEditorComponent implements OnInit {
   newEnd: string = '';
 
   ngOnInit(): void {
-    if (!this.tutorId) {
-      const routeId = this.route.snapshot.paramMap.get('id');
-      if (routeId) {
-        this.tutorId = routeId;
-      }
+    if (this.isEmbedded && this.tutorId) {
+      this.setDefaultSlotTimes();
+      return;
     }
 
-    if (this.tutorId && !this.isEmbedded) {
-      this.loadTutorAvailability();
+    const handleId = (id: string | null) => {
+      if (id) {
+        this.tutorId = id;
+      } else if (!this.tutorId) {
+        this.tutorId = this.userContext.tutorId();
+      }
+
+      if (this.tutorId && !this.isEmbedded) {
+        this.loadTutorAvailability();
+      } else {
+        this.setDefaultSlotTimes();
+      }
+    };
+
+    if (this.route?.paramMap) {
+      this.route.paramMap.subscribe((params) => {
+        handleId(params.get('id'));
+      });
     } else {
-      this.setDefaultSlotTimes();
+      const routeId = this.route?.snapshot?.paramMap?.get('id');
+      handleId(routeId);
     }
   }
 
   loadTutorAvailability(): void {
+    if (!this.tutorId) {
+      this.tutorId = this.userContext.tutorId();
+    }
+    if (!this.tutorId) {
+      this.errorMessage.set('Could not load tutor availability. Please verify the tutor ID.');
+      this.isLoading.set(false);
+      this.setDefaultSlotTimes();
+      return;
+    }
+
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
@@ -180,6 +205,10 @@ export class AvailabilityEditorComponent implements OnInit {
     if (!this.canEdit()) {
       this.errorMessage.set('Students cannot update or save tutor availability.');
       return;
+    }
+
+    if (!this.tutorId) {
+      this.tutorId = this.userContext.tutorId();
     }
 
     if (!this.tutorId) {

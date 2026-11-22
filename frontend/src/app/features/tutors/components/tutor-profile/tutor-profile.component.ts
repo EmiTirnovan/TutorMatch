@@ -15,8 +15,6 @@ import { StarRatingComponent } from '../star-rating/star-rating.component';
 import { TutorReviewsComponent } from '../tutor-reviews/tutor-reviews.component';
 import { UserContextService } from '../../../../core/services/user-context.service';
 
-const DEMO_TUTOR_ID = 'demo-tutor-001';
-
 @Component({
   selector: 'app-tutor-profile',
   standalone: true,
@@ -56,7 +54,6 @@ export class TutorProfileComponent implements OnInit {
   readonly averageRating = computed(() => this.tutor()?.averageRating ?? 0);
   readonly hasReviews = computed(() => this.ratingsCount() > 0);
   readonly reviewsLabel = computed(() => `${this.ratingsCount()} ${this.ratingsCount() === 1 ? 'review' : 'reviews'}`);
-  readonly isDemoTutor = computed(() => this.tutor()?.id === DEMO_TUTOR_ID);
   readonly bookedSessions = signal<SessionResponse[]>([]);
   readonly slotsLoading = signal(false);
   readonly slotsError = signal(false);
@@ -76,12 +73,23 @@ export class TutorProfileComponent implements OnInit {
   newEditSubjectInput = '';
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id && id !== 'demo') {
-      this.loadTutor(id);
+    const handleId = (id: string | null) => {
+      const resolvedId = id || this.userContext.tutorId();
+      if (resolvedId) {
+        this.loadTutor(resolvedId);
+      } else {
+        this.isLoading.set(false);
+        this.errorMessage.set('No tutor ID provided.');
+      }
+    };
+
+    if (this.route?.paramMap) {
+      this.route.paramMap.subscribe((params) => {
+        handleId(params.get('id'));
+      });
     } else {
-      // Demo mock profile for exploratory testing
-      this.loadDemoTutor();
+      const id = this.route?.snapshot?.paramMap?.get('id');
+      handleId(id);
     }
   }
 
@@ -95,9 +103,10 @@ export class TutorProfileComponent implements OnInit {
         this.isLoading.set(false);
         this.loadBookedSessions(data.id);
       },
-      error: () => {
-        // Fallback to demo profile with notification if backend has no matching ID
-        this.loadDemoTutor();
+      error: (err) => {
+        this.isLoading.set(false);
+        this.tutor.set(null);
+        this.errorMessage.set(err?.error?.detail || err?.error?.message || 'Tutor profile not found.');
       }
     });
   }
@@ -212,20 +221,6 @@ export class TutorProfileComponent implements OnInit {
     this.isSavingProfile.set(true);
     this.editErrorMessage.set(null);
 
-    if (this.isDemoTutor()) {
-      this.tutor.update(curr => curr ? {
-        ...curr,
-        name,
-        bio,
-        hourlyRate,
-        subjects
-      } : null);
-      this.isSavingProfile.set(false);
-      this.isEditProfileOpen.set(false);
-      this.successMessage.set('Profile and subjects updated successfully (demo mode).');
-      return;
-    }
-
     this.tutorService.updateTutor(t.id, {
       name,
       bio,
@@ -250,49 +245,6 @@ export class TutorProfileComponent implements OnInit {
         this.editErrorMessage.set(detail);
       }
     });
-  }
-
-  loadDemoTutor(): void {
-    const tomorrow10 = new Date();
-    tomorrow10.setDate(tomorrow10.getDate() + 1);
-    tomorrow10.setHours(10, 0, 0, 0);
-
-    const tomorrow12 = new Date(tomorrow10);
-    tomorrow12.setHours(12, 0, 0, 0);
-
-    const afterTomorrow14 = new Date(tomorrow10);
-    afterTomorrow14.setDate(afterTomorrow14.getDate() + 1);
-    afterTomorrow14.setHours(14, 0, 0, 0);
-
-    const afterTomorrow16 = new Date(afterTomorrow14);
-    afterTomorrow16.setHours(16, 0, 0, 0);
-
-    const daysAgo = (days: number): string => new Date(Date.now() - days * 86_400_000).toISOString();
-
-    this.tutor.set({
-      id: DEMO_TUTOR_ID,
-      name: 'Radu Ionescu',
-      email: 'radu.ionescu@student.upt.ro',
-      bio: 'Student în anul 3 la Calculatoare. Am fost asistent voluntar la laboratorul de Structuri de Date și Teoria Grafurilor. Te pot ajuta cu pointeri în C, arbori echilibrați, algoritmi pe grafuri și pregătire pentru restanțe sau examene.',
-      hourlyRate: 80,
-      subjects: ['Algoritmi și Structuri de Date', 'C / C++', 'Teoria Grafurilor', 'Programare Orientată pe Obiecte'],
-      averageRating: 4.8,
-      ratingsCount: 5,
-      ratingDistribution: { '1': 0, '2': 0, '3': 0, '4': 1, '5': 4 },
-      reviews: [
-        { sessionId: 'demo-review-1', date: daysAgo(3), score: 5, comment: 'Explica foarte clar pointerii, am inteles in o singura sedinta.', studentName: 'Maria Popescu' },
-        { sessionId: 'demo-review-2', date: daysAgo(9), score: 5, comment: 'Exemple bune la arbori echilibrati.', studentName: 'Andrei Lungu' },
-        { sessionId: 'demo-review-3', date: daysAgo(16), score: 4, comment: null, studentName: 'Ioana Mihai' },
-        { sessionId: 'demo-review-4', date: daysAgo(24), score: 5, comment: 'M-a ajutat sa recuperez restanta la SD.', studentName: 'Vlad Enache' },
-        { sessionId: 'demo-review-5', date: daysAgo(40), score: 5, comment: null, studentName: null }
-      ],
-      availability: [
-        { start: tomorrow10.toISOString(), end: tomorrow12.toISOString() },
-        { start: afterTomorrow14.toISOString(), end: afterTomorrow16.toISOString() }
-      ]
-    });
-
-    this.isLoading.set(false);
   }
 
   getInitials(name: string): string {

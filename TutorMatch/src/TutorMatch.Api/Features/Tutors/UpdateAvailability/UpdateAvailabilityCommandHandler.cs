@@ -5,19 +5,34 @@ using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Domain.Tutors.Events;
+using TutorMatch.Api.Domain.Users;
 
 public class UpdateAvailabilityCommandHandler : ICommandHandler<UpdateAvailabilityCommand>
 {
     private readonly ITutorRepository _repository;
+    private readonly IUserRepository? _userRepository;
 
-    public UpdateAvailabilityCommandHandler(ITutorRepository repository)
+    public UpdateAvailabilityCommandHandler(
+        ITutorRepository repository,
+        IUserRepository? userRepository = null)
     {
         _repository = repository;
+        _userRepository = userRepository;
     }
 
     public Task<Result> HandleAsync(UpdateAvailabilityCommand command, CancellationToken cancellationToken = default)
     {
         var tutor = _repository.GetById(command.TutorId);
+        if (tutor is null && _userRepository is not null)
+        {
+            var user = _userRepository.GetById(command.TutorId);
+            if (user is not null && user.Role.Equals("Tutor", StringComparison.OrdinalIgnoreCase))
+            {
+                tutor = new Tutor(user.FullName, user.Email, "Tutor on TutorMatch", 50m, user.Id);
+                _repository.Add(tutor);
+            }
+        }
+
         if (tutor is null)
         {
             return Task.FromResult(Result.Failure(

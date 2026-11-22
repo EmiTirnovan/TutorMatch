@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -14,6 +15,7 @@ public static class GetMySessionsEndpoint
     public static IEndpointRouteBuilder MapGetMySessions(this IEndpointRouteBuilder group)
     {
         group.MapGet("/my", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("List my sessions")
             .WithDescription("Lists the sessions of a student or tutor (role), optionally filtered by status: Upcoming, Booked, Cancelled, LateCancelled, Completed.")
             .Produces<GetMySessionsResponse>(StatusCodes.Status200OK)

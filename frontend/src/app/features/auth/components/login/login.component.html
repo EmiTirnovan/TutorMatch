@@ -1,0 +1,96 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-icon-badge">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+      </div>
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-subtitle">Log in to your TutorMatch account</p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="alert alert-danger" data-testid="login-error-alert" role="alert">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    }
+
+    <!-- Google Sign In -->
+    <div class="google-section">
+      <div #googleBtn class="google-btn-wrapper" data-testid="google-signin-btn-container"></div>
+    </div>
+
+    <div class="auth-divider">
+      <span>or sign in with email</span>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form" novalidate>
+      <div class="form-group">
+        <label for="email" class="form-label">Email address</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="name@university.ro"
+          class="form-control"
+          [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+          data-testid="login-email-input"
+          autocomplete="email"
+        />
+        @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+          <div class="invalid-feedback">
+            Please enter a valid email address.
+          </div>
+        }
+      </div>
+
+      <div class="form-group">
+        <div class="label-with-link">
+          <label for="password" class="form-label">Password</label>
+        </div>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="••••••••"
+          class="form-control"
+          [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+          data-testid="login-password-input"
+          autocomplete="current-password"
+        />
+        @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+          <div class="invalid-feedback">
+            Password must be at least 6 characters.
+          </div>
+        }
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn-primary btn-block submit-btn"
+        [disabled]="isLoading()"
+        data-testid="login-submit-btn"
+      >
+        @if (isLoading()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          Signing in...
+        } @else {
+          Sign In
+        }
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <span>Don't have an account?</span>
+      <a routerLink="/register" class="auth-link" data-testid="go-to-register-link">Register here</a>
+    </div>
+  </div>
+</div>

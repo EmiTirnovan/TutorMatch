@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
@@ -12,6 +13,7 @@ public static class DeleteSessionEndpoint
     public static IEndpointRouteBuilder MapDeleteSession(this IEndpointRouteBuilder group)
     {
         group.MapDelete("/{id:guid}", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("Delete a session")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesErrors(StatusCodes.Status404NotFound);

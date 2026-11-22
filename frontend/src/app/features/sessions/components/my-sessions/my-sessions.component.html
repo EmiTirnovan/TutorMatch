@@ -9,20 +9,12 @@
       <div class="identity-info">
         <span class="text-muted text-sm">Active Identity:</span>
         <strong class="identity-name">
-          {{ currentRole() === 'tutor' ? 'Tutor (' + userContext.tutorName() + ')' : 'Student (' + userContext.studentName() + ')' }}
+          {{ userContext.currentUserName() || (currentRole() === 'tutor' ? 'Tutor' : 'Student') }}
         </strong>
         <span class="badge" [ngClass]="currentRole() === 'tutor' ? 'badge-primary' : 'badge-neutral'">
           {{ currentRole() === 'tutor' ? 'Tutor' : 'Student' }}
         </span>
       </div>
-      <button
-        type="button"
-        class="btn btn-secondary btn-sm"
-        data-testid="dashboard-toggle-role-btn"
-        (click)="toggleRole()"
-      >
-        Switch to {{ currentRole() === 'tutor' ? 'Student' : 'Tutor' }}
-      </button>
     </div>
   </header>
 

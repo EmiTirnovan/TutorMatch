@@ -254,12 +254,11 @@ describe('MySessionsComponent', () => {
     });
   });
 
-  describe('Demo User Switcher', () => {
-    it('Given_RoleToggle_When_Clicked_Then_SwitchesRoleAndReloadsSessions', () => {
+  describe('User Context Role Changes', () => {
+    it('Given_RoleChange_When_RoleUpdates_Then_ReloadsSessionsForNewRole', () => {
       expect(component.currentRole()).toBe('tutor');
 
-      const toggleBtn = fixture.nativeElement.querySelector('[data-testid="dashboard-toggle-role-btn"]') as HTMLButtonElement;
-      toggleBtn.click();
+      userContext.setRole('student');
       fixture.detectChanges();
 
       expect(component.currentRole()).toBe('student');

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
@@ -12,6 +12,7 @@ public static class RateSessionEndpoint
     public static IEndpointRouteBuilder MapRateSession(this IEndpointRouteBuilder group)
     {
         group.MapPost("/{tutorId:guid}/sessions/{sessionId:guid}/rate", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("Rate a completed session")
             .WithDescription("The student is identified by the X-Student-Id header.")
             .Produces(StatusCodes.Status204NoContent)

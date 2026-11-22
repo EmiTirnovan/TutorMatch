@@ -356,15 +356,15 @@ describe('TutorProfileComponent', () => {
       expect(queryAll('review-item').length).toBe(0);
     });
 
-    it('Given_DemoProfile_When_Rendering_Then_ShowsSampleReviewsConsistentWithHeader', () => {
-      vi.spyOn(tutorService, 'getTutorById').mockReturnValue(throwError(() => new Error('not found')));
+    it('Given_TutorNotFound_When_Loading_Then_ShowsNotFoundState', () => {
+      vi.spyOn(tutorService, 'getTutorById').mockReturnValue(throwError(() => ({ error: { detail: 'Tutor not found' } })));
 
       fixture.detectChanges();
 
-      expect((query('header-rating') as HTMLElement).textContent).toContain('(5 reviews)');
-      expect(queryAll('review-item').length).toBe(5);
-      expect(queryAll('distribution-percent').map((el) => el.textContent?.trim())).toEqual(['80%', '20%', '0%', '0%', '0%']);
-      expect(query('reviews-truncated')).toBeNull();
+      expect(component.tutor()).toBeNull();
+      expect(component.errorMessage()).toBe('Tutor not found');
+      expect(fixture.nativeElement.textContent).toContain('Tutor Profile Not Found');
+      expect(query('reviews-section')).toBeNull();
     });
 
     it('Given_TutorProfile_When_Rendering_Then_ComputesRatingSignalsFromTheResponse', () => {
@@ -376,12 +376,11 @@ describe('TutorProfileComponent', () => {
       expect(component.reviewsLabel()).toBe('4 reviews');
     });
   });
-  it('Given_DemoProfile_When_Rendering_Then_ExplainsBookingIsUnavailable', () => {
+  it('Given_TutorNotFound_When_Rendering_Then_SlotPickerIsNotShown', () => {
     vi.spyOn(tutorService, 'getTutorById').mockReturnValue(throwError(() => new Error('not found')));
 
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('sample profile');
     expect(fixture.nativeElement.querySelector('app-slot-picker')).toBeNull();
   });
 

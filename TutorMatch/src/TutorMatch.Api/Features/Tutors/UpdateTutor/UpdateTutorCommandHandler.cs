@@ -2,6 +2,7 @@ using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Domain.Tutors.Events;
+using TutorMatch.Api.Domain.Users;
 
 namespace TutorMatch.Api.Features.Tutors.UpdateTutor;
 
@@ -10,10 +11,14 @@ public class UpdateTutorCommandHandler :
     ICommandHandler<UpdateTutorProfileCommand>
 {
     private readonly ITutorRepository _repository;
+    private readonly IUserRepository? _userRepository;
 
-    public UpdateTutorCommandHandler(ITutorRepository repository)
+    public UpdateTutorCommandHandler(
+        ITutorRepository repository,
+        IUserRepository? userRepository = null)
     {
         _repository = repository;
+        _userRepository = userRepository;
     }
 
     public Task<Result> HandleAsync(UpdateTutorCommand command, CancellationToken cancellationToken = default) =>
@@ -43,6 +48,16 @@ public class UpdateTutorCommandHandler :
         }
 
         var tutor = _repository.GetById(command.Id);
+        if (tutor is null && _userRepository is not null)
+        {
+            var user = _userRepository.GetById(command.Id);
+            if (user is not null && user.Role.Equals("Tutor", StringComparison.OrdinalIgnoreCase))
+            {
+                tutor = new Tutor(user.FullName, user.Email, "Tutor on TutorMatch", 50m, user.Id);
+                _repository.Add(tutor);
+            }
+        }
+
         if (tutor is null)
         {
             return Task.FromResult(Result.Failure(

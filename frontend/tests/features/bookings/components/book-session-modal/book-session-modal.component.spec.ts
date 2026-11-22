@@ -8,6 +8,7 @@ import { LocationPickerMapComponent } from '../../../../../src/app/features/loca
 import { BookSessionModalComponent } from '../../../../../src/app/features/bookings/components/book-session-modal/book-session-modal.component';
 import { TutorDetailsResponse } from '../../../../../src/app/core/models/tutor.models';
 import { DEMO_STUDENT_ID, SessionType } from '../../../../../src/app/core/models/session.models';
+import { UserContextService } from '../../../../../src/app/core/services/user-context.service';
 
 const TUTOR: TutorDetailsResponse = {
   id: 'tutor-1',
@@ -46,6 +47,8 @@ describe('BookSessionModalComponent', () => {
       providers: [provideHttpClient(), provideHttpClientTesting()]
     });
     httpMock = TestBed.inject(HttpTestingController);
+    const userContext = TestBed.inject(UserContextService);
+    userContext.setStudentId(DEMO_STUDENT_ID);
     fixture = TestBed.createComponent(BookSessionModalComponent);
     component = fixture.componentInstance;
     document.body.appendChild(fixture.nativeElement);

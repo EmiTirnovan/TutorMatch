@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -13,6 +14,7 @@ public static class CompleteSessionEndpoint
     public static IEndpointRouteBuilder MapCompleteSession(this IEndpointRouteBuilder group)
     {
         group.MapPost("/{id:guid}/complete", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("Mark a session as completed")
             .WithDescription("Only the session's tutor can complete it. The tutor id can be sent in the body or as the tutorId query parameter.")
             .Produces(StatusCodes.Status204NoContent)

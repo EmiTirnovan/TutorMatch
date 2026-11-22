@@ -4,6 +4,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { routes } from '../src/app/app.routes';
+import { AuthService } from '../src/app/core/services/auth.service';
 import { SearchTutorsComponent } from '../src/app/features/tutors/components/search-tutors/search-tutors.component';
 import { TutorProfileComponent } from '../src/app/features/tutors/components/tutor-profile/tutor-profile.component';
 import { TutorRegisterComponent } from '../src/app/features/tutors/components/tutor-register/tutor-register.component';
@@ -15,7 +16,18 @@ describe('app routes', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthService,
+          useValue: {
+            isAuthenticated: () => true,
+            currentUser: () => ({ id: '123e4567-e89b-12d3-a456-426614174000', email: 'tutor@test.com', fullName: 'Test Tutor', role: 'tutor' })
+          }
+        }
+      ]
     });
   });
 
