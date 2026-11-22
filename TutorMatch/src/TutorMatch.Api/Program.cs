@@ -124,12 +124,33 @@ public class Program
             dbContext.Database.Migrate();
 
             var tutorRepo = scope.ServiceProvider.GetRequiredService<ITutorRepository>();
-            if (tutorRepo.GetAll().Count == 0)
+            var demoTutorId = Guid.Parse("35ee570a-c31c-4ff7-b77d-ccce19e81d2e");
+            if (tutorRepo.GetById(demoTutorId) is null)
             {
-                var demoTutor = new Tutor("Emi Tirnovan", "emi@tutormatch.ro", "Student anul 3. Ajut cu Algoritmi si POO.", 75m);
+                var demoTutor = new Tutor(
+                    "Emi Tirnovan",
+                    "emi@tutormatch.ro",
+                    "Student anul 3. Ajut cu Algoritmi si POO.",
+                    75m,
+                    demoTutorId);
                 var tomorrow = DateTime.UtcNow.Date.AddDays(1);
                 demoTutor.AddAvailability(new DateRange(tomorrow.AddHours(10), tomorrow.AddHours(14)));
+                demoTutor.AddAvailability(new DateRange(tomorrow.AddDays(1).AddHours(14), tomorrow.AddDays(1).AddHours(18)));
                 tutorRepo.Add(demoTutor);
+            }
+
+            var legacyDemoTutorId = Guid.Parse("c167e843-d680-4882-a437-950f1dac2bd1");
+            if (tutorRepo.GetById(legacyDemoTutorId) is null)
+            {
+                var legacyDemoTutor = new Tutor(
+                    "Emi Tirnovan",
+                    "emi.legacy@tutormatch.ro",
+                    "Student anul 3. Ajut cu Algoritmi si POO.",
+                    75m,
+                    legacyDemoTutorId);
+                var tomorrow = DateTime.UtcNow.Date.AddDays(1);
+                legacyDemoTutor.AddAvailability(new DateRange(tomorrow.AddHours(10), tomorrow.AddHours(14)));
+                tutorRepo.Add(legacyDemoTutor);
             }
 
             // shortcut: no auth yet, the frontend books as this student (DEMO_STUDENT_ID); replace when identity lands.
@@ -138,6 +159,12 @@ public class Program
             if (studentRepo.GetById(demoStudentId) is null)
             {
                 studentRepo.Add(new Student(demoStudentId, "Alex Radu", "alex.radu@example.com"));
+            }
+
+            var legacyStudentId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            if (studentRepo.GetById(legacyStudentId) is null)
+            {
+                studentRepo.Add(new Student(legacyStudentId, "Alex Radu", "alex.legacy@example.com"));
             }
         }
 
