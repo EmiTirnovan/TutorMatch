@@ -121,6 +121,32 @@
         }
       </div>
 
+      <div class="form-group">
+        <label for="confirmPassword" class="form-label">Confirm Password</label>
+        <input
+          id="confirmPassword"
+          type="password"
+          formControlName="confirmPassword"
+          placeholder="Repeat your password"
+          class="form-control"
+          [class.is-invalid]="
+            (registerForm.get('confirmPassword')?.touched || registerForm.touched) &&
+            (registerForm.get('confirmPassword')?.hasError('required') || registerForm.hasError('passwordMismatch'))
+          "
+          data-testid="register-confirm-password-input"
+          autocomplete="new-password"
+        />
+        @if (registerForm.get('confirmPassword')?.hasError('required') && (registerForm.get('confirmPassword')?.touched || registerForm.touched)) {
+          <div class="invalid-feedback">
+            Please confirm your password.
+          </div>
+        } @else if (registerForm.hasError('passwordMismatch') && (registerForm.get('confirmPassword')?.touched || registerForm.touched)) {
+          <div class="invalid-feedback" data-testid="register-password-mismatch-error">
+            Passwords do not match.
+          </div>
+        }
+      </div>
+
       <button
         type="submit"
         class="btn btn-primary btn-block submit-btn"

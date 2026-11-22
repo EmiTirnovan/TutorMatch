@@ -59,6 +59,7 @@ describe('RegisterComponent', () => {
       fullName: 'Andrei Popa',
       email: 'andrei@tutormatch.ro',
       password: 'password123',
+      confirmPassword: 'password123',
       role: 'Tutor'
     });
     authService.register.mockReturnValue(
@@ -82,11 +83,28 @@ describe('RegisterComponent', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/sessions');
   });
 
+  it('Given_MismatchedPasswords_When_Validating_Then_FormIsInvalid', () => {
+    component.registerForm.setValue({
+      fullName: 'Andrei Popa',
+      email: 'andrei@tutormatch.ro',
+      password: 'password123',
+      confirmPassword: 'differentpassword',
+      role: 'Student'
+    });
+
+    expect(component.registerForm.invalid).toBe(true);
+    expect(component.registerForm.hasError('passwordMismatch')).toBe(true);
+
+    component.onSubmit();
+    expect(authService.register).not.toHaveBeenCalled();
+  });
+
   it('Given_RegistrationError_When_Submit_Then_DisplaysErrorMessage', () => {
     component.registerForm.setValue({
       fullName: 'Andrei Popa',
       email: 'existing@tutormatch.ro',
       password: 'password123',
+      confirmPassword: 'password123',
       role: 'Student'
     });
     authService.register.mockReturnValue(

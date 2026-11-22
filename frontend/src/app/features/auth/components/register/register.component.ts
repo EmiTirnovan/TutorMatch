@@ -8,13 +8,29 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
+  AbstractControl,
   FormControl,
   FormGroup,
   ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
   Validators
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
+
+export const passwordMatchValidator: ValidatorFn = (
+  control: AbstractControl
+): ValidationErrors | null => {
+  const password = control.get('password')?.value;
+  const confirmPassword = control.get('confirmPassword')?.value;
+
+  if (!password || !confirmPassword) {
+    return null;
+  }
+
+  return password === confirmPassword ? null : { passwordMismatch: true };
+};
 
 @Component({
   selector: 'app-register',
@@ -31,12 +47,16 @@ export class RegisterComponent implements AfterViewInit {
   readonly isLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
-  readonly registerForm = new FormGroup({
-    fullName: new FormControl('', [Validators.required, Validators.minLength(2)]),
-    email: new FormControl('', [Validators.required, Validators.email]),
-    password: new FormControl('', [Validators.required, Validators.minLength(6)]),
-    role: new FormControl<'Student' | 'Tutor'>('Student', [Validators.required])
-  });
+  readonly registerForm = new FormGroup(
+    {
+      fullName: new FormControl('', [Validators.required, Validators.minLength(2)]),
+      email: new FormControl('', [Validators.required, Validators.email]),
+      password: new FormControl('', [Validators.required, Validators.minLength(6)]),
+      confirmPassword: new FormControl('', [Validators.required]),
+      role: new FormControl<'Student' | 'Tutor'>('Student', [Validators.required])
+    },
+    { validators: passwordMatchValidator }
+  );
 
   ngAfterViewInit(): void {
     const btnElem = this.googleBtn()?.nativeElement;
