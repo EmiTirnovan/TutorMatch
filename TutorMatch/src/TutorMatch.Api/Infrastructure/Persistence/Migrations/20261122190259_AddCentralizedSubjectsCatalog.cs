@@ -27,7 +27,7 @@ namespace TutorMatch.Api.Infrastructure.Persistence.Migrations
                 table: "Subjects",
                 type: "TEXT",
                 nullable: false,
-                defaultValueSql: "CURRENT_TIMESTAMP");
+                defaultValue: new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc));
 
             migrationBuilder.AddColumn<int>(
                 name: "UsageCount",
