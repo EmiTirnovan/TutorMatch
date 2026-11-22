@@ -174,6 +174,44 @@ public class UpdateAvailabilityEndpointTests : IDisposable
         body.Should().Contain("Tutor.Validation");
     }
 
+    [Fact]
+    public async Task Given_ExistingTutor_When_GettingAvailability_Then_ReturnsOkWithSlots()
+    {
+        var tutorId = Guid.NewGuid();
+        var slotStart = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
+        var slotEnd = DateTime.UtcNow.Date.AddDays(1).AddHours(12);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+            await db.Database.ExecuteSqlRawAsync(
+                "INSERT INTO Tutors (Id, Name, Email, Bio, HourlyRate) VALUES ({0}, {1}, {2}, {3}, {4})",
+                tutorId, "Test Tutor", "test_getavail@tutor.com", "Bio", 100);
+            await db.Database.ExecuteSqlRawAsync(
+                "INSERT INTO TutorAvailabilities (Id, Start, End, TutorId) VALUES ({0}, {1}, {2}, {3})",
+                Guid.NewGuid(), slotStart, slotEnd, tutorId);
+        }
+
+        var response = await _client.GetAsync($"/api/tutors/{tutorId}/availability");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var slots = await response.Content.ReadFromJsonAsync<List<DateRangeDto>>();
+        slots.Should().NotBeNull();
+        slots.Should().HaveCount(1);
+        slots![0].Start.Should().BeCloseTo(slotStart, TimeSpan.FromSeconds(1));
+        slots[0].End.Should().BeCloseTo(slotEnd, TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task Given_NonExistentTutor_When_GettingAvailability_Then_ReturnsNotFound()
+    {
+        var nonExistentId = Guid.NewGuid();
+
+        var response = await _client.GetAsync($"/api/tutors/{nonExistentId}/availability");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     public void Dispose()
     {
         _connection.Dispose();
