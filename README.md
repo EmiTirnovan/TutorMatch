@@ -52,10 +52,10 @@ reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coveragereport"
 **Tutori**
 - Înregistrare tutor: bio, materii, tarif orar, disponibilitate.
 - Actualizare disponibilitate (listă de intervale `DateRange`).
-- Vizualizare profil tutor.
+- Vizualizare profil tutor, cu recenziile primite (notă medie, distribuție pe stele, lista recenziilor).
 
 **Căutare**
-- Căutare clasică cu filtre (materie, preț, disponibilitate).
+- Căutare clasică cu filtre (materie, preț, rating minim, disponibilitate), paginare și sortare (după preț sau după cel mai mare rating).
 - Căutare semantică: `GET /api/tutors/semantic-search?q=...` întoarce top 5 tutori după similaritate cosinus.
 - Fallback automat pe căutarea clasică dacă Ollama nu răspunde, cu `mode: "keyword"` în răspuns.
 
@@ -63,10 +63,12 @@ reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coveragereport"
 - Rezervare sesiune pe un interval.
 - Anulare sesiune (gratuit cu cel puțin 12h înainte, altfel `LateCancelled`).
 - Marcare sesiune ca finalizată.
-- Listarea sesiunilor proprii.
+- Listarea sesiunilor proprii, cu rating-ul acordat pentru cele evaluate.
 
 **Rating**
 - Se poate acorda doar după o sesiune `Completed`, o singură dată per sesiune.
+- Rating-ul acordat se vede pe cardul sesiunii (stele, notă, comentariu), iar butonul de evaluare dispare.
+- Nota medie, numărul de recenzii și distribuția pe stele apar pe profilul tutorelui.
 
 ### Reguli de domeniu (invariante)
 | # | Regulă |
@@ -181,21 +183,34 @@ Studentul care rezervă se trimite în header-ul `X-Student-Id`, la fel ca la `R
 **Slice-uri:** `SearchTutors`, `RateSession`
 
 **Backend**
-- `SearchTutors`: filtre (materie, interval de preț, disponibilitate într-o dată/interval), paginare, sortare.
+- `SearchTutors`: filtre (materie, interval de preț, **rating minim**, disponibilitate într-o dată/interval), paginare, sortare (`priceAsc`, `priceDesc`, `rating_desc`).
+- `minRating` păstrează tutorii cu media ratingurilor ≥ valoarea cerută (tutorii fără rating sunt excluși); `rating_desc` ordonează descrescător după medie, iar la egalitate după preț.
 - Aceasta este **baza de comparație („keyword”)** pentru evaluarea AI și fallback-ul din SemanticSearch – deci contractul răspunsului se stabilește împreună cu Andrei.
 - `RateSession`: R5 (doar după `Completed`, o singură dată per sesiune), scor 1–5 + comentariu opțional.
-- Rating mediu afișabil pe profilul tutorelui (agregare).
+- Agregare rating în `GetTutorById`: `averageRating`, `ratingsCount`, `ratingDistribution` (numărul de rating-uri pe fiecare stea) și ultimele 20 de recenzii (`reviews`: data sesiunii, scor, comentariu, numele studentului).
+- `GetMySessions` întoarce pentru fiecare sesiune `hasRated`, `ratingScore`, `ratingNotes`, ca rating-ul să nu mai fie oferit a doua oară (evită 409).
+- Rating-urile se citesc prin `IRatingRepository` (implementare SQLite).
 
 **Frontend**
-- Pagina de căutare cu filtre și listă de rezultate (card tutor).
+- Pagina de căutare cu filtre (materie, preț maxim, **rating minim** cu stele, dată), sortare (inclusiv „Highest rating”) și listă de rezultate (card tutor).
 - Componenta de rating (stele + comentariu) accesibilă din sesiunile finalizate.
+- Pe cardul unei sesiuni finalizate: buton „Rate Tutor” dacă nu a fost evaluată, altfel stelele acordate, nota (`4/5`) și comentariul; după evaluare, cardul se actualizează imediat, fără refresh. Dacă serverul răspunde 409 (deja evaluată), lista se reîncarcă automat.
+- Pe profilul tutorelui: antet cu stele, notă medie și număr de recenzii, plus secțiunea „Reviews from students” (`TutorReviewsComponent`) cu distribuție pe stele în procente, lista cronologică a recenziilor și stare goală pentru tutorii fără recenzii. Stelele sunt afișate de `StarRatingComponent`.
 
 **Teste**
-- Teste pe combinații de filtre și cazuri limită (fără rezultate, filtre contradictorii).
+- Teste pe combinații de filtre și cazuri limită (fără rezultate, filtre contradictorii, `minRating` la limită, tutori fără rating) și pe sortarea `rating_desc` cu paginare.
 - Teste pentru R5 (rating dublu, rating pe sesiune ne-finalizată).
 - Teste de integrare + un test de UI pe fluxul de căutare.
+- Unit tests pe `GetMySessions` (`hasRated` pe sesiuni evaluate / neevaluate) și `GetTutorById` (medie, distribuție, limita de 20 de recenzii), plus teste de integrare, inclusiv pe forma JSON citită de frontend.
+- Teste de componentă pentru `SessionCardComponent`, `MySessionsComponent`, `TutorProfileComponent`, `TutorReviewsComponent`, `StarRatingComponent` și bara de filtre.
 
 **Ce învață:** interogări/filtre dinamice, paginare, reguli de unicitate, agregări; în plus contribuie la **etichetarea setului de evaluare** (vezi mai jos).
+
+**Contract API pentru rating (Angular ↔ .NET):**
+- `GET /api/tutors/search?minRating=4&sortBy=rating_desc` – filtrare și sortare după rating, combinabile cu `subject`, `maxPrice`, `date`.
+- `GET /api/sessions/my?userId=...&role=Student` – fiecare sesiune are `hasRated`, `ratingScore`, `ratingNotes`.
+- `GET /api/tutors/{id}` – `averageRating`, `ratingsCount`, `ratingDistribution` (cheile `1`–`5`) și `reviews`.
+- `POST /api/tutors/{tutorId}/sessions/{sessionId}/rate` (header `X-Student-Id`) – **409** dacă sesiunea a fost deja evaluată.
 
 ---
 

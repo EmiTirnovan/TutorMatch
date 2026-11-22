@@ -78,3 +78,42 @@
     flex: 1;
   }
 }
+
+.session-type-group {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  gap: 0.5rem;
+}
+
+.session-type-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.session-type-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.session-type-option.is-selected {
+  border-color: var(--primary-900);
+  background-color: var(--slate-50);
+}
+
+.session-type-info {
+  font-size: 0.8125rem;
+  color: var(--slate-500);
+}
+
+.location-label {
+  margin-top: 0.25rem;
+}

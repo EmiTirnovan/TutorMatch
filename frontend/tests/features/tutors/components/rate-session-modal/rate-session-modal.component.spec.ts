@@ -79,18 +79,43 @@ describe('RateSessionModalComponent', () => {
   });
 
   it('Given_ServerReportsDuplicate_When_Submitting_Then_ShowsErrorAndLocksForm', () => {
-    const conflict = new HttpErrorResponse({ status: 409, error: { detail: 'Această sesiune a fost deja evaluată.' } });
+    const conflict = new HttpErrorResponse({ status: 409, error: { detail: 'This session has already been rated.' } });
     createModal('Completed', throwError(() => conflict));
 
     component.selectScore(2);
     component.submit();
 
-    expect(component.errorMessage()).toBe('Această sesiune a fost deja evaluată.');
+    expect(component.errorMessage()).toBe('This session has already been rated.');
     expect(component.isRated()).toBe(true);
     component.submit();
     expect(rateSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('Given_ServerReportsDuplicate_When_Submitting_Then_EmitsAlreadyRatedWithoutEmittingRated', () => {
+    const conflict = new HttpErrorResponse({ status: 409, error: { detail: 'This session has already been rated.' } });
+    createModal('Completed', throwError(() => conflict));
+    const alreadyRatedEvents: unknown[] = [];
+    const ratedEvents: unknown[] = [];
+    component.alreadyRated.subscribe(() => alreadyRatedEvents.push(true));
+    component.rated.subscribe((request) => ratedEvents.push(request));
+
+    component.selectScore(2);
+    component.submit();
+
+    expect(alreadyRatedEvents.length).toBe(1);
+    expect(ratedEvents).toEqual([]);
+  });
+
+  it('Given_ServerError_When_Submitting_Then_DoesNotEmitAlreadyRated', () => {
+    createModal('Completed', throwError(() => new HttpErrorResponse({ status: 500 })));
+    const alreadyRatedEvents: unknown[] = [];
+    component.alreadyRated.subscribe(() => alreadyRatedEvents.push(true));
+
+    component.selectScore(4);
+    component.submit();
+
+    expect(alreadyRatedEvents).toEqual([]);
+  });
   it('Given_ServerError_When_Submitting_Then_AllowsRetry', () => {
     createModal('Completed', throwError(() => new HttpErrorResponse({ status: 500 })));
 
@@ -305,13 +330,13 @@ describe('RateSessionModalComponent', () => {
   });
 
   it('Given_ServerReportsDuplicate_When_SubmittingFromDom_Then_ShowsServerMessageWithoutSuccessAlert', () => {
-    const conflict = new HttpErrorResponse({ status: 409, error: { detail: 'Această sesiune a fost deja evaluată.' } });
+    const conflict = new HttpErrorResponse({ status: 409, error: { detail: 'This session has already been rated.' } });
     createModal('Completed', throwError(() => conflict));
     stars()[1].click();
 
     submitForm();
 
-    expect(query('.alert-danger').textContent).toContain('Această sesiune a fost deja evaluată.');
+    expect(query('.alert-danger').textContent).toContain('This session has already been rated.');
     expect(query('.alert-success')).toBeNull();
     expect(query<HTMLButtonElement>('button[type="submit"]').disabled).toBe(true);
     expect(stars().every((star) => star.disabled)).toBe(true);

@@ -27,6 +27,8 @@ export class RateSessionModalComponent implements AfterViewInit {
 
   readonly closed = output<void>();
   readonly rated = output<RateSessionRequest>();
+  /** Emitted when the server reports the session was already rated (HTTP 409), so the caller can refresh its list. */
+  readonly alreadyRated = output<void>();
 
   readonly starValues = Array.from({ length: MAX_RATING }, (_, index) => index + MIN_RATING);
   readonly canRate = computed(() => this.sessionStatus() === COMPLETED_STATUS);
@@ -78,6 +80,7 @@ export class RateSessionModalComponent implements AfterViewInit {
         this.isSubmitting.set(false);
         if (error.status === 409) {
           this.isRated.set(true);
+          this.alreadyRated.emit();
         }
         this.errorMessage.set(error.error?.detail ?? 'The rating could not be saved. Please try again.');
       }

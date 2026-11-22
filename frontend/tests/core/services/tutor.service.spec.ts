@@ -110,7 +110,7 @@ describe('TutorService', () => {
 
   it('Given_ActiveFilters_When_SearchingTutors_Then_SendsFiltersAsQueryParams', () => {
     service
-      .searchTutors({ subject: ' SQL ', maxPrice: 80, date: '2026-11-10', sortBy: 'priceDesc', page: 2, pageSize: 6 })
+      .searchTutors({ subject: ' SQL ', maxPrice: 80, minRating: null, date: '2026-11-10', sortBy: 'priceDesc', page: 2, pageSize: 6 })
       .subscribe();
 
     const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
@@ -126,7 +126,7 @@ describe('TutorService', () => {
 
   it('Given_EmptyFilters_When_SearchingTutors_Then_OmitsOptionalQueryParams', () => {
     service
-      .searchTutors({ subject: '', maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
+      .searchTutors({ subject: '', maxPrice: null, minRating: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
       .subscribe();
 
     const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
@@ -136,6 +136,38 @@ describe('TutorService', () => {
     req.flush({ tutors: [], totalCount: 0, page: 1, pageSize: 6, mode: 'keyword' });
   });
 
+  it('Given_MinRating_When_SearchingTutors_Then_SendsMinRatingQueryParam', () => {
+    service
+      .searchTutors({ subject: '', maxPrice: null, minRating: 4, date: '', sortBy: 'rating_desc', page: 1, pageSize: 6 })
+      .subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
+    expect(req.request.params.get('minRating')).toBe('4');
+    expect(req.request.params.get('sortBy')).toBe('rating_desc');
+    req.flush({ tutors: [], totalCount: 0, page: 1, pageSize: 6, mode: 'keyword' });
+  });
+
+  it('Given_MinRatingWithOtherFilters_When_SearchingTutors_Then_SendsAllFiltersTogether', () => {
+    service
+      .searchTutors({ subject: 'SQL', maxPrice: 80, minRating: 3, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
+      .subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
+    expect(req.request.params.get('subject')).toBe('SQL');
+    expect(req.request.params.get('maxPrice')).toBe('80');
+    expect(req.request.params.get('minRating')).toBe('3');
+    req.flush({ tutors: [], totalCount: 0, page: 1, pageSize: 6, mode: 'keyword' });
+  });
+
+  it.each([null, 0])('Given_MinRatingOf_%s_When_SearchingTutors_Then_OmitsMinRatingQueryParam', (minRating) => {
+    service
+      .searchTutors({ subject: '', maxPrice: null, minRating, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
+      .subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
+    expect(req.request.params.has('minRating')).toBe(false);
+    req.flush({ tutors: [], totalCount: 0, page: 1, pageSize: 6, mode: 'keyword' });
+  });
   it('Given_RatingRequest_When_RatingSession_Then_PostsScoreWithStudentHeader', () => {
     service.rateSession('tutor-1', 'session-1', 'student-1', { score: 4, notes: 'Clear explanations' }).subscribe();
 
@@ -147,7 +179,7 @@ describe('TutorService', () => {
   });
 
   it('Given_AnyFilters_When_SearchingTutors_Then_AlwaysSendsPagingAndSortParams', () => {
-    service.searchTutors({ subject: '', maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 }).subscribe();
+    service.searchTutors({ subject: '', maxPrice: null, minRating: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 }).subscribe();
 
     const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
     expect(req.request.params.get('page')).toBe('1');
@@ -158,7 +190,7 @@ describe('TutorService', () => {
   });
 
   it('Given_WhitespaceOnlySubject_When_SearchingTutors_Then_OmitsSubjectParam', () => {
-    service.searchTutors({ subject: '   ', maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 }).subscribe();
+    service.searchTutors({ subject: '   ', maxPrice: null, minRating: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 }).subscribe();
 
     const req = httpMock.expectOne((r) => r.url === '/api/tutors/search');
     expect(req.request.params.has('subject')).toBe(false);
@@ -176,7 +208,7 @@ describe('TutorService', () => {
     let received: unknown;
 
     service
-      .searchTutors({ subject: '', maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
+      .searchTutors({ subject: '', maxPrice: null, minRating: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
       .subscribe((response) => (received = response));
     httpMock.expectOne((r) => r.url === '/api/tutors/search').flush(payload);
 
@@ -187,7 +219,7 @@ describe('TutorService', () => {
     let status: number | undefined;
 
     service
-      .searchTutors({ subject: '', maxPrice: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
+      .searchTutors({ subject: '', maxPrice: null, minRating: null, date: '', sortBy: 'priceAsc', page: 1, pageSize: 6 })
       .subscribe({ error: (error) => (status = error.status) });
     httpMock.expectOne((r) => r.url === '/api/tutors/search').flush('boom', { status: 500, statusText: 'Server Error' });
 
@@ -215,9 +247,9 @@ describe('TutorService', () => {
     });
     httpMock
       .expectOne('/api/tutors/tutor-1/sessions/session-1/rate')
-      .flush({ detail: 'Această sesiune a fost deja evaluată.' }, { status: 409, statusText: 'Conflict' });
+      .flush({ detail: 'This session has already been rated.' }, { status: 409, statusText: 'Conflict' });
 
     expect(status).toBe(409);
-    expect(detail).toBe('Această sesiune a fost deja evaluată.');
+    expect(detail).toBe('This session has already been rated.');
   });
 });

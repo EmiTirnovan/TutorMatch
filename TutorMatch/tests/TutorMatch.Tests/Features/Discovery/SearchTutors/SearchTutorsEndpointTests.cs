@@ -6,6 +6,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TutorMatch.Api.Domain.Common;
+using TutorMatch.Api.Domain.Sessions;
+using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features.Discovery.SearchTutors;
 using TutorMatch.Api.Infrastructure.Persistence;
@@ -71,6 +73,22 @@ public class SearchTutorsEndpointTests : IDisposable
         await db.SaveChangesAsync();
     }
 
+    private async Task SeedRatingAsync(string tutorEmail, int score)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
+
+        var tutor = await db.Tutors.SingleAsync(t => t.Email == tutorEmail);
+        var student = new Student(Guid.NewGuid(), "Student Rating", $"{Guid.NewGuid():N}@test.com");
+        var start = DateTime.UtcNow.AddDays(-3);
+        var session = new Session(Guid.NewGuid(), tutor.Id, student.Id, new DateRange(start, start.AddHours(1)), SessionStatus.Completed);
+        db.Students.Add(student);
+        db.Sessions.Add(session);
+        await db.SaveChangesAsync();
+
+        db.Ratings.Add(new Rating(session.Id, tutor.Id, student.Id, score));
+        await db.SaveChangesAsync();
+    }
     [Fact]
     public async Task Given_SearchRequestWithSubject_When_Searching_Then_ReturnsFilteredTutors()
     {
@@ -143,6 +161,72 @@ public class SearchTutorsEndpointTests : IDisposable
         json.Should().Contain("\"subjects\":[\"Matematica\"]");
     }
 
+    [Fact]
+    public async Task Given_MinRatingQuery_When_Searching_Then_ReturnsOnlyTutorsAtOrAboveRating()
+    {
+        // Arrange
+        await SeedDataAsync();
+        await SeedRatingAsync("mate@test.com", 3);
+        await SeedRatingAsync("info@test.com", 5);
+
+        // Act
+        var response = await _client.GetAsync("/api/tutors/search?minRating=4");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<SearchTutorsResponse>();
+        content!.Tutors.Select(t => t.Name).Should().Equal("Tutor Info Scump");
+        content.TotalCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Given_RatingDescSort_When_Searching_Then_ReturnsHighestRatedTutorFirst()
+    {
+        // Arrange
+        await SeedDataAsync();
+        await SeedRatingAsync("mate@test.com", 3);
+        await SeedRatingAsync("info@test.com", 5);
+
+        // Act
+        var response = await _client.GetAsync("/api/tutors/search?sortBy=rating_desc");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<SearchTutorsResponse>();
+        content!.Tutors.Select(t => t.Name).Should().Equal("Tutor Info Scump", "Tutor Mate Ieftin");
+        content.Tutors.First().AverageRating.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task Given_MinRatingSubjectPriceAndRatingSort_When_Searching_Then_CombinesAllFilters()
+    {
+        // Arrange
+        await SeedDataAsync();
+        await SeedRatingAsync("mate@test.com", 4);
+        await SeedRatingAsync("info@test.com", 5);
+
+        // Act
+        var response = await _client.GetAsync("/api/tutors/search?subject=Matematica&maxPrice=100&minRating=4&sortBy=rating_desc");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadFromJsonAsync<SearchTutorsResponse>();
+        content!.Tutors.Select(t => t.Name).Should().Equal("Tutor Mate Ieftin");
+    }
+
+    [Fact]
+    public async Task Given_NoRatingFilterOrSort_When_Searching_Then_StillReturnsUnratedTutors()
+    {
+        // Arrange
+        await SeedDataAsync();
+
+        // Act
+        var response = await _client.GetAsync("/api/tutors/search");
+
+        // Assert
+        var content = await response.Content.ReadFromJsonAsync<SearchTutorsResponse>();
+        content!.Tutors.Should().HaveCount(2);
+    }
     public void Dispose()
     {
         _connection.Close();

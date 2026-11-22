@@ -35,7 +35,7 @@ describe('SearchModeBadgeComponent', () => {
     expect(badge.classList).toContain('mode-fallback');
     expect(badge.classList).not.toContain('mode-semantic');
     expect(host.querySelector('.mode-message')?.textContent).toContain(
-      'Căutarea semantică este indisponibilă momentan, afișăm rezultate pe baza cuvintelor cheie'
+      'Semantic search is unavailable right now, showing keyword-based results'
     );
   });
 

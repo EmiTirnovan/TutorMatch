@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Builder;
 using TutorMatch.Api.Features.Discovery.SearchTutors;
 using TutorMatch.Api.Features.Discovery.RateSession;
+using TutorMatch.Api.Features.SemanticSearch;
 
 namespace TutorMatch.Api.Features.Discovery;
 
@@ -10,9 +11,9 @@ public static class DiscoveryEndpoints
 {
     public static IEndpointRouteBuilder MapDiscoveryEndpoints(this IEndpointRouteBuilder app)
     {
-        MapRoutes(app.MapGroup("/api/v2/tutors").WithTags("Discovery v2"));
-        MapRoutes(app.MapGroup("/api/v1/tutors").WithTags("Discovery v1"));
-        MapRoutes(app.MapGroup("/api/tutors").WithTags("Discovery"));
+        MapRoutes(app.MapGroup("/api/v2/tutors").WithTags("Discovery / Search").WithGroupName("v2"));
+        MapRoutes(app.MapGroup("/api/v1/tutors").WithTags("Discovery / Search").WithGroupName("v1"));
+        MapRoutes(app.MapGroup("/api/tutors").WithTags("Discovery / Search (unversioned)").WithGroupName("v1"));
 
         return app;
     }
@@ -21,5 +22,6 @@ public static class DiscoveryEndpoints
     {
         group.MapSearchTutors();
         group.MapRateSession();
+        group.MapSemanticSearch();
     }
 }

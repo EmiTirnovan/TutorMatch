@@ -20,6 +20,29 @@
   </div>
 
   <div class="filter-field">
+    <span id="filter-min-rating-label" class="field-label">Minimum rating</span>
+    <div class="star-filter" role="group" aria-labelledby="filter-min-rating-label">
+      @for (rating of ratingOptions; track rating) {
+        <button
+          type="button"
+          class="star-button"
+          [class.star-button-active]="selectedRating() !== null && rating <= selectedRating()!"
+          [attr.aria-pressed]="selectedRating() === rating"
+          [attr.aria-label]="rating === 1 ? '1 star and up' : rating + ' stars and up'"
+          (click)="selectRating(rating)"
+        >
+          <svg class="star-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+        </button>
+      }
+    </div>
+    <span class="rating-hint text-muted text-sm" aria-live="polite">
+      {{ selectedRating() === null ? 'Any rating' : selectedRating() + '+ stars' }}
+    </span>
+  </div>
+
+  <div class="filter-field">
     <label for="filter-date">Available on</label>
     <input id="filter-date" class="form-control" type="date" formControlName="date" />
   </div>
@@ -29,6 +52,7 @@
     <select id="filter-sort" class="form-control" formControlName="sortBy">
       <option value="priceAsc">Price: low to high</option>
       <option value="priceDesc">Price: high to low</option>
+      <option value="rating_desc">Highest rating</option>
     </select>
   </div>
 

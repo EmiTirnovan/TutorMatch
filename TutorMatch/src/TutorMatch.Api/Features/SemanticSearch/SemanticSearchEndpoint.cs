@@ -24,6 +24,9 @@ public static class SemanticSearchEndpoint
         group.MapGet("/semantic-search", HandleAsync)
              .WithTags("Tutors")
              .RequireRateLimiting(SemanticSearchRateLimiting.PolicyName);
+             .WithSummary("Semantic (AI) tutor search")
+             .WithDescription("Ranks tutors by embedding similarity to the free-text query q. Falls back to keyword search when the AI service is unavailable; the response mode says which one ran.")
+             .Produces<SemanticSearchResponse>(StatusCodes.Status200OK);
 
         return group;
     }

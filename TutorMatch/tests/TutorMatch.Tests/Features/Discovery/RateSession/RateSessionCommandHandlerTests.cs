@@ -69,7 +69,7 @@ public class RateSessionCommandHandlerTests : IDisposable
         result.IsSuccess.Should().BeFalse();
         result.Error.Type.Should().Be(ErrorType.NotFound);
         result.Error.Code.Should().Be("Session.NotFound");
-        result.Error.Description.Should().Be("Sesiunea nu a fost găsită.");
+        result.Error.Description.Should().Be("Session not found.");
         (await GetStoredRatingsAsync()).Should().BeEmpty();
     }
 
@@ -87,7 +87,7 @@ public class RateSessionCommandHandlerTests : IDisposable
         result.IsSuccess.Should().BeFalse();
         result.Error.Type.Should().Be(ErrorType.Conflict);
         result.Error.Code.Should().Be("Session.Conflict");
-        result.Error.Description.Should().Be("Sesiunea poate fi evaluată doar după ce a fost finalizată.");
+        result.Error.Description.Should().Be("A session can only be rated after it has been completed.");
         (await GetStoredRatingsAsync()).Should().BeEmpty();
     }
 
@@ -100,7 +100,7 @@ public class RateSessionCommandHandlerTests : IDisposable
         var result = await _handler.HandleAsync(command);
 
         result.Error.Type.Should().Be(ErrorType.Conflict);
-        result.Error.Description.Should().Be("Doar studentul participant poate evalua sesiunea.");
+        result.Error.Description.Should().Be("Only the student who attended can rate this session.");
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class RateSessionCommandHandlerTests : IDisposable
         result.IsSuccess.Should().BeFalse();
         result.Error.Type.Should().Be(ErrorType.Conflict);
         result.Error.Code.Should().Be("Session.Conflict");
-        result.Error.Description.Should().Be("Doar studentul participant poate evalua sesiunea.");
+        result.Error.Description.Should().Be("Only the student who attended can rate this session.");
         (await GetStoredRatingsAsync()).Should().BeEmpty();
     }
 
@@ -131,7 +131,7 @@ public class RateSessionCommandHandlerTests : IDisposable
         result.IsSuccess.Should().BeFalse();
         result.Error.Type.Should().Be(ErrorType.Conflict);
         result.Error.Code.Should().Be("Rating.Conflict");
-        result.Error.Description.Should().Be("Această sesiune a fost deja evaluată.");
+        result.Error.Description.Should().Be("This session has already been rated.");
         stored.Should().ContainSingle();
         stored[0].Score.Should().Be(5);
         stored[0].Notes.Should().Be("First");
@@ -216,7 +216,7 @@ public class RateSessionCommandHandlerTests : IDisposable
         result.IsSuccess.Should().BeFalse();
         result.Error.Type.Should().Be(ErrorType.Validation);
         result.Error.Code.Should().Be("Rating.Validation");
-        result.Error.Description.Should().Contain("Scorul trebuie să fie intre 1 și 5.");
+        result.Error.Description.Should().Contain("Score must be between 1 and 5.");
         (await GetStoredRatingsAsync()).Should().BeEmpty();
     }
 

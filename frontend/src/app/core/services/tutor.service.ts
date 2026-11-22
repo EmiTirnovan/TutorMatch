@@ -46,6 +46,9 @@ export class TutorService {
     if (filters.maxPrice !== null) {
       params = params.set('maxPrice', filters.maxPrice);
     }
+    if (filters.minRating !== null && filters.minRating > 0) {
+      params = params.set('minRating', filters.minRating);
+    }
     if (filters.date) {
       params = params.set('date', filters.date);
     }

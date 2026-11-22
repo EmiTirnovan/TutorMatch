@@ -26,6 +26,61 @@
       }
     </div>
 
+    @if (isPhysical()) {
+      <div class="location-info" data-testid="location-info">
+        <span class="participant-label">Location</span>
+        <span class="location-name">{{ session().locationName }}</span>
+        @if (hasCoordinates()) {
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            data-testid="map-btn"
+            aria-controls="map-popover"
+            [attr.aria-expanded]="mapOpen()"
+            (click)="mapOpen.set(!mapOpen())"
+          >
+            View on map
+          </button>
+        }
+      </div>
+      @if (mapOpen()) {
+        <div
+          id="map-popover"
+          class="map-popover"
+          role="dialog"
+          aria-label="Session location"
+          data-testid="map-popover"
+          (keydown.escape)="mapOpen.set(false)"
+        >
+          <app-location-viewer-map [latitude]="session().latitude!" [longitude]="session().longitude!" [address]="session().locationName" />
+          <button type="button" class="btn btn-secondary btn-sm" (click)="mapOpen.set(false)">Close map</button>
+        </div>
+      }
+    }
+
+    @if (showRating()) {
+      <div class="rating-summary" data-testid="rating-summary">
+        <span class="participant-label">{{ userRole() === 'student' ? 'Your rating' : 'Student rating' }}</span>
+        @if (ratingScore() !== null) {
+          <div class="rating-line" role="img" [attr.aria-label]="'Rated ' + ratingScore() + ' out of 5'">
+            <span class="rating-stars" aria-hidden="true">
+              @for (filled of ratingStars(); track $index) {
+                <svg class="star" [class.star-filled]="filled" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              }
+            </span>
+            <strong data-testid="rating-score">{{ ratingScore() }}/5</strong>
+          </div>
+        } @else {
+          <span class="rating-line" data-testid="rating-no-score">Rated</span>
+        }
+        @if (ratingNotes(); as notes) {
+          <blockquote class="rating-comment" data-testid="rating-comment">{{ notes }}</blockquote>
+        }
+      </div>
+    }
+
     @if (isLateCancelledSession()) {
       <div class="late-cancellation-note">
         <svg
@@ -73,6 +128,18 @@
   </div>
 
   <div class="card-actions">
+    @if (meetingLink(); as link) {
+      <a
+        class="btn btn-primary btn-sm meet-btn"
+        data-testid="meet-btn"
+        [href]="link"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Join on Google Meet
+      </a>
+    }
+
     @if (canCancel()) {
       <button
         type="button"

@@ -1,8 +1,10 @@
-export type TutorSortOption = 'priceAsc' | 'priceDesc';
+export type TutorSortOption = 'priceAsc' | 'priceDesc' | 'rating_desc';
 
 export interface TutorFilterCriteria {
   subject: string;
   maxPrice: number | null;
+  /** Minimum average rating (1-5), or null when tutors of any rating are accepted. */
+  minRating: number | null;
   /** ISO date (yyyy-MM-dd) or empty string when no date filter is applied. */
   date: string;
   sortBy: TutorSortOption;
@@ -16,6 +18,7 @@ export interface TutorSearchFilters extends TutorFilterCriteria {
 export const DEFAULT_FILTER_CRITERIA: TutorFilterCriteria = {
   subject: '',
   maxPrice: null,
+  minRating: null,
   date: '',
   sortBy: 'priceAsc'
 };

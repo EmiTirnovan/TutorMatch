@@ -17,6 +17,7 @@ import {
   isLateCancelled,
   isUpcoming
 } from '../../../../core/models/session.models';
+import { RateSessionRequest } from '../../../../core/models/tutor-search.models';
 import { SessionService } from '../../../../core/services/session.service';
 import { UserContextService, UserRole } from '../../../../core/services/user-context.service';
 import { TimeProvider } from '../../../../core/services/time-provider.service';
@@ -121,9 +122,12 @@ export class MySessionsComponent implements OnInit {
 
   loadSessions(
     userId: string = this.userContext.currentUserId(),
-    role: UserRole = this.currentRole()
+    role: UserRole = this.currentRole(),
+    silent = false
   ): void {
-    this.isLoading.set(true);
+    if (!silent) {
+      this.isLoading.set(true);
+    }
     this.errorMessage.set(null);
 
     const apiRole = role === 'student' ? 'Student' : 'Tutor';
@@ -194,10 +198,28 @@ export class MySessionsComponent implements OnInit {
     this.sessionToRate.set(null);
   }
 
-  onSessionRated(): void {
+  /** Marks the rated session in the list right away, without reloading or showing the skeletons. */
+  onSessionRated(rating: RateSessionRequest): void {
+    const ratedSession = this.sessionToRate();
     this.sessionToRate.set(null);
     this.actionSuccessMessage.set('Thank you! Your rating has been submitted.');
-    this.loadSessions();
+
+    if (!ratedSession) {
+      return;
+    }
+
+    this.sessions.update((sessions) =>
+      sessions.map((session) =>
+        session.id === ratedSession.id
+          ? { ...session, hasRated: true, ratingScore: rating.score, ratingNotes: rating.notes ?? null }
+          : session
+      )
+    );
+  }
+
+  /** The server says this session was rated already: refresh quietly so its card stops offering "Rate Tutor". */
+  onSessionAlreadyRated(): void {
+    this.loadSessions(this.userContext.currentUserId(), this.currentRole(), true);
   }
 
   dismissAlert(): void {

@@ -11,7 +11,9 @@ public static class GetTutorsEndpoint
 {
     public static IEndpointRouteBuilder MapGetTutors(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync);
+        group.MapGet("/", HandleAsync)
+            .WithSummary("List all tutors")
+            .Produces<List<TutorSummaryResponse>>(StatusCodes.Status200OK);
         return group;
     }
 

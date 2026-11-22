@@ -11,7 +11,11 @@ public static class UpdateSessionEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateSession(this IEndpointRouteBuilder group)
     {
-        group.MapPut("/{id:guid}", HandleAsync);
+        group.MapPut("/{id:guid}", HandleAsync)
+            .WithSummary("Reschedule a session")
+            .WithDescription("Changes the start and end time of a booked session.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict);
         return group;
     }
 

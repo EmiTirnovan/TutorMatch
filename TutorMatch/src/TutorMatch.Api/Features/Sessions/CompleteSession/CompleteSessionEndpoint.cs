@@ -12,7 +12,11 @@ public static class CompleteSessionEndpoint
 {
     public static IEndpointRouteBuilder MapCompleteSession(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/{id:guid}/complete", HandleAsync);
+        group.MapPost("/{id:guid}/complete", HandleAsync)
+            .WithSummary("Mark a session as completed")
+            .WithDescription("Only the session's tutor can complete it. The tutor id can be sent in the body or as the tutorId query parameter.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict);
         return group;
     }
 

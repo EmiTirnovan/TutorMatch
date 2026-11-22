@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SessionCardComponent } from '../../../../../src/app/features/sessions/components/session-card/session-card.component';
 import { TimeProvider } from '../../../../../src/app/core/services/time-provider.service';
-import { SessionResponse, SessionStatus } from '../../../../../src/app/core/models/session.models';
+import { SessionResponse, SessionStatus, SessionType } from '../../../../../src/app/core/models/session.models';
 
 describe('SessionCardComponent', () => {
   let component: SessionCardComponent;
@@ -224,6 +224,180 @@ describe('SessionCardComponent', () => {
       rateBtn.click();
 
       expect(emitted).toEqual(expect.objectContaining({ id: 'session-1' }));
+    });
+  });
+
+  describe('Online vs Physical', () => {
+    const query = (id: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-testid="${id}"]`);
+
+    it('Given_UpcomingOnlineSessionWithLink_When_Rendering_Then_ShowsMeetButtonOpeningNewTab', () => {
+      setup({ type: SessionType.Online, meetingLink: 'https://meet.google.com/abc-defg-hij' });
+
+      const meet = query('meet-btn') as HTMLAnchorElement;
+      expect(meet.textContent?.trim()).toBe('Join on Google Meet');
+      expect(meet.href).toBe('https://meet.google.com/abc-defg-hij');
+      expect(meet.target).toBe('_blank');
+      expect(meet.rel).toContain('noopener');
+      expect(query('location-info')).toBeNull();
+    });
+
+    it('Given_TutorRole_When_RenderingOnlineSession_Then_TutorAlsoGetsMeetButton', () => {
+      setup({ type: SessionType.Online, meetingLink: 'https://meet.google.com/abc-defg-hij' }, 'tutor');
+
+      expect(query('meet-btn')).not.toBeNull();
+    });
+
+    it('Given_CancelledOrLinklessOnlineSession_When_Rendering_Then_HidesMeetButton', () => {
+      setup({ type: SessionType.Online, meetingLink: 'https://meet.google.com/x', status: SessionStatus.Cancelled });
+      expect(query('meet-btn')).toBeNull();
+
+      setup({ type: SessionType.Online, meetingLink: null });
+      expect(query('meet-btn')).toBeNull();
+    });
+
+    it('Given_PhysicalSessionWithCoordinates_When_ClickingViewOnMap_Then_TogglesMapPopover', () => {
+      setup({ type: SessionType.Physical, locationName: 'Corp C, sala C309', latitude: 47.17, longitude: 27.57 });
+
+      expect(query('location-info')?.textContent).toContain('Corp C, sala C309');
+      expect(query('meet-btn')).toBeNull();
+      expect(query('map-popover')).toBeNull();
+
+      const mapBtn = query('map-btn') as HTMLButtonElement;
+      expect(mapBtn.textContent?.trim()).toBe('View on map');
+      mapBtn.click();
+      fixture.detectChanges();
+      expect(query('map-popover')).not.toBeNull();
+      expect(query('viewer-address')?.textContent).toBe('Corp C, sala C309');
+      expect(mapBtn.getAttribute('aria-expanded')).toBe('true');
+
+      query('map-popover')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      fixture.detectChanges();
+      expect(query('map-popover')).toBeNull();
+    });
+
+    it('Given_PhysicalSessionWithoutCoordinates_When_Rendering_Then_ShowsAddressWithoutMapButton', () => {
+      setup({ type: SessionType.Physical, locationName: 'Biblioteca Centrala' });
+
+      expect(query('location-info')?.textContent).toContain('Biblioteca Centrala');
+      expect(query('map-btn')).toBeNull();
+    });
+  });
+
+  describe('Rating', () => {
+    const query = (id: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-testid="${id}"]`);
+    const filledStars = (): number => fixture.nativeElement.querySelectorAll('[data-testid="rating-summary"] .star-filled').length;
+    const allStars = (): number => fixture.nativeElement.querySelectorAll('[data-testid="rating-summary"] .star').length;
+
+    it('Given_CompletedSessionNotRated_When_RenderingAsStudent_Then_ShowsActiveRateButtonAndNoRatingSummary', () => {
+      setup({ status: SessionStatus.Completed, hasRated: false }, 'student');
+
+      const rateBtn = query('rate-btn') as HTMLButtonElement;
+      expect(rateBtn.textContent?.trim()).toBe('Rate Tutor');
+      expect(rateBtn.disabled).toBe(false);
+      expect(query('rating-summary')).toBeNull();
+    });
+
+    it('Given_CompletedSessionWithoutRatingInfo_When_RenderingAsStudent_Then_StillOffersRateButton', () => {
+      setup({ status: SessionStatus.Completed }, 'student');
+
+      expect(query('rate-btn')).not.toBeNull();
+      expect(query('rating-summary')).toBeNull();
+    });
+
+    it('Given_RatedCompletedSession_When_RenderingAsStudent_Then_HidesRateButtonAndShowsScoreStarsAndComment', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: 5, ratingNotes: 'Explains very clearly' }, 'student');
+
+      expect(query('rate-btn')).toBeNull();
+      expect(query('rating-score')?.textContent?.trim()).toBe('5/5');
+      expect(allStars()).toBe(5);
+      expect(filledStars()).toBe(5);
+      expect(query('rating-comment')?.textContent?.trim()).toBe('Explains very clearly');
+      expect(query('rating-summary')?.textContent).toContain('Your rating');
+    });
+
+    it.each([1, 2, 3, 4])('Given_RatingScoreOf_%s_When_Rendering_Then_FillsExactlyThatManyStars', (score) => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: score }, 'student');
+
+      expect(filledStars()).toBe(score);
+      expect(allStars()).toBe(5);
+      expect(query('rating-score')?.textContent?.trim()).toBe(`${score}/5`);
+      expect(query('rating-summary')?.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe(
+        `Rated ${score} out of 5`
+      );
+    });
+
+    it('Given_RatedSessionWithoutComment_When_Rendering_Then_ShowsStarsWithoutCommentBlock', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: 4, ratingNotes: null }, 'student');
+
+      expect(query('rating-score')).not.toBeNull();
+      expect(query('rating-comment')).toBeNull();
+    });
+
+    it('Given_RatedSessionWithBlankComment_When_Rendering_Then_HidesCommentBlock', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: 4, ratingNotes: '   ' }, 'student');
+
+      expect(query('rating-comment')).toBeNull();
+    });
+
+    it('Given_RatedSessionWithoutScore_When_Rendering_Then_ShowsRatedLabelAndNoRateButton', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: null }, 'student');
+
+      expect(query('rating-no-score')?.textContent?.trim()).toBe('Rated');
+      expect(query('rating-score')).toBeNull();
+      expect(query('rate-btn')).toBeNull();
+    });
+
+    it('Given_RatedCompletedSession_When_RenderingAsTutor_Then_ShowsStudentRatingWithoutRateButton', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: 3, ratingNotes: 'Good' }, 'tutor');
+
+      expect(query('rate-btn')).toBeNull();
+      expect(query('rating-summary')?.textContent).toContain('Student rating');
+      expect(query('rating-score')?.textContent?.trim()).toBe('3/5');
+      expect(query('rating-comment')?.textContent?.trim()).toBe('Good');
+    });
+
+    it('Given_RatedSession_When_RateIsRequestedProgrammatically_Then_DoesNotEmitRateRequested', () => {
+      setup({ status: SessionStatus.Completed, hasRated: true, ratingScore: 5 }, 'student');
+      const emitted: SessionResponse[] = [];
+      component.rateRequested.subscribe((session) => emitted.push(session));
+
+      component.onRate();
+
+      expect(component.canRate()).toBe(false);
+      expect(emitted).toEqual([]);
+    });
+
+    it('Given_UnratedCompletedSession_When_RateIsRequested_Then_EmitsRateRequested', () => {
+      setup({ status: SessionStatus.Completed, hasRated: false }, 'student');
+      const emitted: SessionResponse[] = [];
+      component.rateRequested.subscribe((session) => emitted.push(session));
+
+      component.onRate();
+
+      expect(emitted.map((session) => session.id)).toEqual(['session-1']);
+    });
+
+    it('Given_SessionThatIsNotCompleted_When_Rendering_Then_ShowsNoRatingSummary', () => {
+      setup({ status: SessionStatus.Booked, hasRated: true, ratingScore: 5 }, 'student');
+
+      expect(query('rating-summary')).toBeNull();
+    });
+
+    it('Given_SessionBecomesRated_When_InputUpdates_Then_SwitchesFromRateButtonToRatingSummary', () => {
+      setup({ status: SessionStatus.Completed, hasRated: false }, 'student');
+      expect(query('rate-btn')).not.toBeNull();
+
+      fixture.componentRef.setInput('session', {
+        ...baseSession,
+        status: SessionStatus.Completed,
+        hasRated: true,
+        ratingScore: 4,
+        ratingNotes: 'Great'
+      });
+      fixture.detectChanges();
+
+      expect(query('rate-btn')).toBeNull();
+      expect(query('rating-score')?.textContent?.trim()).toBe('4/5');
     });
   });
 });

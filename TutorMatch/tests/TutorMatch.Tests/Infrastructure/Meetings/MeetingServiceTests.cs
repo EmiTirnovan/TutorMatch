@@ -2,7 +2,13 @@ using System.Net;
 using System.Text;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
+using TutorMatch.Api.Domain.Sessions;
+using TutorMatch.Api.Domain.Students;
+using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Infrastructure.Meetings;
+using TutorMatch.Api.Infrastructure.Sessions;
+using TutorMatch.Api.Infrastructure.Students;
+using TutorMatch.Api.Infrastructure.Tutors;
 using Xunit;
 
 namespace TutorMatch.Tests.Infrastructure.Meetings;
@@ -38,43 +44,97 @@ public class MeetingServiceTests
     private static HttpResponseMessage Json(string json, HttpStatusCode status = HttpStatusCode.OK) =>
         new(status) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
 
-    private static (GoogleMeetService Service, StubHandler Handler) CreateGoogleService(Func<HttpRequestMessage, HttpResponseMessage> respond)
+    private static (GoogleMeetService Service, StubHandler Handler) CreateGoogleService(
+        Func<HttpRequestMessage, HttpResponseMessage> respond,
+        bool withSavedSession = true)
     {
         var handler = new StubHandler(respond);
         var options = Options.Create(new GoogleMeetOptions { ClientId = "client", ClientSecret = "secret", RefreshToken = "refresh" });
-        return (new GoogleMeetService(new StubHttpClientFactory(new HttpClient(handler)), options), handler);
+
+        var sessions = new InMemorySessionRepository();
+        var tutors = new InMemoryTutorRepository();
+        var students = new InMemoryStudentRepository();
+        var tutorId = Guid.NewGuid();
+        var studentId = Guid.NewGuid();
+        tutors.Add(new Tutor("Tutor Meet", "tutor.meet@gmail.com", "Bio", 50, tutorId));
+        students.Add(new Student(studentId, "Student Meet", "student.meet@gmail.com"));
+        if (withSavedSession)
+        {
+            sessions.Add(new Session(SessionId, tutorId, studentId, Start, End));
+        }
+
+        var service = new GoogleMeetService(new StubHttpClientFactory(new HttpClient(handler)), options, sessions, tutors, students);
+        return (service, handler);
     }
 
+    private const string MeetLink = "https://meet.google.com/abc-defg-hij";
+
+    private static HttpResponseMessage GoogleResponds(HttpRequestMessage request, string spaceJson) =>
+        request.RequestUri!.Host switch
+        {
+            "oauth2.googleapis.com" => Json("""{"access_token":"token-123","expires_in":3599}"""),
+            "meet.googleapis.com" => Json(spaceJson),
+            _ => Json("""{"id":"evt1"}""")
+        };
+
+    private const string OpenSpaceJson =
+        """{"name":"spaces/abc","meetingUri":"https://meet.google.com/abc-defg-hij","meetingCode":"abc-defg-hij","config":{"accessType":"OPEN"}}""";
+
     [Fact]
-    public async Task Given_googleReturnsMeetLink_When_generatingLink_Then_returnsHangoutLinkAndSendsConferenceRequest()
+    public async Task Given_googleCreatesSpace_When_generatingLink_Then_returnsOpenSpaceLinkAndInvitesTutorAndStudent()
     {
-        var (service, handler) = CreateGoogleService(request =>
-            request.RequestUri!.Host == "oauth2.googleapis.com"
-                ? Json("""{"access_token":"token-123","expires_in":3599}""")
-                : Json("""{"id":"evt1","hangoutLink":"https://meet.google.com/abc-defg-hij"}"""));
+        var (service, handler) = CreateGoogleService(request => GoogleResponds(request, OpenSpaceJson));
 
         var link = await service.GenerateMeetingLinkAsync(SessionId, "TutorMatch: Algebra", Start, End);
 
-        link.Should().Be("https://meet.google.com/abc-defg-hij");
-        handler.Requests.Should().HaveCount(2);
+        link.Should().Be(MeetLink);
+        handler.Requests.Should().HaveCount(3);
         handler.Requests[0].Body.Should().Contain("grant_type=refresh_token").And.Contain("refresh_token=refresh");
-        var (eventRequest, eventBody) = handler.Requests[1];
-        eventRequest.RequestUri!.ToString().Should().Contain("/calendars/primary/events").And.Contain("conferenceDataVersion=1");
+
+        var (spaceRequest, spaceBody) = handler.Requests[1];
+        spaceRequest.RequestUri!.ToString().Should().Be("https://meet.googleapis.com/v2/spaces");
+        spaceRequest.Headers.Authorization!.ToString().Should().Be("Bearer token-123");
+        spaceBody.Should().Be("""{"config":{"accessType":"OPEN"}}""");
+
+        var (eventRequest, eventBody) = handler.Requests[2];
+        eventRequest.RequestUri!.ToString().Should().Contain("/calendars/primary/events").And.Contain("sendUpdates=all");
         eventRequest.Headers.Authorization!.ToString().Should().Be("Bearer token-123");
-        eventBody.Should().Contain("hangoutsMeet").And.Contain(SessionId.ToString()).And.Contain("TutorMatch: Algebra");
+        eventBody.Should().Contain("TutorMatch: Algebra").And.Contain($"\"location\":\"{MeetLink}\"").And.NotContain("conferenceData");
+        eventBody.Should().Contain("\"attendees\":[{\"email\":\"tutor.meet@gmail.com\"},{\"email\":\"student.meet@gmail.com\"}]");
     }
 
     [Fact]
-    public async Task Given_eventWithoutHangoutLink_When_generatingLink_Then_throwsInvalidOperationException()
+    public async Task Given_sessionNotFound_When_generatingLink_Then_createsEventWithoutAttendees()
     {
-        var (service, _) = CreateGoogleService(request =>
-            request.RequestUri!.Host == "oauth2.googleapis.com"
-                ? Json("""{"access_token":"token-123"}""")
-                : Json("""{"id":"evt1"}"""));
+        var (service, handler) = CreateGoogleService(request => GoogleResponds(request, OpenSpaceJson), withSavedSession: false);
+
+        var link = await service.GenerateMeetingLinkAsync(SessionId, "Topic", Start, End);
+
+        link.Should().Be(MeetLink);
+        handler.Requests[2].Body.Should().Contain("\"attendees\":[]");
+    }
+
+    [Fact]
+    public async Task Given_spaceWithoutMeetingUri_When_generatingLink_Then_throwsWithoutCreatingEvent()
+    {
+        var (service, handler) = CreateGoogleService(request => GoogleResponds(request, """{"name":"spaces/abc"}"""));
 
         var action = () => service.GenerateMeetingLinkAsync(SessionId, "Topic", Start, End);
 
         await action.Should().ThrowAsync<InvalidOperationException>();
+        handler.Requests.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Given_meetApiRejectsRequest_When_generatingLink_Then_throwsHttpRequestException()
+    {
+        var (service, _) = CreateGoogleService(request => request.RequestUri!.Host == "meet.googleapis.com"
+            ? Json("""{"error":{"code":403,"status":"PERMISSION_DENIED"}}""", HttpStatusCode.Forbidden)
+            : GoogleResponds(request, OpenSpaceJson));
+
+        var action = () => service.GenerateMeetingLinkAsync(SessionId, "Topic", Start, End);
+
+        await action.Should().ThrowAsync<HttpRequestException>();
     }
 
     [Fact]

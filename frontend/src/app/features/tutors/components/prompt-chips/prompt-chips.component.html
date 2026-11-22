@@ -1,4 +1,4 @@
-<div class="chips" role="list" aria-label="Căutări sugerate">
+<div class="chips" role="list" aria-label="Suggested searches">
   @for (prompt of prompts(); track prompt) {
     <button type="button" class="chip" role="listitem" [disabled]="disabled()" (click)="select(prompt)">
       {{ prompt }}

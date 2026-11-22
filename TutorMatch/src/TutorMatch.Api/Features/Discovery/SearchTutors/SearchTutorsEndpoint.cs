@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
@@ -11,7 +11,10 @@ public static class SearchTutorsEndpoint
 {
     public static IEndpointRouteBuilder MapSearchTutors(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/search", HandleAsync);
+        group.MapGet("/search", HandleAsync)
+            .WithSummary("Search tutors with filters")
+            .WithDescription("Filters by subject, price range, minimum average rating and available date, with paging. SortBy accepts priceAsc (default), priceDesc and rating_desc.")
+            .Produces<SearchTutorsResponse>(StatusCodes.Status200OK);
         return group;
     }
 
@@ -27,7 +30,8 @@ public static class SearchTutorsEndpoint
             request.Date,
             request.Page <= 0 ? 1 : request.Page,
             request.PageSize <= 0 ? 10 : request.PageSize,
-            request.SortBy);
+            request.SortBy,
+            request.MinRating);
 
         var result = await handler.HandleAsync(query, cancellationToken);
         return result.ToHttpResult();

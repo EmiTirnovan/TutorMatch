@@ -128,6 +128,7 @@ describe('SemanticEvaluationService', () => {
     expect(keywordSpy).toHaveBeenCalledWith({
       subject: 'pointeri in C',
       maxPrice: null,
+      minRating: null,
       date: '',
       sortBy: 'priceAsc',
       page: 1,

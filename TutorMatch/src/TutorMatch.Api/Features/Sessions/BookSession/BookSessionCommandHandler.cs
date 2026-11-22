@@ -45,6 +45,13 @@ public class BookSessionCommandHandler : ICommandHandler<BookSessionCommand, Res
                 Error.Validation("Session.Validation", "LocationName is required for physical sessions."));
         }
 
+        // The frontend pins every physical address on the map; requiring the pin here stops API callers skipping it.
+        if (command.Type == SessionType.Physical && (command.Latitude is null || command.Longitude is null))
+        {
+            return Result<BookSessionResponse>.Failure(
+                Error.Validation("Session.Validation", "Latitude and Longitude are required for physical sessions."));
+        }
+
         DateRange interval;
         try
         {
@@ -92,7 +99,7 @@ public class BookSessionCommandHandler : ICommandHandler<BookSessionCommand, Res
             if (hasTutorOverlap)
             {
                 return Result<BookSessionResponse>.Failure(
-                    Error.Conflict("Session.Conflict", "Slotul selectat se suprapune cu o altă sesiune a tutorelui."));
+                    Error.Conflict("Session.Conflict", "The selected slot overlaps another session of this tutor."));
             }
 
             // Synchronize student's session collection so the domain aggregate executes its invariants
@@ -142,7 +149,7 @@ public class BookSessionCommandHandler : ICommandHandler<BookSessionCommand, Res
             catch (DbUpdateConcurrencyException)
             {
                 return Result<BookSessionResponse>.Failure(
-                    Error.Conflict("Session.Conflict", "Slotul a fost rezervat concurent de o altă cerere."));
+                    Error.Conflict("Session.Conflict", "The slot was booked by another request at the same time."));
             }
             catch (InvalidOperationException ex)
             {
@@ -196,7 +203,7 @@ public class BookSessionCommandHandler : ICommandHandler<BookSessionCommand, Res
         {
             // An online session without a link is unusable: undo the booking so the slot is freed.
             _sessionRepository.Delete(session.Id);
-            return Error.Failure("Session.MeetingLinkFailed", "Nu s-a putut genera link-ul de meeting. Rezervarea a fost anulata, incearca din nou.");
+            return Error.Failure("Session.MeetingLinkFailed", "The meeting link could not be created. The booking was cancelled, please try again.");
         }
     }
 }

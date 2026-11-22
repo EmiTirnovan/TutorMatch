@@ -11,7 +11,8 @@ public record SearchTutorsQuery(
     DateTime? Date = null,
     int Page = 1,
     int PageSize = 10,
-    string? SortBy = null) : IQuery<Result<SearchTutorsResponse>>
+    string? SortBy = null,
+    double? MinRating = null) : IQuery<Result<SearchTutorsResponse>>
 {
     public SearchTutorsQuery(string? subject) : this(subject, null, null, null, 1, 10, null)
     {

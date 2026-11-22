@@ -1,10 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
+import { NOMINATIM_URL } from '../../../../../src/app/core/services/geocoding.service';
 import type { Mock } from 'vitest';
+import { By } from '@angular/platform-browser';
+import { LocationPickerMapComponent } from '../../../../../src/app/features/locations/components/location-picker-map/location-picker-map.component';
 import { BookSessionModalComponent } from '../../../../../src/app/features/bookings/components/book-session-modal/book-session-modal.component';
 import { TutorDetailsResponse } from '../../../../../src/app/core/models/tutor.models';
-import { DEMO_STUDENT_ID } from '../../../../../src/app/core/models/session.models';
+import { DEMO_STUDENT_ID, SessionType } from '../../../../../src/app/core/models/session.models';
 
 const TUTOR: TutorDetailsResponse = {
   id: 'tutor-1',
@@ -87,7 +90,8 @@ describe('BookSessionModalComponent', () => {
       tutorId: 'tutor-1',
       startTime: SLOT.start,
       endTime: SLOT.end,
-      subject: 'Discrete Math'
+      subject: 'Discrete Math',
+      type: SessionType.Online
     });
     req.flush({ id: 'session-1', subject: 'Discrete Math' });
 
@@ -107,7 +111,8 @@ describe('BookSessionModalComponent', () => {
       startTime: SLOT.start,
       endTime: SLOT.end,
       subject: 'Teoria Grafurilor',
-      notes: 'Ajutor la tema 2 si arbori minimi'
+      notes: 'Ajutor la tema 2 si arbori minimi',
+      type: SessionType.Online
     });
     req.flush({ id: 'session-2', subject: 'Teoria Grafurilor', notes: 'Ajutor la tema 2 si arbori minimi' });
   });
@@ -220,5 +225,129 @@ describe('BookSessionModalComponent', () => {
 
     expect(text()).toContain('Please try again');
     expect(confirmButton()?.disabled).toBe(false);
+  });
+
+  describe('session format', () => {
+    const query = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
+    const choosePhysical = (): void => {
+      (query('[data-testid="type-physical"]') as HTMLInputElement).click();
+      fixture.detectChanges();
+    };
+    const picker = (): LocationPickerMapComponent =>
+      fixture.debugElement.query(By.directive(LocationPickerMapComponent)).componentInstance;
+    const typeAddress = (value: string): void => {
+      const input = query('#booking-location') as HTMLInputElement;
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+    const search = (): TestRequest => {
+      (query('[data-testid="search-address-btn"]') as HTMLButtonElement).click();
+      return httpMock.expectOne(req => req.url === `${NOMINATIM_URL}/search`);
+    };
+    const CORP_C = { display_name: 'Corp C, Bulevardul Carol I 11, Iasi', lat: '47.1745', lon: '27.5718' };
+
+    it('Given_DefaultFormat_When_Opened_Then_OnlineSelectedWithMeetInfo', () => {
+      expect((query('[data-testid="type-online"]') as HTMLInputElement).checked).toBe(true);
+      expect(query('[data-testid="online-info"]')?.textContent).toContain('Google Meet link will be generated automatically');
+      expect(query('app-location-picker-map')).toBeNull();
+    });
+
+    it('Given_PhysicalSelected_When_Rendering_Then_ShowsLocationPickerAndDetailsField', () => {
+      choosePhysical();
+
+      expect(component.sessionType()).toBe(SessionType.Physical);
+      expect(query('[data-testid="online-info"]')).toBeNull();
+      expect(query('app-location-picker-map')).not.toBeNull();
+      expect(query('#booking-location-details')).not.toBeNull();
+    });
+
+    it('Given_TypedButUnverifiedAddress_When_Confirming_Then_ShowsErrorAndSendsNothing', () => {
+      choosePhysical();
+      typeAddress('asdf bla bla');
+
+      confirmButton()?.click();
+      fixture.detectChanges();
+
+      httpMock.expectNone('/api/v2/sessions');
+      expect(text()).toContain('Search the address and choose it, or pin the spot on the map');
+      expect(query('#booking-location')?.getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('Given_ApartmentDetailsInAddress_When_Searching_Then_AppendsThemToTheDetailsField', () => {
+      choosePhysical();
+      component.locationDetails.set('interfon 18');
+      typeAddress('Carol I 11, sc. B, et. 4, ap. 18, Iasi');
+
+      search().flush([CORP_C]);
+
+      expect(component.locationDetails()).toBe('interfon 18, sc. B, et. 4, ap. 18');
+    });
+
+    it('Given_PickedLocationAndRoom_When_Confirming_Then_BooksWithAddressCoordinatesAndRoom', () => {
+      choosePhysical();
+      typeAddress('Carol I 11 Iasi');
+      component.locationDetails.set('sala C309');
+      search().flush([CORP_C]);
+      fixture.detectChanges();
+
+      confirmButton()?.click();
+      const booking = httpMock.expectOne('/api/v2/sessions');
+      expect(booking.request.body).toEqual({
+        tutorId: 'tutor-1',
+        startTime: SLOT.start,
+        endTime: SLOT.end,
+        subject: 'Discrete Math',
+        type: SessionType.Physical,
+        locationName: 'Corp C, Bulevardul Carol I 11, Iasi - sala C309',
+        latitude: 47.1745,
+        longitude: 27.5718
+      });
+      booking.flush({ id: 'session-3' });
+    });
+
+    it('Given_VerifiedAddressThenEdited_When_Confirming_Then_SendsNothing', () => {
+      choosePhysical();
+      typeAddress('Carol I 11 Iasi');
+      search().flush([CORP_C]);
+      fixture.detectChanges();
+      typeAddress('Corp C, Carol I 11, Iasi, langa cantina');
+
+      confirmButton()?.click();
+
+      httpMock.expectNone('/api/v2/sessions');
+      expect(component.pickedLocation()).toBeNull();
+    });
+
+    describe('map click', () => {
+      beforeEach(() => vi.useFakeTimers());
+      afterEach(() => vi.useRealTimers());
+
+      it('Given_LookupPending_When_Confirming_Then_SendsNothing', () => {
+        choosePhysical();
+        picker().onMapPicked({ lat: 47.1745, lng: 27.5718 });
+
+        component.confirm();
+
+        httpMock.expectNone('/api/v2/sessions');
+        vi.advanceTimersByTime(1000);
+        httpMock.expectOne(req => req.url === `${NOMINATIM_URL}/reverse`).flush(CORP_C);
+        expect(component.pickedLocation()).toEqual({ lat: 47.1745, lng: 27.5718, address: 'Corp C, Bulevardul Carol I 11, Iasi' });
+      });
+
+      it('Given_LookupPending_When_SwitchingToOnline_Then_CanBookOnlineRightAway', () => {
+        choosePhysical();
+        picker().onMapPicked({ lat: 47.1745, lng: 27.5718 });
+
+        (query('[data-testid="type-online"]') as HTMLInputElement).click();
+        fixture.detectChanges();
+        vi.advanceTimersByTime(1000);
+
+        httpMock.expectNone(req => req.url.startsWith(NOMINATIM_URL));
+        expect(component.pickedLocation()).toBeNull();
+        confirmButton()?.click();
+        httpMock.expectOne('/api/v2/sessions').flush({ id: 'session-5' });
+      });
+    });
   });
 });

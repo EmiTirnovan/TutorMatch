@@ -1,0 +1,66 @@
+<div class="location-picker">
+  <label for="booking-location" class="picker-label">Address</label>
+  <span id="booking-location-help" class="picker-info">
+    Search the street and number. Apartment, floor, staircase etc. are moved to the field below
+    automatically.
+  </span>
+  <div class="address-search">
+    <input
+      id="booking-location"
+      type="text"
+      class="form-control"
+      placeholder="e.g. Bulevardul Carol I 11, Iasi"
+      [class.is-invalid]="locationError()"
+      [attr.aria-invalid]="!!locationError()"
+      [attr.aria-describedby]="
+        locationError() ? 'booking-location-help booking-location-error' : 'booking-location-help'
+      "
+      [ngModel]="address()"
+      (ngModelChange)="onAddressInput($event)"
+      (keydown.enter)="$event.preventDefault(); searchAddress()"
+    />
+    <button
+      type="button"
+      class="btn btn-secondary"
+      data-testid="search-address-btn"
+      [disabled]="isGeocoding()"
+      (click)="searchAddress()"
+    >
+      {{ isGeocoding() ? 'Searching...' : 'Search address' }}
+    </button>
+  </div>
+
+  @if (locationError(); as message) {
+    <span id="booking-location-error" class="field-error" role="alert">{{ message }}</span>
+  }
+  @if (pickedPoint()) {
+    <span class="location-verified" data-testid="location-verified"
+      >&#10003; Address verified and pinned on the map</span
+    >
+  }
+  @if (locationHint(); as hint) {
+    <span class="location-hint" role="status" data-testid="location-hint">{{ hint }}</span>
+  }
+
+  @if (searchResults(); as results) {
+    <ul class="address-results" aria-label="Matching addresses" data-testid="address-results">
+      @for (place of results; track $index) {
+        <li>
+          <button type="button" class="address-result" (click)="choosePlace(place)">
+            {{ place.address }}
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  <span class="picker-info"
+    >Or click the map to pin the spot; the address fills in automatically.</span
+  >
+  <app-location-map
+    [editable]="true"
+    [latitude]="pickedPoint()?.lat"
+    [longitude]="pickedPoint()?.lng"
+    (picked)="onMapPicked($event)"
+  />
+</div>

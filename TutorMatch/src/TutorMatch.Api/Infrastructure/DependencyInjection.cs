@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<ITutorRepository, SqliteTutorRepository>();
         services.AddScoped<ISessionRepository, SqliteSessionRepository>();
         services.AddScoped<IStudentRepository, SqliteStudentRepository>();
+        services.AddScoped<IRatingRepository, SqliteRatingRepository>();
 
         return services;
     }
@@ -82,6 +83,7 @@ public static class DependencyInjection
         services.AddScoped<ITutorRepository, SqliteTutorRepository>();
         services.AddScoped<ISessionRepository, SqliteSessionRepository>();
         services.AddScoped<IStudentRepository, SqliteStudentRepository>();
+        services.AddScoped<IRatingRepository, SqliteRatingRepository>();
 
         return services;
     }

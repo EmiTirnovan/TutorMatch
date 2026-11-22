@@ -4,23 +4,27 @@ import {
   computed,
   inject,
   input,
-  output
+  output,
+  signal
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import {
   SessionResponse,
-  getStatusLabel,
+  SessionType,
   isCancelled,
   isCompleted,
   isLateCancelled,
   isUpcoming
 } from '../../../../core/models/session.models';
+import { LocationViewerMapComponent } from '../../../locations/components/location-viewer-map/location-viewer-map.component';
 import { TimeProvider } from '../../../../core/services/time-provider.service';
+
+const MAX_RATING = 5;
 
 @Component({
   selector: 'app-session-card',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, LocationViewerMapComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './session-card.component.html',
   styleUrl: './session-card.component.css'
@@ -40,6 +44,17 @@ export class SessionCardComponent {
   readonly isCompletedSession = computed(() => isCompleted(this.session().status));
   readonly isCancelledSession = computed(() => isCancelled(this.session().status));
   readonly isLateCancelledSession = computed(() => isLateCancelled(this.session().status));
+
+  readonly isPhysical = computed(() => this.session().type === SessionType.Physical);
+
+  /** Meet link is only useful while the session can still take place. */
+  readonly meetingLink = computed(() =>
+    !this.isPhysical() && this.isUpcomingSession() ? this.session().meetingLink || null : null
+  );
+
+  readonly hasCoordinates = computed(() => this.session().latitude != null && this.session().longitude != null);
+
+  readonly mapOpen = signal(false);
 
   /**
    * Has the session reached or passed its start time?
@@ -86,12 +101,25 @@ export class SessionCardComponent {
     this.isParticipant()
   );
 
+  readonly hasRated = computed(() => this.session().hasRated === true);
+  readonly ratingScore = computed(() => this.session().ratingScore ?? null);
+  readonly ratingNotes = computed(() => this.session().ratingNotes?.trim() || null);
+
+  /** One entry per star, true when the star is filled. */
+  readonly ratingStars = computed(() =>
+    Array.from({ length: MAX_RATING }, (_, index) => index < (this.ratingScore() ?? 0))
+  );
+
+  /** The rating is shown on completed sessions that were already rated. */
+  readonly showRating = computed(() => this.isCompletedSession() && this.hasRated());
+
   /**
-   * Only the student can rate a completed session.
+   * Only the student can rate a completed session, and only once.
    */
   readonly canRate = computed(() =>
     this.userRole() === 'student' &&
     this.isCompletedSession() &&
+    !this.hasRated() &&
     this.isParticipant()
   );
 

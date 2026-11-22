@@ -52,6 +52,55 @@
         }
       </div>
 
+      <fieldset class="form-group session-type-group">
+        <legend class="form-label">Session format</legend>
+        <div class="session-type-options">
+          <label class="session-type-option" [class.is-selected]="sessionType() === SessionType.Online">
+            <input
+              type="radio"
+              name="booking-session-type"
+              data-testid="type-online"
+              [checked]="sessionType() === SessionType.Online"
+              (change)="selectOnline()"
+            />
+            Online (Google Meet)
+          </label>
+          <label class="session-type-option" [class.is-selected]="sessionType() === SessionType.Physical">
+            <input
+              type="radio"
+              name="booking-session-type"
+              data-testid="type-physical"
+              [checked]="sessionType() === SessionType.Physical"
+              (change)="sessionType.set(SessionType.Physical)"
+            />
+            In person
+          </label>
+        </div>
+
+        @if (sessionType() === SessionType.Online) {
+          <p class="session-type-info" data-testid="online-info">
+            A Google Meet link will be generated automatically and shown in My Sessions after booking.
+          </p>
+        } @else {
+          <app-location-picker-map
+            (locationChange)="pickedLocation.set($event)"
+            (busyChange)="isGeocoding.set($event)"
+            (unitDetailsFound)="onUnitDetailsFound($event)"
+          />
+
+          <label for="booking-location-details" class="form-label location-label">Block / staircase / floor / apartment or room (optional)</label>
+          <input
+            id="booking-location-details"
+            type="text"
+            class="form-control"
+            placeholder="e.g. bl. A2, sc. B, et. 4, ap. 18 or sala C309"
+            maxlength="100"
+            [ngModel]="locationDetails()"
+            (ngModelChange)="locationDetails.set($event)"
+          />
+        }
+      </fieldset>
+
       <div class="form-group">
         <label for="booking-notes" class="form-label">Session Details & Goals (optional)</label>
         <textarea
@@ -79,7 +128,7 @@
         {{ dailyLimitReached() ? 'Choose another date' : 'Cancel' }}
       </button>
       @if (!dailyLimitReached()) {
-        <button type="button" class="btn btn-accent" [disabled]="isSubmitting()" (click)="confirm()">
+        <button type="button" class="btn btn-accent" [disabled]="isSubmitting() || isGeocoding()" (click)="confirm()">
           {{ isSubmitting() ? 'Booking...' : 'Confirm booking' }}
         </button>
       }

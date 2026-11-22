@@ -12,7 +12,16 @@ public static class BookSessionEndpoint
 {
     public static IEndpointRouteBuilder MapBookSession(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync);
+        group.MapPost("/", HandleAsync)
+            .WithSummary("Book a tutoring session")
+            .WithDescription("Books a session for the student identified by the X-Student-Id header. Online sessions get a generated Google Meet link; physical sessions require LocationName, Latitude and Longitude. Returns 500 (Session.MeetingLinkFailed) when the meeting link cannot be created.")
+            .Produces<BookSessionResponse>(StatusCodes.Status201Created)
+            .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status500InternalServerError)
+            .WithOpenApi(operation =>
+            {
+                operation.Parameters.First(p => p.Name == "X-Student-Id").Description = "Id of the student making the request (no auth yet).";
+                return operation;
+            });
         return group;
     }
 

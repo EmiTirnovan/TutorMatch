@@ -54,6 +54,7 @@ describe('SearchTutorsComponent', () => {
     expect(searchSpy).toHaveBeenCalledWith({
       subject: '',
       maxPrice: null,
+      minRating: null,
       date: '',
       sortBy: 'priceAsc',
       page: 1,
@@ -77,12 +78,13 @@ describe('SearchTutorsComponent', () => {
     createPage(of(response([tutor('1', 'Maria Dragomir')], 20)));
     component.goToPage(3);
 
-    component.onCriteriaChange({ subject: 'SQL', maxPrice: 80, date: '2026-11-10', sortBy: 'priceDesc' });
+    component.onCriteriaChange({ subject: 'SQL', maxPrice: 80, minRating: null, date: '2026-11-10', sortBy: 'priceDesc' });
 
     expect(component.page()).toBe(1);
     expect(searchSpy).toHaveBeenLastCalledWith({
       subject: 'SQL',
       maxPrice: 80,
+      minRating: null,
       date: '2026-11-10',
       sortBy: 'priceDesc',
       page: 1,
@@ -90,6 +92,33 @@ describe('SearchTutorsComponent', () => {
     });
   });
 
+  it('Given_MinRatingAndRatingSort_When_Applied_Then_SearchesFirstPageWithRatingCriteria', () => {
+    createPage(of(response([tutor('1', 'Maria Dragomir')], 20)));
+    component.goToPage(2);
+
+    component.onCriteriaChange({ subject: 'SQL', maxPrice: 80, minRating: 4, date: '', sortBy: 'rating_desc' });
+
+    expect(component.page()).toBe(1);
+    expect(searchSpy).toHaveBeenLastCalledWith({
+      subject: 'SQL',
+      maxPrice: 80,
+      minRating: 4,
+      date: '',
+      sortBy: 'rating_desc',
+      page: 1,
+      pageSize: SEARCH_PAGE_SIZE
+    });
+  });
+
+  it('Given_StarSelectedInFilterBar_When_Submitting_Then_SearchesWithMinRating', () => {
+    createPage(of(response([tutor('1', 'Maria Dragomir')])));
+    const star = element().querySelectorAll('app-tutor-filter-bar .star-button')[3] as HTMLButtonElement;
+    star.click();
+
+    (element().querySelector('app-tutor-filter-bar form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+
+    expect(searchSpy).toHaveBeenLastCalledWith(expect.objectContaining({ minRating: 4, page: 1 }));
+  });
   it('Given_MultiplePages_When_GoingToPage_Then_LoadsRequestedPageWithinBounds', () => {
     createPage(of(response([tutor('1', 'Maria Dragomir')], 14)));
 
@@ -302,7 +331,7 @@ describe('SearchTutorsComponent', () => {
 
   it('Given_AppliedFilters_When_ClickingReset_Then_SearchesWithDefaultCriteria', () => {
     createPage(of(response([tutor('1', 'Maria Dragomir')])));
-    component.onCriteriaChange({ subject: 'SQL', maxPrice: 80, date: '2026-11-10', sortBy: 'priceDesc' });
+    component.onCriteriaChange({ subject: 'SQL', maxPrice: 80, minRating: null, date: '2026-11-10', sortBy: 'priceDesc' });
     const reset = element().querySelector('app-tutor-filter-bar .btn-secondary') as HTMLButtonElement;
 
     reset.click();
@@ -310,6 +339,7 @@ describe('SearchTutorsComponent', () => {
     expect(searchSpy).toHaveBeenLastCalledWith({
       subject: '',
       maxPrice: null,
+      minRating: null,
       date: '',
       sortBy: 'priceAsc',
       page: 1,
@@ -457,7 +487,7 @@ describe('SearchTutorsComponent', () => {
       semanticSpy.mockReturnValue(of(semanticResult('semantic')));
       component.onSemanticSearch('pointeri');
 
-      component.onCriteriaChange({ subject: 'SQL', maxPrice: null, date: '', sortBy: 'priceAsc' });
+      component.onCriteriaChange({ subject: 'SQL', maxPrice: null, minRating: null, date: '', sortBy: 'priceAsc' });
 
       expect(component.searchMode()).toBeNull();
       expect(component.activeSemanticQuery()).toBeNull();

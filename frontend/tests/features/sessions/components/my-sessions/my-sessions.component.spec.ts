@@ -1,11 +1,15 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { MySessionsComponent } from '../../../../../src/app/features/sessions/components/my-sessions/my-sessions.component';
 import { SessionService } from '../../../../../src/app/core/services/session.service';
 import { UserContextService } from '../../../../../src/app/core/services/user-context.service';
 import { TimeProvider } from '../../../../../src/app/core/services/time-provider.service';
 import { SessionResponse, SessionStatus } from '../../../../../src/app/core/models/session.models';
+import { RateSessionModalComponent } from '../../../../../src/app/features/tutors/components/rate-session-modal/rate-session-modal.component';
 
 describe('MySessionsComponent', () => {
   let component: MySessionsComponent;
@@ -99,6 +103,8 @@ describe('MySessionsComponent', () => {
       imports: [MySessionsComponent],
       providers: [
         provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         UserContextService,
         { provide: SessionService, useValue: sessionService },
         { provide: TimeProvider, useValue: timeProvider }
@@ -298,6 +304,151 @@ describe('MySessionsComponent', () => {
       );
       const successAlert = fixture.nativeElement.querySelector('[data-testid="action-success-alert"]');
       expect(successAlert?.textContent).toContain('marked as completed');
+    });
+  });
+
+  describe('Rating Flow', () => {
+    const completedSession = (id: string, extra: Partial<SessionResponse> = {}): SessionResponse => ({
+      id,
+      tutorId: 'tutor-1',
+      studentId: 'student-1',
+      startTime: '2026-11-05T10:00:00Z',
+      endTime: '2026-11-05T11:00:00Z',
+      status: SessionStatus.Completed,
+      version: 2,
+      ...extra
+    });
+
+    const query = (id: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-testid="${id}"]`);
+    const cards = (): HTMLElement[] => Array.from(fixture.nativeElement.querySelectorAll('app-session-card'));
+    const cardQuery = (card: HTMLElement, id: string): HTMLElement | null => card.querySelector(`[data-testid="${id}"]`);
+
+    const showCompletedAsStudent = (sessions: SessionResponse[]): void => {
+      sessionService.getMySessions.mockReturnValue(of(sessions));
+      userContext.setStudentId('student-1');
+      userContext.setRole('student');
+      fixture.detectChanges();
+      component.setTab('completed');
+      fixture.detectChanges();
+    };
+
+    it('Given_RatedAndUnratedCompletedSessions_When_Rendering_Then_RateButtonOnlyOnUnratedAndSummaryOnlyOnRated', () => {
+      showCompletedAsStudent([
+        completedSession('unrated'),
+        completedSession('rated', { hasRated: true, ratingScore: 5, ratingNotes: 'Great tutor' })
+      ]);
+
+      const [unratedCard, ratedCard] = cards();
+      expect(cardQuery(unratedCard, 'rate-btn')).not.toBeNull();
+      expect(cardQuery(unratedCard, 'rating-summary')).toBeNull();
+      expect(cardQuery(ratedCard, 'rate-btn')).toBeNull();
+      expect(cardQuery(ratedCard, 'rating-score')?.textContent?.trim()).toBe('5/5');
+      expect(cardQuery(ratedCard, 'rating-comment')?.textContent?.trim()).toBe('Great tutor');
+    });
+
+    it('Given_UnratedSession_When_RatingSucceeds_Then_CardShowsRatingInstantlyWithoutReloading', () => {
+      showCompletedAsStudent([completedSession('unrated')]);
+      const loadsBefore = sessionService.getMySessions.mock.calls.length;
+      component.openRateModal(component.sessions()[0]);
+      fixture.detectChanges();
+
+      component.onSessionRated({ score: 4, notes: 'Very clear' });
+      fixture.detectChanges();
+
+      expect(sessionService.getMySessions.mock.calls.length).toBe(loadsBefore);
+      expect(query('skeleton-loaders')).toBeNull();
+      expect(component.sessionToRate()).toBeNull();
+      expect(fixture.nativeElement.querySelector('app-rate-session-modal')).toBeNull();
+      const [card] = cards();
+      expect(cardQuery(card, 'rate-btn')).toBeNull();
+      expect(cardQuery(card, 'rating-score')?.textContent?.trim()).toBe('4/5');
+      expect(cardQuery(card, 'rating-comment')?.textContent?.trim()).toBe('Very clear');
+      expect(query('action-success-alert')?.textContent).toContain('rating has been submitted');
+    });
+
+    it('Given_RatingWithoutComment_When_RatingSucceeds_Then_StoresNullNotesAndShowsNoCommentBlock', () => {
+      showCompletedAsStudent([completedSession('unrated')]);
+      component.openRateModal(component.sessions()[0]);
+
+      component.onSessionRated({ score: 3 });
+      fixture.detectChanges();
+
+      expect(component.sessions()[0]).toEqual(
+        expect.objectContaining({ hasRated: true, ratingScore: 3, ratingNotes: null })
+      );
+      expect(cardQuery(cards()[0], 'rating-comment')).toBeNull();
+    });
+
+    it('Given_SeveralUnratedSessions_When_RatingOne_Then_OnlyThatSessionChanges', () => {
+      showCompletedAsStudent([completedSession('first'), completedSession('second')]);
+      component.openRateModal(component.sessions()[0]);
+
+      component.onSessionRated({ score: 5 });
+      fixture.detectChanges();
+
+      const [firstCard, secondCard] = cards();
+      expect(cardQuery(firstCard, 'rating-score')).not.toBeNull();
+      expect(cardQuery(secondCard, 'rate-btn')).not.toBeNull();
+      expect(component.sessions().find((s) => s.id === 'second')?.hasRated).toBeUndefined();
+    });
+
+    it('Given_NoSessionSelectedForRating_When_RatedEventArrives_Then_ListStaysUnchanged', () => {
+      showCompletedAsStudent([completedSession('unrated')]);
+
+      component.onSessionRated({ score: 5 });
+
+      expect(component.sessions()[0].hasRated).toBeUndefined();
+    });
+
+    it('Given_OpenRateModal_When_ModalEmitsRated_Then_ListIsUpdatedThroughTemplateBinding', () => {
+      showCompletedAsStudent([completedSession('unrated')]);
+      component.openRateModal(component.sessions()[0]);
+      fixture.detectChanges();
+      const modal = fixture.debugElement.query(By.directive(RateSessionModalComponent));
+
+      modal.componentInstance.rated.emit({ score: 2, notes: 'Ok' });
+      fixture.detectChanges();
+
+      expect(cardQuery(cards()[0], 'rating-score')?.textContent?.trim()).toBe('2/5');
+      expect(fixture.nativeElement.querySelector('app-rate-session-modal')).toBeNull();
+    });
+
+    it('Given_OpenRateModal_When_ModalReportsAlreadyRated_Then_RefreshesSilentlyAndHidesRateButton', () => {
+      showCompletedAsStudent([completedSession('stale')]);
+      component.openRateModal(component.sessions()[0]);
+      fixture.detectChanges();
+      const modal = fixture.debugElement.query(By.directive(RateSessionModalComponent));
+      sessionService.getMySessions.mockReturnValue(
+        of([completedSession('stale', { hasRated: true, ratingScore: 5, ratingNotes: 'Rated earlier' })])
+      );
+      const loadSpy = vi.spyOn(component, 'loadSessions');
+
+      modal.componentInstance.alreadyRated.emit();
+      fixture.detectChanges();
+
+      expect(loadSpy).toHaveBeenCalledWith('student-1', 'student', true);
+      expect(query('skeleton-loaders')).toBeNull();
+      expect(cardQuery(cards()[0], 'rate-btn')).toBeNull();
+      expect(cardQuery(cards()[0], 'rating-score')?.textContent?.trim()).toBe('5/5');
+    });
+
+    it('Given_SilentLoad_When_Loading_Then_DoesNotShowSkeletons', () => {
+      showCompletedAsStudent([completedSession('unrated')]);
+      component.isLoading.set(false);
+
+      component.loadSessions('student-1', 'student', true);
+
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('Given_NormalLoad_When_Loading_Then_ShowsSkeletonsUntilResponseArrives', () => {
+      showCompletedAsStudent([completedSession('unrated')]);
+      const pending = new Subject<SessionResponse[]>();
+      sessionService.getMySessions.mockReturnValue(pending);
+
+      component.loadSessions('student-1', 'student');
+
+      expect(component.isLoading()).toBe(true);
     });
   });
 });

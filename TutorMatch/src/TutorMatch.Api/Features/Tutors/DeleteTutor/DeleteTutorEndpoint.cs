@@ -11,7 +11,10 @@ public static class DeleteTutorEndpoint
 {
     public static IEndpointRouteBuilder MapDeleteTutor(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{id:guid}", HandleAsync);
+        group.MapDelete("/{id:guid}", HandleAsync)
+            .WithSummary("Delete a tutor")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesErrors(StatusCodes.Status404NotFound);
         return group;
     }
 

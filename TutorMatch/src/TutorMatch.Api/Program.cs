@@ -98,7 +98,7 @@ public class Program
             });
         }
 
-        app.MapGet("/", () => "TutorMatch API is running.");
+        app.MapGet("/", () => "TutorMatch API is running.").ExcludeFromDescription();
 
         app.MapTutorEndpoints();
         app.MapSessionEndpoints();
@@ -124,7 +124,7 @@ public class Program
             var studentRepo = scope.ServiceProvider.GetRequiredService<IStudentRepository>();
             if (studentRepo.GetById(demoStudentId) is null)
             {
-                studentRepo.Add(new Student(demoStudentId, "Alex Radu", "alex.radu@student.upt.ro"));
+                studentRepo.Add(new Student(demoStudentId, "Alex Radu", "alex.radu@example.com"));
             }
         }
 
