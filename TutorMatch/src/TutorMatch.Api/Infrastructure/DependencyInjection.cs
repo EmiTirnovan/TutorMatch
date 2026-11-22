@@ -6,9 +6,11 @@ using Microsoft.Extensions.DependencyInjection;
 using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Domain.Users;
 using TutorMatch.Api.Infrastructure.Meetings;
 using TutorMatch.Api.Infrastructure.Persistence;
 using TutorMatch.Api.Infrastructure.Persistence.Repositories;
+using TutorMatch.Api.Infrastructure.Security;
 using TutorMatch.Api.Infrastructure.Sessions;
 using TutorMatch.Api.Infrastructure.Students;
 using TutorMatch.Api.Infrastructure.Tutors;
@@ -29,10 +31,15 @@ public static class DependencyInjection
             options.UseSqlite(connectionString);
         });
 
+        services.AddScoped<IUserRepository, SqliteUserRepository>();
         services.AddScoped<ITutorRepository, SqliteTutorRepository>();
         services.AddScoped<ISessionRepository, SqliteSessionRepository>();
         services.AddScoped<IStudentRepository, SqliteStudentRepository>();
         services.AddScoped<IRatingRepository, SqliteRatingRepository>();
+
+        services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+        services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
         return services;
     }
@@ -80,10 +87,15 @@ public static class DependencyInjection
             });
         }
 
+        services.AddScoped<IUserRepository, SqliteUserRepository>();
         services.AddScoped<ITutorRepository, SqliteTutorRepository>();
         services.AddScoped<ISessionRepository, SqliteSessionRepository>();
         services.AddScoped<IStudentRepository, SqliteStudentRepository>();
         services.AddScoped<IRatingRepository, SqliteRatingRepository>();
+
+        services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+        services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
         return services;
     }

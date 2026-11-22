@@ -1,6 +1,34 @@
 @TutorMatch.Api_HostAddress = http://localhost:5245
 
-GET {{TutorMatch.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Register a new student
+POST {{TutorMatch.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
 
-###
+{
+  "email": "student@tutormatch.ro",
+  "password": "Password123!",
+  "fullName": "Student Test",
+  "role": "Student"
+}
+
+### Login with email and password
+POST {{TutorMatch.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "student@tutormatch.ro",
+  "password": "Password123!"
+}
+
+### Google OAuth Login / Registration
+POST {{TutorMatch.Api_HostAddress}}/api/auth/google
+Content-Type: application/json
+
+{
+  "idToken": "<GOOGLE_ID_TOKEN>",
+  "role": "Student"
+}
+
+### Get current user info (requires Bearer token)
+GET {{TutorMatch.Api_HostAddress}}/api/auth/me
+Authorization: Bearer <TOKEN>

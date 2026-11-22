@@ -1,18 +1,24 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using TutorMatch.Api.Domain.Common;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Domain.Users;
 using TutorMatch.Api.Features;
+using TutorMatch.Api.Features.Auth;
+using TutorMatch.Api.Features.Discovery;
 using TutorMatch.Api.Features.SemanticSearch.Notifications;
 using TutorMatch.Api.Features.Sessions;
 using TutorMatch.Api.Features.Tutors;
 using TutorMatch.Api.Infrastructure;
 using TutorMatch.Api.Infrastructure.Persistence;
-using TutorMatch.Api.Features.Discovery;
+using TutorMatch.Api.Infrastructure.Security;
 
 // Bootstrapping logic cannot be effectively unit-tested.
 [ExcludeFromCodeCoverage]
@@ -21,6 +27,10 @@ public class Program
     public static void Main(String[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        // Options configuration
+        builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+        builder.Services.Configure<GoogleAuthOptions>(builder.Configuration.GetSection(GoogleAuthOptions.SectionName));
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(options =>
@@ -37,6 +47,30 @@ public class Program
                 Version = "v1",
                 Description = "TutorMatch API Version 1"
             });
+
+            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Scheme = "Bearer",
+                BearerFormat = "JWT"
+            });
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
         });
 
         builder.Services.AddCors(options =>
@@ -46,6 +80,36 @@ public class Program
                 policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
             });
         });
+
+        // Configure JWT Bearer Authentication
+        var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        var keyBytes = Encoding.UTF8.GetBytes(jwtOptions.SecretKey);
+
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.RequireHttpsMetadata = false;
+            options.SaveToken = true;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+                ValidateIssuer = true,
+                ValidIssuer = jwtOptions.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwtOptions.Audience,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
+                NameClaimType = "name",
+                RoleClaimType = "role"
+            };
+        });
+
+        builder.Services.AddAuthorization();
 
         // Configure SQLite persistence replacing in-memory repositories
         builder.Services.AddSqliteRepositories(
@@ -93,11 +157,15 @@ public class Program
             });
         }
 
+        app.UseAuthentication();
+        app.UseAuthorization();
+
         app.MapGet("/", () => "TutorMatch API is running.").ExcludeFromDescription();
 
+        app.MapAuthEndpoints();
         app.MapTutorEndpoints();
         app.MapSessionEndpoints();
-        app.MapDiscoveryEndpoints();    
+        app.MapDiscoveryEndpoints();
 
         // Migrate SQLite database and seed initial demo tutor inside a scoped container
         using (var scope = app.Services.CreateScope())
@@ -105,21 +173,46 @@ public class Program
             var dbContext = scope.ServiceProvider.GetRequiredService<TutorMatchDbContext>();
             dbContext.Database.Migrate();
 
+            var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+            var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+            var studentRepo = scope.ServiceProvider.GetRequiredService<IStudentRepository>();
             var tutorRepo = scope.ServiceProvider.GetRequiredService<ITutorRepository>();
-            if (tutorRepo.GetAll().Count == 0)
+
+            var demoStudentId = Guid.Parse("23a81600-7740-49c2-9de8-ad86816f5291");
+            if (userRepo.GetById(demoStudentId) is null)
             {
-                var demoTutor = new Tutor("Emi Tirnovan", "emi@tutormatch.ro", "Student anul 3. Ajut cu Algoritmi si POO.", 75m);
+                var demoStudentUser = new User(
+                    demoStudentId,
+                    "alex.radu@example.com",
+                    passwordHasher.HashPassword("Student123!"),
+                    "Alex Radu",
+                    "Student");
+                userRepo.Add(demoStudentUser);
+
+                if (studentRepo.GetById(demoStudentId) is null)
+                {
+                    studentRepo.Add(new Student(demoStudentId, "Alex Radu", "alex.radu@example.com"));
+                }
+            }
+
+            var demoTutorId = Guid.Parse("35ee570a-c31c-4ff7-b77d-ccce19e81d2e");
+            if (userRepo.GetById(demoTutorId) is null)
+            {
+                var demoTutorUser = new User(
+                    demoTutorId,
+                    "emi@tutormatch.ro",
+                    passwordHasher.HashPassword("Tutor123!"),
+                    "Emi Tirnovan",
+                    "Tutor");
+                userRepo.Add(demoTutorUser);
+            }
+
+            if (tutorRepo.GetById(demoTutorId) is null && tutorRepo.GetAll().Count == 0)
+            {
+                var demoTutor = new Tutor("Emi Tirnovan", "emi@tutormatch.ro", "Student anul 3. Ajut cu Algoritmi si POO.", 75m, demoTutorId);
                 var tomorrow = DateTime.UtcNow.Date.AddDays(1);
                 demoTutor.AddAvailability(new DateRange(tomorrow.AddHours(10), tomorrow.AddHours(14)));
                 tutorRepo.Add(demoTutor);
-            }
-
-            // shortcut: no auth yet, the frontend books as this student (DEMO_STUDENT_ID); replace when identity lands.
-            var demoStudentId = Guid.Parse("23a81600-7740-49c2-9de8-ad86816f5291");
-            var studentRepo = scope.ServiceProvider.GetRequiredService<IStudentRepository>();
-            if (studentRepo.GetById(demoStudentId) is null)
-            {
-                studentRepo.Add(new Student(demoStudentId, "Alex Radu", "alex.radu@example.com"));
             }
         }
 

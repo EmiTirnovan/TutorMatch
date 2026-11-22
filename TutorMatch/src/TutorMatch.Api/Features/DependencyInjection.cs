@@ -1,6 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
+using TutorMatch.Api.Features.Auth;
+using TutorMatch.Api.Features.Auth.Google;
+using TutorMatch.Api.Features.Auth.Login;
+using TutorMatch.Api.Features.Auth.Register;
 using TutorMatch.Api.Features.SemanticSearch;
 using TutorMatch.Api.Features.SemanticSearch.Notifications;
 using TutorMatch.Api.Features.SemanticSearch.Services;
@@ -29,6 +33,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddCqrs(this IServiceCollection services)
     {
+        // Auth CQRS Handlers
+        services.AddScoped<ICommandHandler<RegisterCommand, Result<AuthResponse>>, RegisterCommandHandler>();
+        services.AddScoped<ICommandHandler<LoginCommand, Result<AuthResponse>>, LoginCommandHandler>();
+        services.AddScoped<ICommandHandler<GoogleAuthCommand, Result<AuthResponse>>, GoogleAuthCommandHandler>();
+
         // Tutors CQRS Handlers
         services.AddScoped<ICommandHandler<CreateTutorCommand, Result<CreateTutorResponse>>, CreateTutorCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateTutorCommand>, UpdateTutorCommandHandler>();

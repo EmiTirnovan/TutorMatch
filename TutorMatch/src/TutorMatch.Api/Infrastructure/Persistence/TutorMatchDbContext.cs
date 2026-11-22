@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Domain.Users;
 
 namespace TutorMatch.Api.Infrastructure.Persistence;
 
@@ -14,6 +15,7 @@ public class TutorMatchDbContext : DbContext
     {
     }
 
+    public DbSet<User> Users => Set<User>();
     public DbSet<Tutor> Tutors => Set<Tutor>();
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Student> Students => Set<Student>();
