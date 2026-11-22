@@ -254,20 +254,11 @@
                 }
               </div>
 
-              <div class="subject-input-wrapper">
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="e.g. Algoritmi, C++, Baze de date"
-                  [(ngModel)]="newEditSubjectInput"
-                  (keydown.enter)="$event.preventDefault(); addEditSubject()"
-                  name="newEditSubjectInput"
-                />
-                <button type="button" class="btn btn-secondary btn-add-subject" (click)="addEditSubject()">
-                  Add
-                </button>
-              </div>
-              <span class="text-muted text-xs">Press Enter or click Add to add subject tags.</span>
+              <app-subject-autocomplete
+                inputId="edit-modal-subject-autocomplete"
+                [selectedSubjects]="editSubjects()"
+                (subjectSelected)="onEditSubjectSelected($event)"
+              />
             </div>
 
             <div class="modal-actions" style="margin-top: 1.5rem;">

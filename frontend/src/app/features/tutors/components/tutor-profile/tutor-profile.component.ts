@@ -10,6 +10,7 @@ import { SessionResponse } from '../../../../core/models/session.models';
 import { SlotPickerComponent } from '../../../bookings/components/slot-picker/slot-picker.component';
 import { BookSessionModalComponent } from '../../../bookings/components/book-session-modal/book-session-modal.component';
 import { ConcurrencyConflictDialogComponent } from '../../../bookings/components/concurrency-conflict-dialog/concurrency-conflict-dialog.component';
+import { SubjectAutocompleteComponent } from '../subject-autocomplete/subject-autocomplete.component';
 import { StarRatingComponent } from '../star-rating/star-rating.component';
 import { TutorReviewsComponent } from '../tutor-reviews/tutor-reviews.component';
 import { UserContextService } from '../../../../core/services/user-context.service';
@@ -26,6 +27,7 @@ const DEMO_TUTOR_ID = 'demo-tutor-001';
     SlotPickerComponent,
     BookSessionModalComponent,
     ConcurrencyConflictDialogComponent,
+    SubjectAutocompleteComponent,
     StarRatingComponent,
     TutorReviewsComponent
   ],
@@ -158,6 +160,14 @@ export class TutorProfileComponent implements OnInit {
   closeEditProfile(): void {
     this.isEditProfileOpen.set(false);
     this.editErrorMessage.set(null);
+  }
+
+  onEditSubjectSelected(subject: string): void {
+    const trimmed = subject.trim();
+    if (!trimmed) return;
+    if (!this.editSubjects().some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+      this.editSubjects.update(list => [...list, trimmed]);
+    }
   }
 
   addEditSubject(): void {

@@ -2,11 +2,12 @@ import { Component, inject, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DEFAULT_FILTER_CRITERIA, TutorFilterCriteria, TutorSortOption } from '../../../../core/models/tutor-search.models';
+import { SubjectAutocompleteComponent } from '../subject-autocomplete/subject-autocomplete.component';
 
 @Component({
   selector: 'app-tutor-filter-bar',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, SubjectAutocompleteComponent],
   templateUrl: './tutor-filter-bar.component.html',
   styleUrl: './tutor-filter-bar.component.css'
 })

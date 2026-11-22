@@ -28,8 +28,24 @@ public class SqliteTutorRepository : ITutorRepository
             throw new InvalidOperationException($"A tutor with ID '{tutor.Id}' already exists.");
         }
 
-        _context.Tutors.Add(tutor);
-        _context.SaveChanges();
+        using var transaction = _context.Database.BeginTransaction();
+        try
+        {
+            foreach (var ts in tutor.TutorSubjects)
+            {
+                var subject = ts.Subject ?? _context.Subjects.Find(ts.SubjectId);
+                subject?.IncrementUsage(1);
+            }
+
+            _context.Tutors.Add(tutor);
+            _context.SaveChanges();
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     public Tutor? GetById(Guid id)
@@ -57,8 +73,8 @@ public class SqliteTutorRepository : ITutorRepository
     {
         ArgumentNullException.ThrowIfNull(tutor);
 
-        var entry = _context.Entry(tutor);
-        if (entry.State == EntityState.Detached)
+        using var transaction = _context.Database.BeginTransaction();
+        try
         {
             var existing = _context.Tutors
                 .Include(t => t.Availability)
@@ -71,46 +87,102 @@ public class SqliteTutorRepository : ITutorRepository
                 throw new KeyNotFoundException($"Tutor with ID '{tutor.Id}' was not found.");
             }
 
+            var oldSubjectIds = existing.TutorSubjects.Select(ts => ts.SubjectId).ToHashSet();
+            var newSubjectIds = tutor.TutorSubjects.Select(ts => ts.SubjectId).ToHashSet();
+
+            var addedIds = newSubjectIds.Except(oldSubjectIds).ToList();
+            var removedIds = oldSubjectIds.Except(newSubjectIds).ToList();
+
+            foreach (var id in addedIds)
+            {
+                var subject = _context.Subjects.Find(id);
+                subject?.IncrementUsage(1);
+            }
+
+            foreach (var id in removedIds)
+            {
+                var subject = _context.Subjects.Find(id);
+                subject?.DecrementUsage(1);
+            }
+
             existing.UpdateProfile(tutor.Name, tutor.Bio, tutor.HourlyRate);
             existing.UpdateAvailability(tutor.Availability);
-            existing.UpdateSubjects(tutor.TutorSubjects.Select(ts => ts.Subject).Where(s => s is not null));
-        }
-        else
-        {
-            var exists = _context.Tutors.Any(t => t.Id == tutor.Id);
-            if (!exists)
-            {
-                throw new KeyNotFoundException($"Tutor with ID '{tutor.Id}' was not found.");
-            }
-        }
 
-        _context.SaveChanges();
+            // Reconcile join table entries
+            var toRemove = existing.TutorSubjects.Where(ts => removedIds.Contains(ts.SubjectId)).ToList();
+            foreach (var ts in toRemove)
+            {
+                _context.TutorSubjects.Remove(ts);
+            }
+
+            foreach (var id in addedIds)
+            {
+                var subject = _context.Subjects.Find(id);
+                if (subject is not null)
+                {
+                    existing.AddSubject(subject);
+                }
+                else
+                {
+                    existing.AddSubject(id);
+                }
+            }
+
+            _context.SaveChanges();
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     public bool Delete(Guid id)
     {
-        var tutor = _context.Tutors.Find(id);
-        if (tutor is null)
+        using var transaction = _context.Database.BeginTransaction();
+        try
         {
-            return false;
-        }
+            var tutor = _context.Tutors
+                .Include(t => t.TutorSubjects)
+                    .ThenInclude(ts => ts.Subject)
+                .FirstOrDefault(t => t.Id == id);
 
-        _context.Tutors.Remove(tutor);
-        _context.SaveChanges();
-        return true;
+            if (tutor is null)
+            {
+                return false;
+            }
+
+            foreach (var ts in tutor.TutorSubjects)
+            {
+                var subject = ts.Subject ?? _context.Subjects.Find(ts.SubjectId);
+                subject?.DecrementUsage(1);
+            }
+
+            _context.Tutors.Remove(tutor);
+            _context.SaveChanges();
+            transaction.Commit();
+            return true;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     public Subject GetOrCreateSubject(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        var trimmed = name.Trim();
-        var existing = _context.Subjects.FirstOrDefault(s => s.Name.ToLower() == trimmed.ToLower());
+        var normalized = Subject.NormalizeName(name);
+
+        var existing = _context.Subjects.FirstOrDefault(s => s.Name == normalized);
         if (existing is not null)
         {
             return existing;
         }
 
-        var newSubject = new Subject(trimmed);
+        var newSubject = new Subject(normalized, createdAt: DateTime.UtcNow, usageCount: 0);
         _context.Subjects.Add(newSubject);
         _context.SaveChanges();
         return newSubject;

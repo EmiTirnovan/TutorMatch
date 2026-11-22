@@ -5,11 +5,12 @@ import { Router, RouterLink } from '@angular/router';
 import { TutorService } from '../../../../core/services/tutor.service';
 import { CreateTutorRequest, CreateTutorResponse } from '../../../../core/models/tutor.models';
 import { AvailabilityEditorComponent } from '../availability-editor/availability-editor.component';
+import { SubjectAutocompleteComponent } from '../subject-autocomplete/subject-autocomplete.component';
 
 @Component({
   selector: 'app-tutor-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, AvailabilityEditorComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, AvailabilityEditorComponent, SubjectAutocompleteComponent],
   templateUrl: './tutor-register.component.html',
   styleUrl: './tutor-register.component.css'
 })
@@ -37,6 +38,17 @@ export class TutorRegisterComponent {
     ],
     hourlyRate: [85, [Validators.required, Validators.min(1), Validators.max(1000)]]
   });
+
+  onSubjectSelected(subject: string): void {
+    const trimmed = subject.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    if (!this.subjects().some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+      this.subjects.update(curr => [...curr, trimmed]);
+    }
+  }
 
   addSubject(): void {
     const trimmed = this.newSubjectInput.trim();

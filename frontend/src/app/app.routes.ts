@@ -4,6 +4,7 @@ import { TutorProfileComponent } from './features/tutors/components/tutor-profil
 import { AvailabilityEditorComponent } from './features/tutors/components/availability-editor/availability-editor.component';
 import { SearchTutorsComponent } from './features/tutors/components/search-tutors/search-tutors.component';
 import { MySessionsComponent } from './features/sessions/components/my-sessions/my-sessions.component';
+import { EditProfileComponent } from './features/tutors/components/edit-profile/edit-profile.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'tutors/register', pathMatch: 'full' },
@@ -11,6 +12,8 @@ export const routes: Routes = [
   { path: 'tutors/search', component: SearchTutorsComponent },
   { path: 'tutors/:id', component: TutorProfileComponent },
   { path: 'tutors/:id/availability', component: AvailabilityEditorComponent },
+  { path: 'profile', component: EditProfileComponent },
+  { path: 'profile/edit', component: EditProfileComponent },
   { path: 'sessions', component: MySessionsComponent },
   { path: 'sessions/my', redirectTo: 'sessions' },
   { path: 'my-sessions', redirectTo: 'sessions' },

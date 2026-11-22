@@ -177,6 +177,18 @@ public class Tutor
         return new TutorSavedNotification(Id, Bio, subjects);
     }
 
+    // Creates a TutorProfileUpdated notification for subscribers when profile or subjects are modified
+    public TutorProfileUpdated CreateTutorProfileUpdatedNotification(IEnumerable<string>? subjectNames = null)
+    {
+        var subjects = subjectNames?.ToList() ?? _tutorSubjects
+            .Select(ts => ts.Subject?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
+            .ToList();
+
+        return new TutorProfileUpdated(Id, Bio, subjects);
+    }
+
     private static void ValidateProfile(string name, string email, string bio, decimal hourlyRate)
     {
         if (string.IsNullOrWhiteSpace(name))

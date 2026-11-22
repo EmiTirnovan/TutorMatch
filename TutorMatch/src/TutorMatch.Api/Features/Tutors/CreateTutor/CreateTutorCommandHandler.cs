@@ -38,13 +38,16 @@ public class CreateTutorCommandHandler : ICommandHandler<CreateTutorCommand, Res
 
             if (command.Subjects is not null)
             {
-                foreach (var subjectName in command.Subjects)
+                var distinctSubjectNames = command.Subjects
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Select(Subject.NormalizeName)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                foreach (var subjectName in distinctSubjectNames)
                 {
-                    if (!string.IsNullOrWhiteSpace(subjectName))
-                    {
-                        var subject = _repository.GetOrCreateSubject(subjectName);
-                        tutor.AddSubject(subject);
-                    }
+                    var subject = _repository.GetOrCreateSubject(subjectName);
+                    tutor.AddSubject(subject);
                 }
             }
 

@@ -10,6 +10,8 @@ using TutorMatch.Api.Features;
 using TutorMatch.Api.Features.SemanticSearch;
 using TutorMatch.Api.Features.SemanticSearch.Notifications;
 using TutorMatch.Api.Features.Sessions;
+using TutorMatch.Api.Features.Students;
+using TutorMatch.Api.Features.Subjects;
 using TutorMatch.Api.Features.Tutors;
 using TutorMatch.Api.Infrastructure;
 using TutorMatch.Api.Infrastructure.Persistence;
@@ -102,7 +104,9 @@ public class Program
 
         app.MapTutorEndpoints();
         app.MapSessionEndpoints();
-        app.MapDiscoveryEndpoints();    
+        app.MapDiscoveryEndpoints();
+        app.MapSubjectsEndpoints();
+        app.MapStudentsEndpoints();    
 
         // Migrate SQLite database and seed initial demo tutor inside a scoped container
         using (var scope = app.Services.CreateScope())
