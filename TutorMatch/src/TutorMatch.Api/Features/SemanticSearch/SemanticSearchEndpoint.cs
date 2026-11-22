@@ -13,7 +13,8 @@ public static class SemanticSearchEndpoint
     public static IEndpointRouteBuilder MapSemanticSearchEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/tutors/semantic-search", HandleAsync)
-           .WithTags("Tutors");
+           .WithTags("Tutors")
+           .RequireRateLimiting(SemanticSearchRateLimiting.PolicyName);
 
         return app;
     }
@@ -21,6 +22,8 @@ public static class SemanticSearchEndpoint
     public static IEndpointRouteBuilder MapSemanticSearch(this IEndpointRouteBuilder group)
     {
         group.MapGet("/semantic-search", HandleAsync)
+             .WithTags("Tutors")
+             .RequireRateLimiting(SemanticSearchRateLimiting.PolicyName);
              .WithSummary("Semantic (AI) tutor search")
              .WithDescription("Ranks tutors by embedding similarity to the free-text query q. Falls back to keyword search when the AI service is unavailable; the response mode says which one ran.")
              .Produces<SemanticSearchResponse>(StatusCodes.Status200OK);
