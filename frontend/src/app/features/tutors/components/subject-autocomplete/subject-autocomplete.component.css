@@ -1,0 +1,127 @@
+.autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.autocomplete-input {
+  flex: 1;
+  padding-right: 2.25rem;
+}
+
+.btn-autocomplete-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.5rem 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  background-color: var(--card-bg, #f8fafc);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 6px;
+  color: var(--text-color, #1e293b);
+  transition: all 0.15s ease;
+}
+
+.btn-autocomplete-add:hover:not(:disabled) {
+  background-color: var(--hover-bg, #f1f5f9);
+  border-color: var(--primary-color, #2563eb);
+  color: var(--primary-color, #2563eb);
+}
+
+.btn-autocomplete-add:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input-spinner {
+  position: absolute;
+  right: 5.75rem;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--border-color, #e2e8f0);
+  border-top-color: var(--primary-color, #3b82f6);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  pointer-events: none;
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  list-style: none;
+  padding: 0.35rem;
+  margin: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.925rem;
+  color: var(--text-color, #1e293b);
+  transition: background-color 0.15s ease;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+  background-color: var(--hover-bg, #f1f5f9);
+  color: var(--primary-color, #2563eb);
+}
+
+.suggestion-icon {
+  color: var(--primary-color, #3b82f6);
+  flex-shrink: 0;
+}
+
+.custom-option {
+  border-top: 1px dashed var(--border-color, #e2e8f0);
+  margin-top: 0.25rem;
+  padding-top: 0.65rem;
+  color: var(--text-muted, #64748b);
+}
+
+.custom-option:hover {
+  color: var(--primary-color, #2563eb);
+}
+
+.custom-icon {
+  color: var(--text-muted, #64748b);
+  flex-shrink: 0;
+}
+
+.dropdown-notice {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 4px;
+}
+
+.error-notice {
+  color: #dc2626;
+  background-color: #fef2f2;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -9,6 +9,7 @@ import { SearchTutorsComponent } from '../src/app/features/tutors/components/sea
 import { TutorProfileComponent } from '../src/app/features/tutors/components/tutor-profile/tutor-profile.component';
 import { TutorRegisterComponent } from '../src/app/features/tutors/components/tutor-register/tutor-register.component';
 import { MySessionsComponent } from '../src/app/features/sessions/components/my-sessions/my-sessions.component';
+import { EditProfileComponent } from '../src/app/features/tutors/components/edit-profile/edit-profile.component';
 
 describe('app routes', () => {
   const indexOfPath = (path: string): number => routes.findIndex((route) => route.path === path);
@@ -28,6 +29,12 @@ describe('app routes', () => {
         }
       ]
     });
+  });
+
+  it('Given_ProfilePath_When_ReadingRoutes_Then_MapsToEditProfileComponent', () => {
+    const route = routes.find((candidate) => candidate.path === 'profile');
+
+    expect(route?.component).toBe(EditProfileComponent);
   });
 
   it('Given_SearchPath_When_ReadingRoutes_Then_MapsToSearchTutorsComponent', () => {

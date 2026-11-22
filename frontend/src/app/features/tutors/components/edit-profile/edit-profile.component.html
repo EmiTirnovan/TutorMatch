@@ -1,0 +1,164 @@
+<div class="container edit-profile-page">
+  <div class="edit-profile-header">
+    <div class="header-titles">
+      <h1>Edit Profile</h1>
+      <p class="text-muted">
+        Manage your {{ isTutor() ? 'tutor' : 'student' }} personal details and preferences.
+      </p>
+    </div>
+    <div class="header-actions">
+      @if (isTutor()) {
+        <a [routerLink]="['/tutors', userContext.tutorId()]" class="btn btn-secondary">
+          &larr; View Public Profile
+        </a>
+      } @else {
+        <a routerLink="/tutors/search" class="btn btn-secondary">
+          &larr; Discover Tutors
+        </a>
+      }
+    </div>
+  </div>
+
+  @if (successMessage()) {
+    <div class="alert alert-success" role="status" aria-live="polite">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger" role="alert" aria-live="assertive">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="card loading-card" aria-busy="true">
+      <div class="loading-spinner"></div>
+      <p class="text-muted">Loading profile information...</p>
+    </div>
+  } @else {
+    <div class="card profile-form-card">
+      <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" novalidate>
+        <!-- Full Name -->
+        <div class="form-group">
+          <label for="profile-name">Full Name *</label>
+          <input
+            id="profile-name"
+            type="text"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('name')"
+            formControlName="name"
+            placeholder="Your full name"
+          />
+          @if (isFieldInvalid('name')) {
+            <div class="error-feedback">Name is required (minimum 2 characters).</div>
+          }
+        </div>
+
+        <!-- Email (Read-Only) -->
+        <div class="form-group">
+          <label for="profile-email">University Email</label>
+          <input
+            id="profile-email"
+            type="email"
+            class="form-control disabled-input"
+            formControlName="email"
+            title="University email cannot be changed"
+          />
+          <small class="form-hint">Email address is bound to your university account.</small>
+        </div>
+
+        @if (isTutor()) {
+          <!-- Hourly Rate -->
+          <div class="form-group">
+            <label for="profile-rate">Hourly Rate (RON / hour) *</label>
+            <input
+              id="profile-rate"
+              type="number"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('hourlyRate')"
+              formControlName="hourlyRate"
+              min="1"
+              max="1000"
+            />
+            @if (isFieldInvalid('hourlyRate')) {
+              <div class="error-feedback">Hourly rate must be between 1 and 1000 RON.</div>
+            }
+          </div>
+
+          <!-- Biography -->
+          <div class="form-group">
+            <label for="profile-bio">Biography & Teaching Experience *</label>
+            <textarea
+              id="profile-bio"
+              class="form-control"
+              rows="4"
+              [class.is-invalid]="isFieldInvalid('bio')"
+              formControlName="bio"
+              placeholder="Describe your university experience, subjects you excel in, and teaching methodology..."
+            ></textarea>
+            @if (isFieldInvalid('bio')) {
+              <div class="error-feedback">Biography is required (minimum 10 characters).</div>
+            }
+            <small class="form-hint">Your bio is automatically indexed by AI semantic search.</small>
+          </div>
+        }
+
+        <!-- Centralized Subjects Autocomplete -->
+        <div class="form-group">
+          <label for="profile-subjects-autocomplete">
+            {{ isTutor() ? 'Subjects & Topics Taught *' : 'Subjects of Interest (Topics you want to learn)' }}
+          </label>
+          <app-subject-autocomplete
+            inputId="profile-subjects-autocomplete"
+            [selectedSubjects]="subjects()"
+            (subjectSelected)="onSubjectSelected($event)"
+          />
+
+          <!-- Subject Chips List -->
+          <div class="chips-container" aria-label="Selected subjects">
+            @for (subj of subjects(); track subj; let i = $index) {
+              <span class="chip">
+                {{ subj }}
+                <button
+                  type="button"
+                  class="chip-remove"
+                  (click)="removeSubject(i)"
+                  [attr.aria-label]="'Remove ' + subj"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </span>
+            }
+          </div>
+          @if (isTutor() && subjects().length === 0) {
+            <div class="error-feedback">Please select or add at least one subject.</div>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="isSaving()">
+            @if (isSaving()) {
+              <span class="btn-spinner" aria-hidden="true"></span>
+              <span>Saving Changes...</span>
+            } @else {
+              <span>Save Profile</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

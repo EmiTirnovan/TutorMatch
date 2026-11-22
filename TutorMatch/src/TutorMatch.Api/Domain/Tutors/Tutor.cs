@@ -145,10 +145,17 @@ public class Tutor
     public void UpdateSubjects(IEnumerable<Subject> subjects)
     {
         ArgumentNullException.ThrowIfNull(subjects);
-        _tutorSubjects.Clear();
-        foreach (var subject in subjects)
+        var targetList = subjects.ToList();
+        var targetIds = targetList.Select(s => s.Id).ToHashSet();
+
+        _tutorSubjects.RemoveAll(ts => !targetIds.Contains(ts.SubjectId));
+
+        foreach (var subject in targetList)
         {
-            AddSubject(subject);
+            if (!_tutorSubjects.Any(ts => ts.SubjectId == subject.Id))
+            {
+                AddSubject(subject);
+            }
         }
     }
 
@@ -175,6 +182,18 @@ public class Tutor
             .ToList();
 
         return new TutorSavedNotification(Id, Bio, subjects);
+    }
+
+    // Creates a TutorProfileUpdated notification for subscribers when profile or subjects are modified
+    public TutorProfileUpdated CreateTutorProfileUpdatedNotification(IEnumerable<string>? subjectNames = null)
+    {
+        var subjects = subjectNames?.ToList() ?? _tutorSubjects
+            .Select(ts => ts.Subject?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
+            .ToList();
+
+        return new TutorProfileUpdated(Id, Bio, subjects);
     }
 
     private static void ValidateProfile(string name, string email, string bio, decimal hourlyRate)

@@ -31,6 +31,12 @@ public class Student
         Email = email.Trim();
     }
 
+    public void UpdateProfile(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
+        Name = name.Trim();
+    }
+
     public Session BookSession(
         Guid tutorId,
         DateRange interval,

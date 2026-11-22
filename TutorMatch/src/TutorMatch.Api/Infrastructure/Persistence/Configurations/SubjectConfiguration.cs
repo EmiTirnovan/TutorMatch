@@ -18,7 +18,19 @@ public class SubjectConfiguration : IEntityTypeConfiguration<Subject>
 
         builder.Property(s => s.Name)
             .IsRequired()
-            .HasMaxLength(200);
+            .HasMaxLength(200)
+            .UseCollation("NOCASE");
+
+        builder.HasIndex(s => s.Name)
+            .IsUnique();
+
+        builder.Property(s => s.UsageCount)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.Property(s => s.CreatedAt)
+            .IsRequired()
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
         builder.Property(s => s.Description)
             .HasMaxLength(1000);

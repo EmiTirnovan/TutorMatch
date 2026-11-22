@@ -1,6 +1,10 @@
+using System.Diagnostics;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Options;
 using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Features.Discovery.SearchTutors;
 using TutorMatch.Api.Features.SemanticSearch;
@@ -210,6 +214,205 @@ public class SemanticSearchQueryHandlerTests : IDisposable
         result.IsSuccess.Should().BeTrue();
         result.Value.Mode.Should().Be("semantic");
         result.Value.Results.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("  Analiza   Matematica ", "analiza matematica")]
+    [InlineData("ALGEBRA\tliniara\n", "algebra liniara")]
+    [InlineData("fizica", "fizica")]
+    [InlineData("   ", "")]
+    [InlineData(null, "")]
+    public void Given_RawQuery_When_Normalizing_Then_TrimsCollapsesWhitespaceAndLowercases(string? raw, string expected)
+    {
+        var normalized = SemanticSearchQueryHandler.NormalizeQuery(raw);
+
+        normalized.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task Given_IdenticalQueryTwice_When_Searching_Then_SecondCallHitsCacheWithoutCallingOllama()
+    {
+        await SeedTutorWithEmbeddingAsync([1.0f, 0.0f]);
+        _fakeOllama.EmbeddingGenerator = _ => [1.0f, 0.0f];
+        var handler = CreateCachingHandler(new MemoryCache(new MemoryCacheOptions()));
+        await handler.HandleAsync(new SemanticSearchQuery("analiza matematica"));
+
+        var second = await handler.HandleAsync(new SemanticSearchQuery("analiza matematica"));
+
+        _fakeOllama.CallCount.Should().Be(1);
+        second.Value.Mode.Should().Be(SemanticSearchQueryHandler.ModeSemantic);
+        second.Value.Results.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Given_SlowOllamaAndWarmCache_When_RepeatingQuery_Then_RespondsInUnder15Milliseconds()
+    {
+        await SeedTutorWithEmbeddingAsync([1.0f, 0.0f]);
+        _fakeOllama.EmbeddingGenerator = _ => [1.0f, 0.0f];
+        _fakeOllama.Delay = TimeSpan.FromMilliseconds(300);
+        var handler = CreateCachingHandler(new MemoryCache(new MemoryCacheOptions()));
+        await handler.HandleAsync(new SemanticSearchQuery("analiza matematica"));
+        var stopwatch = Stopwatch.StartNew();
+
+        await handler.HandleAsync(new SemanticSearchQuery("analiza matematica"));
+        stopwatch.Stop();
+
+        _fakeOllama.CallCount.Should().Be(1);
+        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromMilliseconds(15));
+    }
+
+    [Fact]
+    public async Task Given_QueriesDifferingOnlyInCaseAndWhitespace_When_Searching_Then_ShareOneNormalizedCacheEntry()
+    {
+        _fakeOllama.EmbeddingGenerator = _ => [1.0f, 0.0f];
+        var handler = CreateCachingHandler(new MemoryCache(new MemoryCacheOptions()));
+        await handler.HandleAsync(new SemanticSearchQuery("  Analiza   MATEMATICA "));
+
+        await handler.HandleAsync(new SemanticSearchQuery("analiza matematica"));
+
+        _fakeOllama.CallCount.Should().Be(1);
+        _fakeOllama.CapturedPrompts.Should().ContainSingle().Which.Should().Be("analiza matematica");
+    }
+
+    [Fact]
+    public async Task Given_FirstOllamaCallFails_When_RepeatingQuery_Then_FailureIsNotCached()
+    {
+        var calls = 0;
+        _fakeOllama.EmbeddingGenerator = _ => Interlocked.Increment(ref calls) == 1 ? null : [1.0f, 0.0f];
+        var handler = CreateCachingHandler(new MemoryCache(new MemoryCacheOptions()));
+        var first = await handler.HandleAsync(new SemanticSearchQuery("fizica"));
+
+        var second = await handler.HandleAsync(new SemanticSearchQuery("fizica"));
+
+        first.Value.Mode.Should().Be(SemanticSearchQueryHandler.ModeKeyword);
+        second.Value.Mode.Should().Be(SemanticSearchQueryHandler.ModeSemantic);
+        _fakeOllama.CallCount.Should().Be(2);
+    }
+
+    [Theory]
+    [InlineData(29, 1)]
+    [InlineData(31, 2)]
+    public async Task Given_CachedQueryEmbedding_When_TimeAdvances_Then_EntryLivesThirtyMinutes(int minutesLater, int expectedOllamaCalls)
+    {
+        var clock = new ManualSystemClock(DateTimeOffset.UtcNow);
+        var cache = new MemoryCache(new MemoryCacheOptions { Clock = clock });
+        _fakeOllama.EmbeddingGenerator = _ => [1.0f, 0.0f];
+        var handler = CreateCachingHandler(cache);
+        await handler.HandleAsync(new SemanticSearchQuery("fizica"));
+        clock.UtcNow = clock.UtcNow.AddMinutes(minutesLater);
+
+        await handler.HandleAsync(new SemanticSearchQuery("fizica"));
+
+        _fakeOllama.CallCount.Should().Be(expectedOllamaCalls);
+    }
+
+    [Fact]
+    public async Task Given_HandlersForDifferentModelsSharingCache_When_SearchingSameQuery_Then_EachModelEmbedsSeparately()
+    {
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        _fakeOllama.EmbeddingGenerator = _ => [1.0f, 0.0f];
+        var bgeHandler = CreateCachingHandler(cache, new OllamaOptions { Model = "bge-m3" });
+        var nomicHandler = CreateCachingHandler(cache, new OllamaOptions { Model = "nomic-embed-text" });
+        await bgeHandler.HandleAsync(new SemanticSearchQuery("fizica"));
+
+        await nomicHandler.HandleAsync(new SemanticSearchQuery("fizica"));
+
+        _fakeOllama.CallCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Given_OllamaSlowerThanDefault3500msBudget_When_Searching_Then_FallsBackToKeywordAtTheBudget()
+    {
+        var tutor = await SeedTutorWithSubjectAsync("Informatica");
+        _fakeOllama.Delay = TimeSpan.FromSeconds(10);
+        var handler = CreateCachingHandler(new MemoryCache(new MemoryCacheOptions()));
+        var stopwatch = Stopwatch.StartNew();
+
+        var result = await handler.HandleAsync(new SemanticSearchQuery("Informatica"));
+        stopwatch.Stop();
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Mode.Should().Be(SemanticSearchQueryHandler.ModeKeyword);
+        result.Value.Message.Should().Be(SemanticSearchQueryHandler.FallbackMessage);
+        result.Value.Results.Should().ContainSingle(r => r.TutorId == tutor.Id);
+        stopwatch.Elapsed.Should().BeGreaterThan(TimeSpan.FromMilliseconds(3400));
+        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromMilliseconds(5000));
+    }
+
+    [Fact]
+    public async Task Given_ClientIgnoringCancellation_When_BudgetElapses_Then_FallsBackToKeywordAnyway()
+    {
+        var hangingClient = new HangingOllamaClient();
+        var options = Options.Create(new OllamaOptions { QueryTimeoutMilliseconds = 100 });
+        var handler = new SemanticSearchQueryHandler(hangingClient, _context, _fallbackHandler, new MemoryCache(new MemoryCacheOptions()), options);
+        var stopwatch = Stopwatch.StartNew();
+
+        var result = await handler.HandleAsync(new SemanticSearchQuery("Informatica"));
+        stopwatch.Stop();
+
+        result.Value.Mode.Should().Be(SemanticSearchQueryHandler.ModeKeyword);
+        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task Given_OllamaThrowsInvalidOperation_When_Searching_Then_ReturnsKeywordModeWithoutFailure()
+    {
+        _fakeOllama.ExceptionToThrow = new InvalidOperationException("Model not loaded.");
+        var handler = CreateCachingHandler(new MemoryCache(new MemoryCacheOptions()));
+
+        var result = await handler.HandleAsync(new SemanticSearchQuery("Informatica"));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Mode.Should().Be(SemanticSearchQueryHandler.ModeKeyword);
+    }
+
+    [Fact]
+    public async Task Given_CallerCancelsRequest_When_Searching_Then_PropagatesCancellationInsteadOfFallingBack()
+    {
+        _fakeOllama.Delay = TimeSpan.FromSeconds(10);
+        var handler = CreateCachingHandler(new MemoryCache(new MemoryCacheOptions()));
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+
+        var act = () => handler.HandleAsync(new SemanticSearchQuery("Informatica"), cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    private SemanticSearchQueryHandler CreateCachingHandler(IMemoryCache cache, OllamaOptions? options = null) =>
+        new(_fakeOllama, _context, _fallbackHandler, cache, Options.Create(options ?? new OllamaOptions()));
+
+    private async Task<Tutor> SeedTutorWithEmbeddingAsync(float[] vector)
+    {
+        var tutor = new Tutor("Ion Popescu", $"{Guid.NewGuid():N}@test.ro", "Profesor de analiza matematica.", 90m);
+        _context.Tutors.Add(tutor);
+        _context.TutorEmbeddings.Add(new TutorEmbedding(tutor.Id, VectorMath.Serialize(vector)));
+        await _context.SaveChangesAsync();
+        return tutor;
+    }
+
+    private async Task<Tutor> SeedTutorWithSubjectAsync(string subjectName)
+    {
+        var tutor = new Tutor("Alex Radu", $"{Guid.NewGuid():N}@test.ro", "Mentor C++", 100m);
+        tutor.AddSubject(new Subject(subjectName));
+        _context.Tutors.Add(tutor);
+        await _context.SaveChangesAsync();
+        return tutor;
+    }
+
+    private sealed class ManualSystemClock : ISystemClock
+    {
+        public ManualSystemClock(DateTimeOffset start)
+        {
+            UtcNow = start;
+        }
+
+        public DateTimeOffset UtcNow { get; set; }
+    }
+
+    private sealed class HangingOllamaClient : IOllamaClient
+    {
+        public Task<float[]?> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default) =>
+            new TaskCompletionSource<float[]?>().Task;
     }
 }
 

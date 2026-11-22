@@ -1,7 +1,14 @@
 <form class="card filter-bar" [formGroup]="form" (ngSubmit)="apply()" aria-label="Tutor filters">
   <div class="filter-field">
     <label for="filter-subject">Subject</label>
-    <input id="filter-subject" class="form-control" type="text" formControlName="subject" placeholder="e.g. Algoritmi, SQL" />
+    <app-subject-autocomplete
+      inputId="filter-subject"
+      formControlName="subject"
+      placeholder="e.g. Algoritmi, SQL"
+      [allowCustom]="true"
+      [clearOnSelect]="false"
+      [showAddButton]="false"
+    />
   </div>
 
   <div class="filter-field">

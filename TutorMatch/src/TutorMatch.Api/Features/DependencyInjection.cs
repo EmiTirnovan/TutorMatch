@@ -16,6 +16,9 @@ using TutorMatch.Api.Features.Sessions.GetMySessions;
 using TutorMatch.Api.Features.Sessions.GetSessionById;
 using TutorMatch.Api.Features.Sessions.GetSessions;
 using TutorMatch.Api.Features.Sessions.UpdateSession;
+using TutorMatch.Api.Features.Students.GetStudentById;
+using TutorMatch.Api.Features.Students.UpdateProfile;
+using TutorMatch.Api.Features.Subjects.SuggestSubjects;
 using TutorMatch.Api.Features.Tutors.CreateTutor;
 using TutorMatch.Api.Features.Tutors.DeleteTutor;
 using TutorMatch.Api.Features.Tutors.GetTutorById;
@@ -41,10 +44,18 @@ public static class DependencyInjection
         // Tutors CQRS Handlers
         services.AddScoped<ICommandHandler<CreateTutorCommand, Result<CreateTutorResponse>>, CreateTutorCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateTutorCommand>, UpdateTutorCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdateTutorProfileCommand>, UpdateTutorCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateAvailabilityCommand>, UpdateAvailabilityCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteTutorCommand>, DeleteTutorCommandHandler>();
         services.AddScoped<IQueryHandler<GetTutorByIdQuery, Result<GetTutorByIdResponse>>, GetTutorByIdQueryHandler>();
         services.AddScoped<IQueryHandler<GetTutorsQuery, Result<List<TutorSummaryResponse>>>, GetTutorsQueryHandler>();
+
+        // Subjects CQRS Handlers
+        services.AddScoped<IQueryHandler<GetSubjectSuggestionsQuery, Result<SubjectSuggestionResponse>>, GetSubjectSuggestionsQueryHandler>();
+
+        // Students CQRS Handlers
+        services.AddScoped<ICommandHandler<UpdateStudentProfileCommand>, UpdateStudentProfileCommandHandler>();
+        services.AddScoped<IQueryHandler<GetStudentByIdQuery, Result<GetStudentByIdResponse>>, GetStudentByIdQueryHandler>();
 
         // Sessions CQRS Handlers
         services.AddScoped<ICommandHandler<BookSessionCommand, Result<BookSessionResponse>>, BookSessionCommandHandler>();
@@ -57,6 +68,9 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetMySessionsQuery, Result<GetMySessionsResponse>>, GetMySessionsQueryHandler>();
 
         // Semantic Search Services & Handlers
+        services.AddOptions<OllamaOptions>().BindConfiguration(OllamaOptions.SectionName);
+        services.AddMemoryCache();
+        services.AddSingleton(TutorEmbeddingWriteLock.Shared);
         services.AddHttpClient(OllamaClient.HttpClientName);
         services.AddScoped<IOllamaClient, OllamaClient>();
         services.AddScoped<ISearchTutorsFallback, DefaultSearchTutorsFallback>();

@@ -28,21 +28,18 @@ export class UserContextService {
     return this.overrideTutorId() ?? this.authService.currentUser()?.id ?? '';
   });
 
-  readonly studentName = computed<string>(() => {
-    return this.authService.currentUser()?.fullName ?? '';
-  });
-
-  readonly tutorName = computed<string>(() => {
-    return this.authService.currentUser()?.fullName ?? '';
-  });
+  readonly studentName = signal<string>('Alex Radu');
+  readonly tutorName = signal<string>('Emi Tirnovan');
 
   readonly currentUserId = computed(() =>
     this.currentRole() === 'student' ? this.studentId() : this.tutorId()
   );
 
-  readonly currentUserName = computed(() =>
-    this.currentRole() === 'student' ? this.studentName() : this.tutorName()
-  );
+  readonly currentUserName = computed(() => {
+    const authName = this.authService.currentUser()?.fullName;
+    if (authName) return authName;
+    return this.currentRole() === 'student' ? this.studentName() : this.tutorName();
+  });
 
   readonly roleDisplayName = computed(() =>
     this.currentRole() === 'tutor' ? 'Tutor View' : 'Student View'

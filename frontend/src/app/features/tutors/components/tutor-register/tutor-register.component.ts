@@ -1,19 +1,33 @@
 import { Component, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { TutorService } from '../../../../core/services/tutor.service';
 import { CreateTutorRequest, CreateTutorResponse } from '../../../../core/models/tutor.models';
 import { AvailabilityEditorComponent } from '../availability-editor/availability-editor.component';
 import { UserContextService } from '../../../../core/services/user-context.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { SubjectAutocompleteComponent } from '../subject-autocomplete/subject-autocomplete.component';
 
 @Component({
   selector: 'app-tutor-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, AvailabilityEditorComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    RouterLink,
+    AvailabilityEditorComponent,
+    SubjectAutocompleteComponent,
+  ],
   templateUrl: './tutor-register.component.html',
-  styleUrl: './tutor-register.component.css'
+  styleUrl: './tutor-register.component.css',
 })
 export class TutorRegisterComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
@@ -39,11 +53,25 @@ export class TutorRegisterComponent implements OnInit {
   newSubjectInput: string = '';
 
   readonly registerForm: FormGroup = this.fb.group({
-    name: [this.userContext.currentUserName() || '', [Validators.required, Validators.minLength(2)]],
+    name: [
+      this.userContext.currentUserName() || '',
+      [Validators.required, Validators.minLength(2)],
+    ],
     email: [this.authService.currentUser()?.email || '', [Validators.required, Validators.email]],
     bio: ['', [Validators.required, Validators.minLength(10)]],
-    hourlyRate: [null, [Validators.required, Validators.min(1), Validators.max(1000)]]
+    hourlyRate: [null, [Validators.required, Validators.min(1), Validators.max(1000)]],
   });
+
+  onSubjectSelected(subject: string): void {
+    const trimmed = subject.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    if (!this.subjects().some((s) => s.toLowerCase() === trimmed.toLowerCase())) {
+      this.subjects.update((curr) => [...curr, trimmed]);
+    }
+  }
 
   addSubject(): void {
     const trimmed = this.newSubjectInput.trim();
@@ -51,14 +79,14 @@ export class TutorRegisterComponent implements OnInit {
       return;
     }
 
-    if (!this.subjects().some(s => s.toLowerCase() === trimmed.toLowerCase())) {
-      this.subjects.update(curr => [...curr, trimmed]);
+    if (!this.subjects().some((s) => s.toLowerCase() === trimmed.toLowerCase())) {
+      this.subjects.update((curr) => [...curr, trimmed]);
     }
     this.newSubjectInput = '';
   }
 
   removeSubject(index: number): void {
-    this.subjects.update(curr => curr.filter((_, i) => i !== index));
+    this.subjects.update((curr) => curr.filter((_, i) => i !== index));
   }
 
   onSubmit(): void {
@@ -85,7 +113,7 @@ export class TutorRegisterComponent implements OnInit {
       bio: formVal.bio,
       hourlyRate: Number(formVal.hourlyRate),
       subjects: this.subjects(),
-      availability: initialSlots
+      availability: initialSlots,
     };
 
     this.tutorService.createTutor(request).subscribe({
@@ -100,9 +128,10 @@ export class TutorRegisterComponent implements OnInit {
       },
       error: (err: { error?: { detail?: string; title?: string } }) => {
         this.isSubmitting.set(false);
-        const detail = err?.error?.detail || err?.error?.title || 'Registration failed. Please check your data.';
+        const detail =
+          err?.error?.detail || err?.error?.title || 'Registration failed. Please check your data.';
         this.errorMessage.set(detail);
-      }
+      },
     });
   }
 
