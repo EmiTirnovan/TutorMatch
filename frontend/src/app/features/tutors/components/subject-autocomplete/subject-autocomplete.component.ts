@@ -83,6 +83,12 @@ export class SubjectAutocompleteComponent implements OnInit, ControlValueAccesso
 
   ngOnInit(): void {
     this.queryControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(val => {
+        this.onChange(val || '');
+      });
+
+    this.queryControl.valueChanges
       .pipe(
         debounceTime(200),
         distinctUntilChanged(),
@@ -196,9 +202,11 @@ export class SubjectAutocompleteComponent implements OnInit, ControlValueAccesso
     }
 
     if (this.shouldClearOnSelect()) {
-      this.queryControl.setValue('', { emitEvent: true });
+      this.queryControl.setValue('', { emitEvent: false });
+      this.onChange('');
     } else {
-      this.queryControl.setValue(trimmed, { emitEvent: true });
+      this.queryControl.setValue(trimmed, { emitEvent: false });
+      this.onChange(trimmed);
     }
 
     this.suggestions.set([]);

@@ -40,6 +40,15 @@ public class Program
                 Version = "v1",
                 Description = "TutorMatch API Version 1"
             });
+
+            options.DocInclusionPredicate((docName, apiDesc) =>
+            {
+                if (string.IsNullOrEmpty(apiDesc.GroupName))
+                {
+                    return true;
+                }
+                return string.Equals(apiDesc.GroupName, docName, StringComparison.OrdinalIgnoreCase);
+            });
         });
 
         builder.Services.AddCors(options =>

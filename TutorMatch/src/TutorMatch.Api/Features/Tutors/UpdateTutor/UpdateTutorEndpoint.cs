@@ -15,6 +15,12 @@ public static class UpdateTutorEndpoint
             .WithSummary("Update a tutor profile")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict);
+
+        group.MapPut("/{id:guid}/profile", HandleAsync)
+            .WithSummary("Update a tutor profile (alias)")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict);
+
         return group;
     }
 

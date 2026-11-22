@@ -98,8 +98,8 @@ public class UpdateTutorProfileCommandHandlerTests
         TutorProfileUpdated? profileUpdatedEvent = null;
         TutorSavedNotification? aiSyncNotification = null;
 
-        Action<TutorProfileUpdated> onProfileUpdated = e => profileUpdatedEvent = e;
-        Action<TutorSavedNotification> onAiSync = n => aiSyncNotification = n;
+        Action<TutorProfileUpdated> onProfileUpdated = e => { if (e.TutorId == tutor.Id) profileUpdatedEvent = e; };
+        Action<TutorSavedNotification> onAiSync = n => { if (n.TutorId == tutor.Id) aiSyncNotification = n; };
 
         TutorProfileUpdated.Handler += onProfileUpdated;
         TutorSavedNotification.Handler += onAiSync;

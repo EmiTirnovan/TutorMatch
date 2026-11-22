@@ -9,6 +9,7 @@ public class InMemoryTutorRepository : ITutorRepository
 {
     private readonly ConcurrentDictionary<Guid, Tutor> _tutors = new();
     private readonly ConcurrentDictionary<string, Subject> _subjects = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<Guid, HashSet<Guid>> _tutorSubjectIds = new();
 
     public void Add(Tutor tutor)
     {
@@ -24,6 +25,9 @@ public class InMemoryTutorRepository : ITutorRepository
         {
             throw new InvalidOperationException($"Un tutore cu Id-ul '{tutor.Id}' exista deja.");
         }
+
+        var subjectIds = tutor.TutorSubjects.Select(ts => ts.SubjectId).ToHashSet();
+        _tutorSubjectIds[tutor.Id] = subjectIds;
 
         foreach (var ts in tutor.TutorSubjects)
         {
@@ -51,11 +55,12 @@ public class InMemoryTutorRepository : ITutorRepository
             throw new KeyNotFoundException($"Tutorele cu Id-ul '{tutor.Id}' nu a fost gasit.");
         }
 
-        var oldSubjectIds = existing.TutorSubjects.Select(ts => ts.SubjectId).ToHashSet();
+        _tutorSubjectIds.TryGetValue(tutor.Id, out var oldSubjectIds);
+        oldSubjectIds ??= new HashSet<Guid>();
         var newSubjectIds = tutor.TutorSubjects.Select(ts => ts.SubjectId).ToHashSet();
 
-        var addedIds = newSubjectIds.Except(oldSubjectIds);
-        var removedIds = oldSubjectIds.Except(newSubjectIds);
+        var addedIds = newSubjectIds.Except(oldSubjectIds).ToList();
+        var removedIds = oldSubjectIds.Except(newSubjectIds).ToList();
 
         foreach (var id in addedIds)
         {
@@ -69,6 +74,7 @@ public class InMemoryTutorRepository : ITutorRepository
             subject?.DecrementUsage(1);
         }
 
+        _tutorSubjectIds[tutor.Id] = newSubjectIds;
         _tutors[tutor.Id] = tutor;
     }
 
@@ -76,6 +82,7 @@ public class InMemoryTutorRepository : ITutorRepository
     {
         if (_tutors.TryRemove(id, out var tutor))
         {
+            _tutorSubjectIds.TryRemove(id, out _);
             foreach (var ts in tutor.TutorSubjects)
             {
                 var subject = ts.Subject ?? _subjects.Values.FirstOrDefault(s => s.Id == ts.SubjectId);

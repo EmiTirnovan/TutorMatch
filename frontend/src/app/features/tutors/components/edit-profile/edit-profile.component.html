@@ -111,40 +111,42 @@
             }
             <small class="form-hint">Your bio is automatically indexed by AI semantic search.</small>
           </div>
+        }
 
-          <!-- Centralized Subjects Autocomplete -->
-          <div class="form-group">
-            <label for="profile-subjects-autocomplete">Subjects & Topics Taught *</label>
-            <app-subject-autocomplete
-              inputId="profile-subjects-autocomplete"
-              [selectedSubjects]="subjects()"
-              (subjectSelected)="onSubjectSelected($event)"
-            />
+        <!-- Centralized Subjects Autocomplete -->
+        <div class="form-group">
+          <label for="profile-subjects-autocomplete">
+            {{ isTutor() ? 'Subjects & Topics Taught *' : 'Subjects of Interest (Topics you want to learn)' }}
+          </label>
+          <app-subject-autocomplete
+            inputId="profile-subjects-autocomplete"
+            [selectedSubjects]="subjects()"
+            (subjectSelected)="onSubjectSelected($event)"
+          />
 
-            <!-- Subject Chips List -->
-            <div class="chips-container" aria-label="Selected subjects">
-              @for (subj of subjects(); track subj; let i = $index) {
-                <span class="chip">
-                  {{ subj }}
-                  <button
-                    type="button"
-                    class="chip-remove"
-                    (click)="removeSubject(i)"
-                    [attr.aria-label]="'Remove ' + subj"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <line x1="18" y1="6" x2="6" y2="18"/>
-                      <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </button>
-                </span>
-              }
-            </div>
-            @if (subjects().length === 0) {
-              <div class="error-feedback">Please select or add at least one subject.</div>
+          <!-- Subject Chips List -->
+          <div class="chips-container" aria-label="Selected subjects">
+            @for (subj of subjects(); track subj; let i = $index) {
+              <span class="chip">
+                {{ subj }}
+                <button
+                  type="button"
+                  class="chip-remove"
+                  (click)="removeSubject(i)"
+                  [attr.aria-label]="'Remove ' + subj"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </span>
             }
           </div>
-        }
+          @if (isTutor() && subjects().length === 0) {
+            <div class="error-feedback">Please select or add at least one subject.</div>
+          }
+        </div>
 
         <div class="form-actions">
           <button type="submit" class="btn btn-primary" [disabled]="isSaving()">

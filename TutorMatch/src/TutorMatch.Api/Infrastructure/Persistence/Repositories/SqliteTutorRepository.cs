@@ -76,18 +76,12 @@ public class SqliteTutorRepository : ITutorRepository
         using var transaction = _context.Database.BeginTransaction();
         try
         {
-            var existing = _context.Tutors
-                .Include(t => t.Availability)
-                .Include(t => t.TutorSubjects)
-                    .ThenInclude(ts => ts.Subject)
-                .FirstOrDefault(t => t.Id == tutor.Id);
+            var oldSubjectIds = _context.TutorSubjects
+                .AsNoTracking()
+                .Where(ts => ts.TutorId == tutor.Id)
+                .Select(ts => ts.SubjectId)
+                .ToHashSet();
 
-            if (existing is null)
-            {
-                throw new KeyNotFoundException($"Tutor with ID '{tutor.Id}' was not found.");
-            }
-
-            var oldSubjectIds = existing.TutorSubjects.Select(ts => ts.SubjectId).ToHashSet();
             var newSubjectIds = tutor.TutorSubjects.Select(ts => ts.SubjectId).ToHashSet();
 
             var addedIds = newSubjectIds.Except(oldSubjectIds).ToList();
@@ -105,26 +99,35 @@ public class SqliteTutorRepository : ITutorRepository
                 subject?.DecrementUsage(1);
             }
 
-            existing.UpdateProfile(tutor.Name, tutor.Bio, tutor.HourlyRate);
-            existing.UpdateAvailability(tutor.Availability);
-
-            // Reconcile join table entries
-            var toRemove = existing.TutorSubjects.Where(ts => removedIds.Contains(ts.SubjectId)).ToList();
-            foreach (var ts in toRemove)
+            var entry = _context.Entry(tutor);
+            if (entry.State == EntityState.Detached)
             {
-                _context.TutorSubjects.Remove(ts);
-            }
+                var existing = _context.Tutors
+                    .Include(t => t.Availability)
+                    .Include(t => t.TutorSubjects)
+                        .ThenInclude(ts => ts.Subject)
+                    .FirstOrDefault(t => t.Id == tutor.Id);
 
-            foreach (var id in addedIds)
-            {
-                var subject = _context.Subjects.Find(id);
-                if (subject is not null)
+                if (existing is null)
                 {
-                    existing.AddSubject(subject);
+                    throw new KeyNotFoundException($"Tutor with ID '{tutor.Id}' was not found.");
                 }
-                else
+
+                existing.UpdateProfile(tutor.Name, tutor.Bio, tutor.HourlyRate);
+                existing.UpdateAvailability(tutor.Availability);
+
+                var subjects = tutor.TutorSubjects
+                    .Select(ts => ts.Subject ?? _context.Subjects.Find(ts.SubjectId))
+                    .Where(s => s is not null)
+                    .Select(s => s!);
+                existing.UpdateSubjects(subjects);
+            }
+            else
+            {
+                var exists = _context.Tutors.Any(t => t.Id == tutor.Id);
+                if (!exists)
                 {
-                    existing.AddSubject(id);
+                    throw new KeyNotFoundException($"Tutor with ID '{tutor.Id}' was not found.");
                 }
             }
 
@@ -176,7 +179,13 @@ public class SqliteTutorRepository : ITutorRepository
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         var normalized = Subject.NormalizeName(name);
 
-        var existing = _context.Subjects.FirstOrDefault(s => s.Name == normalized);
+        var local = _context.Subjects.Local.FirstOrDefault(s => string.Equals(s.Name, normalized, StringComparison.OrdinalIgnoreCase));
+        if (local is not null)
+        {
+            return local;
+        }
+
+        var existing = _context.Subjects.FirstOrDefault(s => EF.Functions.Collate(s.Name, "NOCASE") == normalized || s.Name == normalized);
         if (existing is not null)
         {
             return existing;

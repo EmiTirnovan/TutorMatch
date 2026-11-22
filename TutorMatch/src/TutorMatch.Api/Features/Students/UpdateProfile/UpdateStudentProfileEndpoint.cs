@@ -18,6 +18,12 @@ public static class UpdateStudentProfileEndpoint
             .Produces(StatusCodes.Status204NoContent)
             .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound);
 
+        group.MapPut("/{id:guid}/profile", HandleAsync)
+            .WithSummary("Update a student profile (alias)")
+            .WithDescription("Updates the personal profile details for an existing student.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound);
+
         return group;
     }
 

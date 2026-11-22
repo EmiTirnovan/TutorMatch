@@ -92,6 +92,14 @@ export class EditProfileComponent implements OnInit {
             name: student.name,
             email: student.email
           });
+          const savedInterests = localStorage.getItem(`student_subjects_${studentId}`);
+          if (savedInterests) {
+            try {
+              this.subjects.set(JSON.parse(savedInterests));
+            } catch {
+              this.subjects.set([]);
+            }
+          }
           this.isLoading.set(false);
         },
         error: () => {
@@ -99,6 +107,14 @@ export class EditProfileComponent implements OnInit {
             name: this.userContext.studentName(),
             email: 'student@example.com'
           });
+          const savedInterests = localStorage.getItem(`student_subjects_${studentId}`);
+          if (savedInterests) {
+            try {
+              this.subjects.set(JSON.parse(savedInterests));
+            } catch {
+              this.subjects.set([]);
+            }
+          }
           this.isLoading.set(false);
         }
       });
@@ -167,6 +183,7 @@ export class EditProfileComponent implements OnInit {
         next: () => {
           this.isSaving.set(false);
           this.userContext.studentName.set(formValues.name.trim());
+          localStorage.setItem(`student_subjects_${studentId}`, JSON.stringify(this.subjects()));
           this.successMessage.set('Student profile updated successfully!');
         },
         error: err => {
