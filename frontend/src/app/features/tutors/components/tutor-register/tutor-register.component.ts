@@ -5,6 +5,8 @@ import { Router, RouterLink } from '@angular/router';
 import { TutorService } from '../../../../core/services/tutor.service';
 import { CreateTutorRequest, CreateTutorResponse } from '../../../../core/models/tutor.models';
 import { AvailabilityEditorComponent } from '../availability-editor/availability-editor.component';
+import { UserContextService } from '../../../../core/services/user-context.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-tutor-register',
@@ -17,6 +19,8 @@ export class TutorRegisterComponent {
   private readonly fb = inject(FormBuilder);
   private readonly tutorService = inject(TutorService);
   private readonly router = inject(Router);
+  private readonly userContext = inject(UserContextService);
+  private readonly authService = inject(AuthService);
 
   @ViewChild(AvailabilityEditorComponent) availabilityEditor?: AvailabilityEditorComponent;
 
@@ -25,17 +29,14 @@ export class TutorRegisterComponent {
   readonly successTutorId = signal<string | null>(null);
 
   // Subject tags state
-  readonly subjects = signal<string[]>(['Algoritmi', 'Structuri de date', 'C++']);
+  readonly subjects = signal<string[]>([]);
   newSubjectInput: string = '';
 
   readonly registerForm: FormGroup = this.fb.group({
-    name: ['Alex Popescu', [Validators.required, Validators.minLength(2)]],
-    email: ['alex.popescu@student.upt.ro', [Validators.required, Validators.email]],
-    bio: [
-      'Student în anul 3 la Calculatoare, pasionat de algoritmi, grafuri și pregătire pentru laboratoare și examene.',
-      [Validators.required, Validators.minLength(10)]
-    ],
-    hourlyRate: [85, [Validators.required, Validators.min(1), Validators.max(1000)]]
+    name: [this.userContext.currentUserName() || '', [Validators.required, Validators.minLength(2)]],
+    email: [this.authService.currentUser()?.email || '', [Validators.required, Validators.email]],
+    bio: ['', [Validators.required, Validators.minLength(10)]],
+    hourlyRate: [null, [Validators.required, Validators.min(1), Validators.max(1000)]]
   });
 
   addSubject(): void {

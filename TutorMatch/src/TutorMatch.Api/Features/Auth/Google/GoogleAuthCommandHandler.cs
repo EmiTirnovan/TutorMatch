@@ -1,6 +1,7 @@
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Students;
+using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Domain.Users;
 using TutorMatch.Api.Infrastructure.Security;
 
@@ -10,6 +11,7 @@ public class GoogleAuthCommandHandler : ICommandHandler<GoogleAuthCommand, Resul
 {
     private readonly IUserRepository _userRepository;
     private readonly IStudentRepository _studentRepository;
+    private readonly ITutorRepository? _tutorRepository;
     private readonly IGoogleAuthService _googleAuthService;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
 
@@ -17,12 +19,14 @@ public class GoogleAuthCommandHandler : ICommandHandler<GoogleAuthCommand, Resul
         IUserRepository userRepository,
         IStudentRepository studentRepository,
         IGoogleAuthService googleAuthService,
-        IJwtTokenGenerator jwtTokenGenerator)
+        IJwtTokenGenerator jwtTokenGenerator,
+        ITutorRepository? tutorRepository = null)
     {
         _userRepository = userRepository;
         _studentRepository = studentRepository;
         _googleAuthService = googleAuthService;
         _jwtTokenGenerator = jwtTokenGenerator;
+        _tutorRepository = tutorRepository;
     }
 
     public async Task<Result<AuthResponse>> HandleAsync(GoogleAuthCommand command, CancellationToken cancellationToken = default)
@@ -90,6 +94,13 @@ public class GoogleAuthCommandHandler : ICommandHandler<GoogleAuthCommand, Resul
                 if (_studentRepository.GetById(user.Id) is null)
                 {
                     _studentRepository.Add(new Student(user.Id, user.FullName, user.Email));
+                }
+            }
+            else if (role.Equals("Tutor", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_tutorRepository is not null && _tutorRepository.GetById(user.Id) is null)
+                {
+                    _tutorRepository.Add(new Tutor(user.FullName, user.Email, "Tutor on TutorMatch", 50m, user.Id));
                 }
             }
         }

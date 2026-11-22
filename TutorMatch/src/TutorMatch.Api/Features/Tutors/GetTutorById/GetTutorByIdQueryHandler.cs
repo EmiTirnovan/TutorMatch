@@ -4,6 +4,7 @@ using TutorMatch.Api.Common.Results;
 using TutorMatch.Api.Domain.Sessions;
 using TutorMatch.Api.Domain.Students;
 using TutorMatch.Api.Domain.Tutors;
+using TutorMatch.Api.Domain.Users;
 
 namespace TutorMatch.Api.Features.Tutors.GetTutorById;
 
@@ -15,22 +16,36 @@ public class GetTutorByIdQueryHandler : IQueryHandler<GetTutorByIdQuery, Result<
     private readonly IRatingRepository? _ratingRepository;
     private readonly ISessionRepository? _sessionRepository;
     private readonly IStudentRepository? _studentRepository;
+    private readonly IUserRepository? _userRepository;
 
     public GetTutorByIdQueryHandler(
         ITutorRepository repository,
         IRatingRepository? ratingRepository = null,
         ISessionRepository? sessionRepository = null,
-        IStudentRepository? studentRepository = null)
+        IStudentRepository? studentRepository = null,
+        IUserRepository? userRepository = null)
     {
         _repository = repository;
         _ratingRepository = ratingRepository;
         _sessionRepository = sessionRepository;
         _studentRepository = studentRepository;
+        _userRepository = userRepository;
     }
 
     public Task<Result<GetTutorByIdResponse>> HandleAsync(GetTutorByIdQuery query, CancellationToken cancellationToken = default)
     {
         var tutor = _repository.GetById(query.Id);
+
+        if (tutor is null && _userRepository is not null)
+        {
+            var user = _userRepository.GetById(query.Id);
+            if (user is not null && user.Role.Equals("Tutor", StringComparison.OrdinalIgnoreCase))
+            {
+                tutor = new Tutor(user.FullName, user.Email, "Tutor on TutorMatch", 50m, user.Id);
+                _repository.Add(tutor);
+            }
+        }
+
         if (tutor is null)
         {
             return Task.FromResult(Result<GetTutorByIdResponse>.Failure(

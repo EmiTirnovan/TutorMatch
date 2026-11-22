@@ -4,6 +4,12 @@
       <div class="spinner"></div>
       <p class="text-muted">Loading tutor profile...</p>
     </div>
+  } @else if (errorMessage()) {
+    <div class="card not-found-card" style="text-align: center; padding: 3rem 1.5rem; margin: 2rem 0;">
+      <h2 style="margin-bottom: 0.5rem;">Tutor Profile Not Found</h2>
+      <p class="text-muted" style="margin-bottom: 1.5rem;">{{ errorMessage() }}</p>
+      <a routerLink="/tutors/search" class="btn btn-primary">Discover active tutors</a>
+    </div>
   } @else if (tutor(); as t) {
     <div class="profile-layout">
       <!-- Left Column: Tutor Details -->
@@ -124,11 +130,7 @@
             <div class="alert alert-success" role="status">{{ message }}</div>
           }
 
-          @if (isDemoTutor()) {
-            <div class="alert alert-warning">
-              This is a sample profile. <a routerLink="/tutors/search" style="font-weight: 600; text-decoration: underline;">Browse active tutors</a> or <a routerLink="/tutors/register" style="font-weight: 600; text-decoration: underline;">register a new tutor</a> to book a session.
-            </div>
-          } @else if (slotsLoading()) {
+          @if (slotsLoading()) {
             <div class="slots-skeleton" aria-busy="true" aria-label="Loading available slots">
               <div class="skeleton"></div>
               <div class="skeleton"></div>
