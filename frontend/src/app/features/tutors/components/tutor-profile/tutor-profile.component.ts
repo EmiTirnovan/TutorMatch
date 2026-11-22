@@ -11,6 +11,8 @@ import { SlotPickerComponent } from '../../../bookings/components/slot-picker/sl
 import { BookSessionModalComponent } from '../../../bookings/components/book-session-modal/book-session-modal.component';
 import { ConcurrencyConflictDialogComponent } from '../../../bookings/components/concurrency-conflict-dialog/concurrency-conflict-dialog.component';
 import { SubjectAutocompleteComponent } from '../subject-autocomplete/subject-autocomplete.component';
+import { StarRatingComponent } from '../star-rating/star-rating.component';
+import { TutorReviewsComponent } from '../tutor-reviews/tutor-reviews.component';
 import { UserContextService } from '../../../../core/services/user-context.service';
 
 const DEMO_TUTOR_ID = 'demo-tutor-001';
@@ -25,7 +27,9 @@ const DEMO_TUTOR_ID = 'demo-tutor-001';
     SlotPickerComponent,
     BookSessionModalComponent,
     ConcurrencyConflictDialogComponent,
-    SubjectAutocompleteComponent
+    SubjectAutocompleteComponent,
+    StarRatingComponent,
+    TutorReviewsComponent
   ],
   templateUrl: './tutor-profile.component.html',
   styleUrl: './tutor-profile.component.css'
@@ -48,6 +52,10 @@ export class TutorProfileComponent implements OnInit {
     return t ? t.id.toLowerCase() === this.userContext.tutorId().toLowerCase() : false;
   });
 
+  readonly ratingsCount = computed(() => this.tutor()?.ratingsCount ?? 0);
+  readonly averageRating = computed(() => this.tutor()?.averageRating ?? 0);
+  readonly hasReviews = computed(() => this.ratingsCount() > 0);
+  readonly reviewsLabel = computed(() => `${this.ratingsCount()} ${this.ratingsCount() === 1 ? 'review' : 'reviews'}`);
   readonly isDemoTutor = computed(() => this.tutor()?.id === DEMO_TUTOR_ID);
   readonly bookedSessions = signal<SessionResponse[]>([]);
   readonly slotsLoading = signal(false);
@@ -259,6 +267,8 @@ export class TutorProfileComponent implements OnInit {
     const afterTomorrow16 = new Date(afterTomorrow14);
     afterTomorrow16.setHours(16, 0, 0, 0);
 
+    const daysAgo = (days: number): string => new Date(Date.now() - days * 86_400_000).toISOString();
+
     this.tutor.set({
       id: DEMO_TUTOR_ID,
       name: 'Radu Ionescu',
@@ -266,8 +276,16 @@ export class TutorProfileComponent implements OnInit {
       bio: 'Student în anul 3 la Calculatoare. Am fost asistent voluntar la laboratorul de Structuri de Date și Teoria Grafurilor. Te pot ajuta cu pointeri în C, arbori echilibrați, algoritmi pe grafuri și pregătire pentru restanțe sau examene.',
       hourlyRate: 80,
       subjects: ['Algoritmi și Structuri de Date', 'C / C++', 'Teoria Grafurilor', 'Programare Orientată pe Obiecte'],
-      rating: 4.9,
-      ratingCount: 14,
+      averageRating: 4.8,
+      ratingsCount: 5,
+      ratingDistribution: { '1': 0, '2': 0, '3': 0, '4': 1, '5': 4 },
+      reviews: [
+        { sessionId: 'demo-review-1', date: daysAgo(3), score: 5, comment: 'Explica foarte clar pointerii, am inteles in o singura sedinta.', studentName: 'Maria Popescu' },
+        { sessionId: 'demo-review-2', date: daysAgo(9), score: 5, comment: 'Exemple bune la arbori echilibrati.', studentName: 'Andrei Lungu' },
+        { sessionId: 'demo-review-3', date: daysAgo(16), score: 4, comment: null, studentName: 'Ioana Mihai' },
+        { sessionId: 'demo-review-4', date: daysAgo(24), score: 5, comment: 'M-a ajutat sa recuperez restanta la SD.', studentName: 'Vlad Enache' },
+        { sessionId: 'demo-review-5', date: daysAgo(40), score: 5, comment: null, studentName: null }
+      ],
       availability: [
         { start: tomorrow10.toISOString(), end: tomorrow12.toISOString() },
         { start: afterTomorrow14.toISOString(), end: afterTomorrow16.toISOString() }

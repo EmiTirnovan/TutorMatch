@@ -54,6 +54,10 @@ export interface SessionResponse {
   locationName?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  /** Only populated by GET /sessions/my: whether the student already rated this session. */
+  hasRated?: boolean;
+  ratingScore?: number | null;
+  ratingNotes?: string | null;
 }
 
 export interface MySessionsResponse {

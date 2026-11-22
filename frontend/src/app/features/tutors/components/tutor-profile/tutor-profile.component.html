@@ -21,13 +21,15 @@
               </div>
 
               <div class="meta-row">
-                <span class="rating-badge">
-                  <svg class="star-svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                  </svg>
-                  <strong>{{ t.rating ? t.rating.toFixed(1) : '5.0' }}</strong>
-                  <span class="text-muted">({{ t.ratingCount || 0 }} reviews)</span>
-                </span>
+                @if (hasReviews()) {
+                  <span class="rating-badge" data-testid="header-rating" [attr.aria-label]="averageRating().toFixed(1) + ' out of 5, ' + reviewsLabel()">
+                    <app-star-rating [value]="averageRating()" [size]="16" />
+                    <strong>{{ averageRating().toFixed(1) }}</strong>
+                    <span class="text-muted">({{ reviewsLabel() }})</span>
+                  </span>
+                } @else {
+                  <span class="text-muted" data-testid="header-no-reviews">No reviews yet</span>
+                }
                 <span class="dot-divider">•</span>
                 <span class="price-badge">
                   <strong>{{ t.hourlyRate }} RON</strong> / hour
@@ -96,6 +98,13 @@
             </div>
           }
         </div>
+
+        <app-tutor-reviews
+          [averageRating]="averageRating()"
+          [ratingsCount]="ratingsCount()"
+          [distribution]="t.ratingDistribution"
+          [reviews]="t.reviews"
+        />
       </div>
 
       <!-- Right Column: Available Slots & Booking -->

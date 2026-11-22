@@ -18,11 +18,11 @@ describe('TutorFilterBarComponent', () => {
   });
 
   it('Given_ChangedFilters_When_Applying_Then_EmitsCurrentCriteria', () => {
-    component.form.setValue({ subject: 'SQL', maxPrice: 90, date: '2026-11-10', sortBy: 'priceDesc' });
+    component.form.setValue({ subject: 'SQL', maxPrice: 90, minRating: null, date: '2026-11-10', sortBy: 'priceDesc' });
 
     component.apply();
 
-    expect(emitted).toEqual([{ subject: 'SQL', maxPrice: 90, date: '2026-11-10', sortBy: 'priceDesc' }]);
+    expect(emitted).toEqual([{ subject: 'SQL', maxPrice: 90, minRating: null, date: '2026-11-10', sortBy: 'priceDesc' }]);
   });
 
   it('Given_InvalidMaxPrice_When_Applying_Then_DoesNotEmit', () => {
@@ -63,7 +63,7 @@ describe('TutorFilterBarComponent', () => {
     expect(query<HTMLSelectElement>('#filter-sort').value).toBe('priceAsc');
     expect(
       Array.from(query<HTMLSelectElement>('#filter-sort').options).map((option) => option.value)
-    ).toEqual(['priceAsc', 'priceDesc']);
+    ).toEqual(['priceAsc', 'priceDesc', 'rating_desc']);
   });
 
   it('Given_FormWithLabels_When_Rendering_Then_EveryFieldHasAssociatedLabel', () => {
@@ -94,7 +94,7 @@ describe('TutorFilterBarComponent', () => {
 
     query<HTMLFormElement>('form').dispatchEvent(new Event('submit'));
 
-    expect(emitted).toEqual([{ subject: 'SQL', maxPrice: 90, date: '2026-11-10', sortBy: 'priceDesc' }]);
+    expect(emitted).toEqual([{ subject: 'SQL', maxPrice: 90, minRating: null, date: '2026-11-10', sortBy: 'priceDesc' }]);
   });
 
   it('Given_Form_When_Rendering_Then_ApplyIsSubmitButtonAndResetIsPlainButton', () => {
@@ -105,7 +105,7 @@ describe('TutorFilterBarComponent', () => {
   });
 
   it('Given_ChangedFilters_When_ClickingResetButton_Then_RestoresInputsAndEmitsDefaults', () => {
-    component.form.setValue({ subject: 'Java', maxPrice: 50, date: '2026-11-10', sortBy: 'priceDesc' });
+    component.form.setValue({ subject: 'Java', maxPrice: 50, minRating: null, date: '2026-11-10', sortBy: 'priceDesc' });
     fixture.detectChanges();
 
     query<HTMLButtonElement>('.filter-actions .btn-secondary').click();
@@ -147,5 +147,102 @@ describe('TutorFilterBarComponent', () => {
 
     expect(emitted).toEqual([{ ...DEFAULT_FILTER_CRITERIA, maxPrice: 25 }]);
     expect(query('.error-feedback')).toBeNull();
+  });
+
+  const starButtons = (): HTMLButtonElement[] =>
+    Array.from(fixture.nativeElement.querySelectorAll('.star-button') as NodeListOf<HTMLButtonElement>);
+
+  it('Given_SortDropdown_When_Rendering_Then_OffersHighestRatingOption', () => {
+    const option = Array.from(query<HTMLSelectElement>('#filter-sort').options).find(
+      (candidate) => candidate.value === 'rating_desc'
+    );
+
+    expect(option?.textContent?.trim()).toBe('Highest rating');
+  });
+
+  it('Given_NewFilterBar_When_Rendering_Then_ShowsFiveUnselectedStarsAndAnyRatingHint', () => {
+    expect(starButtons().length).toBe(5);
+    expect(starButtons().map((button) => button.getAttribute('aria-label'))).toEqual([
+      '1 star and up',
+      '2 stars and up',
+      '3 stars and up',
+      '4 stars and up',
+      '5 stars and up'
+    ]);
+    expect(starButtons().every((button) => button.getAttribute('aria-pressed') === 'false')).toBe(true);
+    expect(query('.rating-hint').textContent).toContain('Any rating');
+    expect(query('.star-filter').getAttribute('aria-labelledby')).toBe('filter-min-rating-label');
+  });
+
+  it('Given_StarClicked_When_Rendering_Then_FillsStarsUpToSelectionAndShowsHint', () => {
+    starButtons()[3].click();
+    fixture.detectChanges();
+
+    expect(component.form.controls.minRating.value).toBe(4);
+    expect(starButtons().map((button) => button.classList.contains('star-button-active'))).toEqual([
+      true,
+      true,
+      true,
+      true,
+      false
+    ]);
+    expect(starButtons().map((button) => button.getAttribute('aria-pressed'))).toEqual([
+      'false',
+      'false',
+      'false',
+      'true',
+      'false'
+    ]);
+    expect(query('.rating-hint').textContent).toContain('4+ stars');
+  });
+
+  it('Given_SelectedStar_When_ClickingItAgain_Then_ClearsRatingFilter', () => {
+    starButtons()[3].click();
+
+    starButtons()[3].click();
+    fixture.detectChanges();
+
+    expect(component.form.controls.minRating.value).toBeNull();
+    expect(starButtons().some((button) => button.classList.contains('star-button-active'))).toBe(false);
+    expect(query('.rating-hint').textContent).toContain('Any rating');
+  });
+
+  it('Given_SelectedStar_When_ClickingAnotherStar_Then_ReplacesSelection', () => {
+    starButtons()[1].click();
+
+    starButtons()[4].click();
+
+    expect(component.form.controls.minRating.value).toBe(5);
+  });
+
+  it('Given_StarsAndRatingSort_When_Applying_Then_EmitsMinRatingTogetherWithOtherFilters', () => {
+    component.form.controls.subject.setValue('SQL');
+    component.form.controls.maxPrice.setValue(90);
+    starButtons()[3].click();
+    component.form.controls.sortBy.setValue('rating_desc');
+
+    component.apply();
+
+    expect(emitted).toEqual([
+      { subject: 'SQL', maxPrice: 90, minRating: 4, date: '', sortBy: 'rating_desc' }
+    ]);
+  });
+
+  it('Given_SelectedStars_When_ClickingReset_Then_ClearsStarsAndEmitsNullMinRating', () => {
+    starButtons()[2].click();
+
+    query<HTMLButtonElement>('.filter-actions .btn-secondary').click();
+    fixture.detectChanges();
+
+    expect(emitted).toEqual([DEFAULT_FILTER_CRITERIA]);
+    expect(starButtons().some((button) => button.classList.contains('star-button-active'))).toBe(false);
+    expect(query('.rating-hint').textContent).toContain('Any rating');
+  });
+
+  it('Given_StarButtons_When_Clicking_Then_DoesNotSubmitTheForm', () => {
+    starButtons()[2].click();
+
+    expect(emitted).toEqual([]);
+    expect(starButtons().every((button) => button.type === 'button')).toBe(true);
   });
 });

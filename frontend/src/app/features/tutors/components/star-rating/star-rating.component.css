@@ -1,0 +1,11 @@
+.stars {
+  display: inline-flex;
+}
+
+.star {
+  color: var(--slate-200);
+}
+
+.star-filled {
+  color: var(--warning-600);
+}

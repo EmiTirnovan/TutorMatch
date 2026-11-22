@@ -91,6 +91,31 @@ describe('RateSessionModalComponent', () => {
     expect(rateSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('Given_ServerReportsDuplicate_When_Submitting_Then_EmitsAlreadyRatedWithoutEmittingRated', () => {
+    const conflict = new HttpErrorResponse({ status: 409, error: { detail: 'This session has already been rated.' } });
+    createModal('Completed', throwError(() => conflict));
+    const alreadyRatedEvents: unknown[] = [];
+    const ratedEvents: unknown[] = [];
+    component.alreadyRated.subscribe(() => alreadyRatedEvents.push(true));
+    component.rated.subscribe((request) => ratedEvents.push(request));
+
+    component.selectScore(2);
+    component.submit();
+
+    expect(alreadyRatedEvents.length).toBe(1);
+    expect(ratedEvents).toEqual([]);
+  });
+
+  it('Given_ServerError_When_Submitting_Then_DoesNotEmitAlreadyRated', () => {
+    createModal('Completed', throwError(() => new HttpErrorResponse({ status: 500 })));
+    const alreadyRatedEvents: unknown[] = [];
+    component.alreadyRated.subscribe(() => alreadyRatedEvents.push(true));
+
+    component.selectScore(4);
+    component.submit();
+
+    expect(alreadyRatedEvents).toEqual([]);
+  });
   it('Given_ServerError_When_Submitting_Then_AllowsRetry', () => {
     createModal('Completed', throwError(() => new HttpErrorResponse({ status: 500 })));
 

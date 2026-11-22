@@ -1,14 +1,30 @@
+using System.Text.RegularExpressions;
 using FluentAssertions;
+using TutorMatch.Api.Features.SemanticSearch.Services;
+using TutorMatch.Tests.Features.SemanticSearch.Fakes;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace TutorMatch.Tests.Evaluation;
 
 /// <summary>
-/// Set de evaluare (Ground Truth) si teste de masurare a acuratetei (Top-3 Accuracy)
-/// pentru modulul de cautare semantica bazat pe IA.
+/// Set de evaluare (Ground Truth) si teste de masurare a acuratetei (Top-1 / Top-3, fallback rate, latenta)
+/// pentru modulul de cautare semantica bazat pe IA. Ruleaza offline (fara Ollama); varianta live este in
+/// <see cref="SemanticSearchLiveBenchmarkTests"/>.
 /// </summary>
 public class SemanticSearchEvaluationTests
 {
+    public const string LexicalProxyStrategy = "Lexical bag-of-words vectors (offline proxy)";
+    public const string KeywordStrategy = "Classic keyword search (SearchTutors)";
+    public const string OllamaDownStrategy = "Semantic search, Ollama down (fallback)";
+
+    private readonly ITestOutputHelper _output;
+
+    public SemanticSearchEvaluationTests(ITestOutputHelper output)
+    {
+        _output = output;
+    }
+
     public record MockTutorProfile(Guid Id, string Name, string Bio, List<string> Subjects);
 
     public record EvaluationPair(
@@ -65,7 +81,8 @@ public class SemanticSearchEvaluationTests
             new List<string> { "Biologie", "Genetica", "Anatomie" })
     };
 
-    // Setul de date de evaluare (25 de perechi intrebare in limbaj natural -> tutore asteptat)
+    // Setul de date de evaluare (30 de perechi intrebare in limbaj natural -> tutore asteptat).
+    // Mirrored in frontend/src/app/core/data/evaluation-cases.ts (checked by a test below).
     public static readonly IReadOnlyList<EvaluationPair> GroundTruthEvaluationSet = new List<EvaluationPair>
     {
         // 1. Matematica
@@ -82,6 +99,8 @@ public class SemanticSearchEvaluationTests
         new("Am dificultati la programare orientata pe obiecte in C++ si Java",
             Guid.Parse("22222222-2222-2222-2222-222222222222"), "Alexandru Radu", "Informatica"),
         new("Caut cineva sa-mi explice probleme de grafuri, Dijkstra si programare dinamica",
+            Guid.Parse("22222222-2222-2222-2222-222222222222"), "Alexandru Radu", "Informatica"),
+        new("Imi da segmentation fault cand lucrez cu pointeri si alocare dinamica in C++ si nu inteleg de ce",
             Guid.Parse("22222222-2222-2222-2222-222222222222"), "Alexandru Radu", "Informatica"),
 
         // 3. Fizica
@@ -104,6 +123,8 @@ public class SemanticSearchEvaluationTests
         new("Sinteze de chimie organica si mecanisme de reactie pentru admiterea la medicina UMF",
             Guid.Parse("55555555-5555-5555-5555-555555555555"), "Andrei Vasilescu", "Chimie"),
         new("Am nevoie de pregatire la chimie si compusi organici pentru examenul de admitere",
+            Guid.Parse("55555555-5555-5555-5555-555555555555"), "Andrei Vasilescu", "Chimie"),
+        new("Ma incurc la izomeri, alchene si reactii de substitutie la chimie organica inainte de simulare",
             Guid.Parse("55555555-5555-5555-5555-555555555555"), "Andrei Vasilescu", "Chimie"),
 
         // 6. Dezvoltare Web
@@ -137,9 +158,13 @@ public class SemanticSearchEvaluationTests
         // 10. Economie & Finante
         new("Explicatii la economie, cerere si oferta, politica monetara si finante corporative",
             Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Laura Gheorghe", "Economie"),
+        new("Nu inteleg cum se calculeaza elasticitatea cererii si costul marginal pentru seminarul de microeconomie",
+            Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Laura Gheorghe", "Economie"),
 
         // 11. Biologie
         new("Meditatii la biologie pentru bacalaureat: genetica moleculara, legile lui Mendel si anatomie umana",
+            Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "Simona Stan", "Biologie"),
+        new("Am examen la biologie celulara si nu inteleg diferenta dintre mitoza si meioza",
             Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "Simona Stan", "Biologie")
     };
 
@@ -171,17 +196,15 @@ public class SemanticSearchEvaluationTests
     }
 
     [Fact]
-    public void Given_GroundTruthEvaluationSet_When_InspectingSize_Then_ContainsBetween20And30TestCases()
+    public void Given_GroundTruthEvaluationSet_When_InspectingSize_Then_ContainsBetween25And30TestCases()
     {
-        // Assert
-        GroundTruthEvaluationSet.Should().HaveCountGreaterOrEqualTo(20);
+        GroundTruthEvaluationSet.Should().HaveCountGreaterOrEqualTo(25);
         GroundTruthEvaluationSet.Should().HaveCountLessOrEqualTo(30);
     }
 
     [Fact]
     public void Given_GroundTruthEvaluationSet_When_ValidatingQueries_Then_AllQueriesAreNonEmptyAndUnique()
     {
-        // Assert
         GroundTruthEvaluationSet.Should().OnlyContain(item => !string.IsNullOrWhiteSpace(item.NaturalLanguageQuery));
 
         var queryList = GroundTruthEvaluationSet.Select(e => e.NaturalLanguageQuery.Trim().ToLowerInvariant()).ToList();
@@ -189,77 +212,176 @@ public class SemanticSearchEvaluationTests
     }
 
     [Fact]
-    public void Given_GroundTruthEvaluationSet_When_CheckingTutors_Then_AllExpectedTutorsExistInMockPool()
+    public void Given_GroundTruthEvaluationSet_When_CheckingTutors_Then_AllExpectedTutorsExistInMockPoolWithMatchingNames()
     {
-        // Arrange
-        var poolTutorIds = MockTutorPool.Select(t => t.Id).ToHashSet();
+        var poolNames = MockTutorPool.ToDictionary(t => t.Id, t => t.Name);
 
-        // Assert
-        GroundTruthEvaluationSet.Should().OnlyContain(item => poolTutorIds.Contains(item.ExpectedTutorId));
+        GroundTruthEvaluationSet.Should().OnlyContain(item =>
+            poolNames.ContainsKey(item.ExpectedTutorId) && poolNames[item.ExpectedTutorId] == item.ExpectedTutorName);
+    }
+
+    [Fact]
+    public void Given_FrontendEvaluationCases_When_ComparedWithBackendGroundTruth_Then_QueriesAndExpectedTutorsMatch()
+    {
+        var frontendCases = ParseFrontendEvaluationCases(File.ReadAllText(RepositoryPaths.FrontendEvaluationCases));
+
+        var backendCases = GroundTruthEvaluationSet
+            .Select(e => (e.NaturalLanguageQuery, e.ExpectedTutorId.ToString(), e.ExpectedTutorName))
+            .ToList();
+
+        frontendCases.Should().Equal(backendCases);
     }
 
     [Fact]
     public void Given_PerfectRanker_When_CalculatingTop3Accuracy_Then_Returns100Percent()
     {
-        // Arrange: ranker ce plaseaza intotdeauna tutorele corect pe prima pozitie
         Func<string, IEnumerable<Guid>> perfectRanker = query =>
         {
             var pair = GroundTruthEvaluationSet.First(e => e.NaturalLanguageQuery == query);
             return new[] { pair.ExpectedTutorId, Guid.NewGuid(), Guid.NewGuid() };
         };
 
-        // Act
         double accuracy = CalculateTopKAccuracy(GroundTruthEvaluationSet, perfectRanker, k: 3);
 
-        // Assert
         accuracy.Should().Be(100.0);
     }
 
     [Fact]
     public void Given_UnsuccessfulRanker_When_CalculatingTop3Accuracy_Then_Returns0Percent()
     {
-        // Arrange: ranker ce nu returneaza niciodata tutorele asteptat
         Func<string, IEnumerable<Guid>> wrongRanker = _ => new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
 
-        // Act
         double accuracy = CalculateTopKAccuracy(GroundTruthEvaluationSet, wrongRanker, k: 3);
 
-        // Assert
         accuracy.Should().Be(0.0);
     }
 
     [Fact]
     public void Given_RankerWithTutorOnThirdPosition_When_CalculatingTop3Accuracy_Then_CountsAsSuccess()
     {
-        // Arrange: ranker ce pune tutorele asteptat pe pozitia 3 (index 2)
         Func<string, IEnumerable<Guid>> ranker = query =>
         {
             var pair = GroundTruthEvaluationSet.First(e => e.NaturalLanguageQuery == query);
             return new[] { Guid.NewGuid(), Guid.NewGuid(), pair.ExpectedTutorId, Guid.NewGuid() };
         };
 
-        // Act
         double accuracy = CalculateTopKAccuracy(GroundTruthEvaluationSet, ranker, k: 3);
 
-        // Assert
         accuracy.Should().Be(100.0);
     }
 
     [Fact]
     public void Given_RankerWithTutorOnFourthPosition_When_CalculatingTop3Accuracy_Then_CountsAsMiss()
     {
-        // Arrange: tutorele este pe pozitia 4 (index 3), dincolo de top 3
         Func<string, IEnumerable<Guid>> ranker = query =>
         {
             var pair = GroundTruthEvaluationSet.First(e => e.NaturalLanguageQuery == query);
             return new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), pair.ExpectedTutorId };
         };
 
-        // Act
         double accuracy = CalculateTopKAccuracy(GroundTruthEvaluationSet, ranker, k: 3);
 
-        // Assert
         accuracy.Should().Be(0.0);
     }
-}
 
+    [Fact]
+    public void Given_MixedOutcomes_When_Summarizing_Then_ComputesTop1Top3FallbackRateAndMeanLatency()
+    {
+        var cases = GroundTruthEvaluationSet.Take(4).ToList();
+        var outcomes = new List<EvaluationCaseOutcome>
+        {
+            new(cases[0], Rank: 1, IsFallback: false, LatencyMs: 10),
+            new(cases[1], Rank: 3, IsFallback: false, LatencyMs: 20),
+            new(cases[2], Rank: 4, IsFallback: false, LatencyMs: 30),
+            new(cases[3], Rank: null, IsFallback: true, LatencyMs: 40)
+        };
+
+        var metrics = SemanticSearchEvaluator.Summarize("test", outcomes);
+
+        metrics.Should().Be(new EvaluationMetrics("test", 4, Top1Accuracy: 25.0, Top3Accuracy: 50.0, FallbackRate: 25.0, MeanLatencyMs: 25.0));
+    }
+
+    [Fact]
+    public void Given_NoOutcomes_When_Summarizing_Then_ReturnsZeroMetrics()
+    {
+        var metrics = SemanticSearchEvaluator.Summarize("empty", Array.Empty<EvaluationCaseOutcome>());
+
+        metrics.Should().Be(new EvaluationMetrics("empty", 0, 0, 0, 0, 0));
+    }
+
+    [Fact]
+    public async Task Given_RankerReturningExpectedTutorSecond_When_Running_Then_RecordsRankTwoForEveryCase()
+    {
+        Func<string, CancellationToken, Task<RankedSearchResult>> search = (query, _) =>
+        {
+            var pair = GroundTruthEvaluationSet.First(e => e.NaturalLanguageQuery == query);
+            return Task.FromResult(new RankedSearchResult(new[] { Guid.NewGuid(), pair.ExpectedTutorId }, IsFallback: false));
+        };
+
+        var run = await SemanticSearchEvaluator.RunAsync("second", GroundTruthEvaluationSet, search);
+
+        run.Outcomes.Should().OnlyContain(o => o.Rank == 2);
+        run.Metrics.Top1Accuracy.Should().Be(0.0);
+        run.Metrics.Top3Accuracy.Should().Be(100.0);
+    }
+
+    [Fact]
+    public async Task Given_OllamaUnavailable_When_EvaluatingSemanticSearch_Then_EveryQueryFallsBackAndScoresLikeKeywordSearch()
+    {
+        var indexer = new FakeOllamaClient { EmbeddingGenerator = DeterministicTextEmbedder.Embed };
+        await using var database = await EvaluationDatabase.CreateAsync(indexer);
+        var downClient = new FakeOllamaClient { ExceptionToThrow = new HttpRequestException("Connection refused.") };
+
+        var semantic = await SemanticSearchEvaluator.RunAsync(OllamaDownStrategy, GroundTruthEvaluationSet, database.SemanticStrategy(downClient, new OllamaOptions()));
+        var keyword = await SemanticSearchEvaluator.RunAsync(KeywordStrategy, GroundTruthEvaluationSet, database.KeywordStrategy());
+
+        semantic.Metrics.FallbackRate.Should().Be(100.0);
+        semantic.Metrics.Top3Accuracy.Should().Be(keyword.Metrics.Top3Accuracy);
+    }
+
+    [Fact]
+    public async Task Given_OfflineEvaluationDatabase_When_Indexing_Then_EveryMockTutorGetsAnEmbedding()
+    {
+        var indexer = new FakeOllamaClient { EmbeddingGenerator = DeterministicTextEmbedder.Embed };
+
+        await using var database = await EvaluationDatabase.CreateAsync(indexer);
+
+        (await database.CountIndexedTutorsAsync()).Should().Be(MockTutorPool.Count);
+        indexer.CapturedPrompts.Should().Contain(
+            "Alexandru Radu | Algoritmi, C++, Informatica, POO | Software engineer si trainer. Ajut studentii cu algoritmi, structuri de date avansate si programare orientata pe obiecte in C++ si Java.");
+    }
+
+    /// <summary>
+    /// Deterministic comparison that runs in every `dotnet test`. The vector pipeline here uses lexical
+    /// bag-of-words vectors instead of a real model, so it measures the pipeline and the dataset, not bge-m3
+    /// or nomic-embed-text. The printed table is copied into docs/ai-evaluation-report.md.
+    /// </summary>
+    [Fact]
+    public async Task Given_OfflineEmbedder_When_ComparingStrategies_Then_VectorPipelineServesAllQueriesAndBeatsKeywordSearch()
+    {
+        var embedder = new FakeOllamaClient { EmbeddingGenerator = DeterministicTextEmbedder.Embed };
+        await using var database = await EvaluationDatabase.CreateAsync(embedder);
+        var downClient = new FakeOllamaClient { ExceptionToThrow = new HttpRequestException("Connection refused.") };
+
+        var lexical = await SemanticSearchEvaluator.RunAsync(LexicalProxyStrategy, GroundTruthEvaluationSet, database.SemanticStrategy(embedder, new OllamaOptions()));
+        var keyword = await SemanticSearchEvaluator.RunAsync(KeywordStrategy, GroundTruthEvaluationSet, database.KeywordStrategy());
+        var ollamaDown = await SemanticSearchEvaluator.RunAsync(OllamaDownStrategy, GroundTruthEvaluationSet, database.SemanticStrategy(downClient, new OllamaOptions()));
+        _output.WriteLine(SemanticSearchEvaluator.ToMarkdownTable(new[] { lexical.Metrics, keyword.Metrics, ollamaDown.Metrics }));
+        _output.WriteLine(SemanticSearchEvaluator.ToPerCaseMarkdownTable(new[] { lexical, keyword }));
+
+        lexical.Metrics.FallbackRate.Should().Be(0.0);
+        lexical.Metrics.Top3Accuracy.Should().BeGreaterThanOrEqualTo(lexical.Metrics.Top1Accuracy);
+        lexical.Metrics.Top3Accuracy.Should().BeGreaterThan(keyword.Metrics.Top3Accuracy);
+    }
+
+    // Reads `evaluationCase('<key>', '<query>')` calls and resolves <key> through the TUTORS map.
+    private static List<(string Query, string TutorId, string TutorName)> ParseFrontendEvaluationCases(string source)
+    {
+        var tutors = Regex.Matches(source, @"(\w+):\s*\{\s*id:\s*'([^']+)',\s*name:\s*'([^']+)'")
+            .ToDictionary(m => m.Groups[1].Value, m => (Id: m.Groups[2].Value, Name: m.Groups[3].Value));
+
+        return Regex.Matches(source, @"evaluationCase\('(\w+)',\s*'((?:[^'\\]|\\.)*)'\)")
+            .Select(m => (m.Groups[2].Value.Replace("\\'", "'"), tutors[m.Groups[1].Value].Id, tutors[m.Groups[1].Value].Name))
+            .ToList();
+    }
+}

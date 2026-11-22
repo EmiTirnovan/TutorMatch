@@ -1,8 +1,9 @@
 import { EvaluationCase } from '../models/semantic-search.models';
 
 /**
- * Ground-truth set mirroring TutorMatch.Tests/Evaluation/SemanticSearchEvaluationTests.cs.
- * It assumes the demo tutors with these ids have been seeded.
+ * Ground-truth set mirroring TutorMatch.Tests/Evaluation/SemanticSearchEvaluationTests.cs (30 cases).
+ * Ids and names match SemanticSearchEvaluationTests.MockTutorPool; a backend test fails if the two sets drift.
+ * The live dashboard only scores hits when those tutors exist in the database it queries.
  */
 const TUTORS = {
   math: { id: '11111111-1111-1111-1111-111111111111', name: 'Ion Popescu', category: 'Matematica' },
@@ -34,6 +35,7 @@ export const EVALUATION_CASES: readonly EvaluationCase[] = [
   evaluationCase('algorithms', 'Vreau sa invat algoritmi si structuri de date pentru interviuri tehnice FAANG'),
   evaluationCase('algorithms', 'Am dificultati la programare orientata pe obiecte in C++ si Java'),
   evaluationCase('algorithms', 'Caut cineva sa-mi explice probleme de grafuri, Dijkstra si programare dinamica'),
+  evaluationCase('algorithms', 'Imi da segmentation fault cand lucrez cu pointeri si alocare dinamica in C++ si nu inteleg de ce'),
   evaluationCase('physics', 'Caut profesor pentru fizica de liceu si facultate, capitolele de termodinamica si electromagnetism'),
   evaluationCase('physics', 'Am nevoie de explicatii pentru ecuatia lui Schrodinger si mecanica cuantica'),
   evaluationCase('physics', 'Ajutor la probleme de optica ondulatorie si mecanica fluidelor'),
@@ -42,6 +44,7 @@ export const EVALUATION_CASES: readonly EvaluationCase[] = [
   evaluationCase('english', 'Cursuri de conversatie fluenta in limba engleza pentru afaceri si redactare de eseuri'),
   evaluationCase('chemistry', 'Sinteze de chimie organica si mecanisme de reactie pentru admiterea la medicina UMF'),
   evaluationCase('chemistry', 'Am nevoie de pregatire la chimie si compusi organici pentru examenul de admitere'),
+  evaluationCase('chemistry', 'Ma incurc la izomeri, alchene si reactii de substitutie la chimie organica inainte de simulare'),
   evaluationCase('web', 'Cum sa construiesc aplicatii web moderne de la zero folosind React si TypeScript'),
   evaluationCase('web', 'Am nevoie de mentorat pentru crearea unui backend REST API cu Node.js si Express'),
   evaluationCase('web', 'Vreau sa inteleg frontend state management, hooks si optimizare de performanta'),
@@ -53,5 +56,7 @@ export const EVALUATION_CASES: readonly EvaluationCase[] = [
   evaluationCase('german', 'Vreau sa invat limba germana de la incepator pana la nivel mediu B2 pentru un job in Germania'),
   evaluationCase('german', 'Pregatire specifica pentru promovarea certificatului Goethe Zertifikat B2'),
   evaluationCase('economics', 'Explicatii la economie, cerere si oferta, politica monetara si finante corporative'),
-  evaluationCase('biology', 'Meditatii la biologie pentru bacalaureat: genetica moleculara, legile lui Mendel si anatomie umana')
+  evaluationCase('economics', 'Nu inteleg cum se calculeaza elasticitatea cererii si costul marginal pentru seminarul de microeconomie'),
+  evaluationCase('biology', 'Meditatii la biologie pentru bacalaureat: genetica moleculara, legile lui Mendel si anatomie umana'),
+  evaluationCase('biology', 'Am examen la biologie celulara si nu inteleg diferenta dintre mitoza si meioza')
 ];

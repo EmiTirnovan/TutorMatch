@@ -77,6 +77,7 @@ export class SemanticSearchService {
       .searchTutors({
         subject: query,
         maxPrice: null,
+        minRating: null,
         date: '',
         sortBy: 'priceAsc',
         page: 1,

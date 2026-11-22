@@ -59,6 +59,9 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetMySessionsQuery, Result<GetMySessionsResponse>>, GetMySessionsQueryHandler>();
 
         // Semantic Search Services & Handlers
+        services.AddOptions<OllamaOptions>().BindConfiguration(OllamaOptions.SectionName);
+        services.AddMemoryCache();
+        services.AddSingleton(TutorEmbeddingWriteLock.Shared);
         services.AddHttpClient(OllamaClient.HttpClientName);
         services.AddScoped<IOllamaClient, OllamaClient>();
         services.AddScoped<ISearchTutorsFallback, DefaultSearchTutorsFallback>();
