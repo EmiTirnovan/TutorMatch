@@ -1,0 +1,88 @@
+<div class="autocomplete-container">
+  <div class="input-wrapper">
+    <input
+      #subjectInput
+      [id]="inputId()"
+      type="text"
+      class="form-control autocomplete-input"
+      [placeholder]="placeholder()"
+      [formControl]="queryControl"
+      [disabled]="disabled()"
+      [attr.aria-label]="ariaLabel()"
+      role="combobox"
+      aria-autocomplete="list"
+      [attr.aria-expanded]="isOpen()"
+      [attr.aria-controls]="inputId() + '-listbox'"
+      [attr.aria-activedescendant]="activeDescendantId()"
+      (input)="onInput($event)"
+      (keydown)="onKeyDown($event)"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
+      autocomplete="off"
+    />
+
+    @if (isLoading()) {
+      <div class="input-spinner" aria-hidden="true" title="Loading suggestions..."></div>
+    }
+
+    @if (showAddButton()) {
+      <button
+        type="button"
+        class="btn-autocomplete-add"
+        [disabled]="disabled() || !hasQuery()"
+        (click)="addCustomFromInput()"
+        aria-label="Add subject"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Add</span>
+      </button>
+    }
+  </div>
+
+  @if (isOpen()) {
+    <ul
+      [id]="inputId() + '-listbox'"
+      class="suggestions-dropdown"
+      role="listbox"
+      [attr.aria-label]="'Subject suggestions for ' + (queryControl.value || '')"
+    >
+      @if (hasError()) {
+        <li class="dropdown-notice error-notice" role="alert">
+          Unable to load suggestions. You can still add your subject.
+        </li>
+      }
+
+      @for (suggestion of suggestions(); track suggestion; let idx = $index) {
+        <li
+          [id]="inputId() + '-option-' + idx"
+          class="suggestion-item"
+          [class.active]="activeIndex() === idx"
+          role="option"
+          [attr.aria-selected]="activeIndex() === idx"
+          (mousedown)="selectSubject(suggestion); $event.preventDefault()"
+        >
+          <svg class="suggestion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span class="suggestion-text">{{ suggestion }}</span>
+        </li>
+      }
+
+      @if (allowCustom() && hasQuery() && !suggestions().includes(queryControl.value!.trim())) {
+        <li
+          class="suggestion-item custom-option"
+          (mousedown)="addCustomFromInput(); $event.preventDefault()"
+        >
+          <svg class="custom-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Add custom subject: <strong>"{{ queryControl.value?.trim() }}"</strong></span>
+        </li>
+      }
+    </ul>
+  }
+</div>

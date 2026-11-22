@@ -109,26 +109,14 @@
             }
           </div>
 
-          <!-- Subject Tags Input -->
+          <!-- Subject Tags Input with Autocomplete -->
           <div class="form-group">
-            <label>Subjects & Topics Taught *</label>
-            <div class="subject-input-wrapper">
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="newSubjectInput"
-                [ngModelOptions]="{standalone: true}"
-                placeholder="Type topic (e.g. Algoritmi, Pointers) and click Add"
-                (keydown.enter)="$event.preventDefault(); addSubject()"
-              />
-              <button type="button" class="btn btn-secondary btn-add-subject" (click)="addSubject()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="12" y1="5" x2="12" y2="19"/>
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                <span>Add</span>
-              </button>
-            </div>
+            <label for="register-subject-autocomplete">Subjects & Topics Taught *</label>
+            <app-subject-autocomplete
+              inputId="register-subject-autocomplete"
+              [selectedSubjects]="subjects()"
+              (subjectSelected)="onSubjectSelected($event)"
+            />
 
             <div class="chips-container">
               @for (subj of subjects(); track $index) {

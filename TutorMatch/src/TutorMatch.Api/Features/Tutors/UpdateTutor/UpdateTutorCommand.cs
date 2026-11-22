@@ -1,5 +1,4 @@
 using TutorMatch.Api.Common.Cqrs;
-using TutorMatch.Api.Common.Results;
 
 namespace TutorMatch.Api.Features.Tutors.UpdateTutor;
 
@@ -11,4 +10,4 @@ public record UpdateTutorCommand(
     string Bio,
     decimal HourlyRate,
     List<string>? Subjects = null
-) : ICommand;
+) : UpdateTutorProfileCommand(Id, Name, Bio, HourlyRate, Subjects), ICommand;

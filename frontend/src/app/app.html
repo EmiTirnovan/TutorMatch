@@ -19,6 +19,9 @@
         <a routerLink="/sessions" routerLinkActive="active" class="nav-item">
           My Sessions
         </a>
+        <a routerLink="/profile" routerLinkActive="active" class="nav-item">
+          My Profile
+        </a>
         <a routerLink="/tutors/register" routerLinkActive="active" class="nav-item">
           Become a Tutor
         </a>
@@ -28,6 +31,9 @@
         </a>
         <a [routerLink]="['/tutors', tutorId()]" routerLinkActive="active" class="nav-item">
           My Profile
+        </a>
+        <a routerLink="/profile" routerLinkActive="active" class="nav-item">
+          Edit Profile
         </a>
         <a [routerLink]="['/tutors', tutorId(), 'availability']" routerLinkActive="active" class="nav-item">
           Manage Availability

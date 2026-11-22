@@ -48,7 +48,10 @@ public class SearchTutorsQueryHandlerTests : IDisposable
 
         foreach (var subjectName in subjects ?? [])
         {
-            tutor.AddSubject(new Subject(subjectName));
+            var normalized = Subject.NormalizeName(subjectName);
+            var existingSubject = _context.Subjects.Local.FirstOrDefault(s => s.Name == normalized)
+                ?? _context.Subjects.FirstOrDefault(s => s.Name == normalized);
+            tutor.AddSubject(existingSubject ?? new Subject(normalized));
         }
 
         foreach (var range in availability ?? [])

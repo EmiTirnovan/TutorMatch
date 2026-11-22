@@ -24,17 +24,21 @@ public class InMemoryTutorRepository : ITutorRepository
         {
             throw new InvalidOperationException($"Un tutore cu Id-ul '{tutor.Id}' exista deja.");
         }
+
+        foreach (var ts in tutor.TutorSubjects)
+        {
+            var subject = ts.Subject ?? _subjects.Values.FirstOrDefault(s => s.Id == ts.SubjectId);
+            subject?.IncrementUsage(1);
+        }
     }
 
     public Tutor? GetById(Guid id)
     {
-        // Tratare safe daca nu exista: returneaza null fara crash
         return _tutors.TryGetValue(id, out var tutor) ? tutor : null;
     }
 
     public IReadOnlyList<Tutor> GetAll()
     {
-        // Snapshot izolat (copie) ca sa evitam erori de concurenta la iterare
         return _tutors.Values.ToList().AsReadOnly();
     }
 
@@ -42,9 +46,27 @@ public class InMemoryTutorRepository : ITutorRepository
     {
         ArgumentNullException.ThrowIfNull(tutor);
 
-        if (!_tutors.ContainsKey(tutor.Id))
+        if (!_tutors.TryGetValue(tutor.Id, out var existing))
         {
             throw new KeyNotFoundException($"Tutorele cu Id-ul '{tutor.Id}' nu a fost gasit.");
+        }
+
+        var oldSubjectIds = existing.TutorSubjects.Select(ts => ts.SubjectId).ToHashSet();
+        var newSubjectIds = tutor.TutorSubjects.Select(ts => ts.SubjectId).ToHashSet();
+
+        var addedIds = newSubjectIds.Except(oldSubjectIds);
+        var removedIds = oldSubjectIds.Except(newSubjectIds);
+
+        foreach (var id in addedIds)
+        {
+            var subject = _subjects.Values.FirstOrDefault(s => s.Id == id);
+            subject?.IncrementUsage(1);
+        }
+
+        foreach (var id in removedIds)
+        {
+            var subject = _subjects.Values.FirstOrDefault(s => s.Id == id);
+            subject?.DecrementUsage(1);
         }
 
         _tutors[tutor.Id] = tutor;
@@ -52,14 +74,23 @@ public class InMemoryTutorRepository : ITutorRepository
 
     public bool Delete(Guid id)
     {
-        // Daca exista il sterge si da true, altfel da false
-        return _tutors.TryRemove(id, out _);
+        if (_tutors.TryRemove(id, out var tutor))
+        {
+            foreach (var ts in tutor.TutorSubjects)
+            {
+                var subject = ts.Subject ?? _subjects.Values.FirstOrDefault(s => s.Id == ts.SubjectId);
+                subject?.DecrementUsage(1);
+            }
+            return true;
+        }
+
+        return false;
     }
 
     public Subject GetOrCreateSubject(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        var trimmed = name.Trim();
-        return _subjects.GetOrAdd(trimmed, n => new Subject(n));
+        var normalized = Subject.NormalizeName(name);
+        return _subjects.GetOrAdd(normalized, n => new Subject(n, createdAt: DateTime.UtcNow, usageCount: 0));
     }
 }
