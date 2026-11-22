@@ -1,4 +1,4 @@
-import { Component, ViewChild, inject, signal } from '@angular/core';
+import { Component, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -15,7 +15,7 @@ import { AuthService } from '../../../../core/services/auth.service';
   templateUrl: './tutor-register.component.html',
   styleUrl: './tutor-register.component.css'
 })
-export class TutorRegisterComponent {
+export class TutorRegisterComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly tutorService = inject(TutorService);
   private readonly router = inject(Router);
@@ -27,6 +27,12 @@ export class TutorRegisterComponent {
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successTutorId = signal<string | null>(null);
+
+  ngOnInit(): void {
+    if (this.userContext.currentRole() === 'tutor' && this.userContext.tutorId()) {
+      this.router.navigate(['/tutors', this.userContext.tutorId()]);
+    }
+  }
 
   // Subject tags state
   readonly subjects = signal<string[]>([]);

@@ -71,12 +71,23 @@ export class TutorProfileComponent implements OnInit {
   newEditSubjectInput = '';
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.loadTutor(id);
+    const handleId = (id: string | null) => {
+      const resolvedId = id || this.userContext.tutorId();
+      if (resolvedId) {
+        this.loadTutor(resolvedId);
+      } else {
+        this.isLoading.set(false);
+        this.errorMessage.set('No tutor ID provided.');
+      }
+    };
+
+    if (this.route?.paramMap) {
+      this.route.paramMap.subscribe((params) => {
+        handleId(params.get('id'));
+      });
     } else {
-      this.isLoading.set(false);
-      this.errorMessage.set('No tutor ID provided.');
+      const id = this.route?.snapshot?.paramMap?.get('id');
+      handleId(id);
     }
   }
 

@@ -19,14 +19,14 @@
         My Sessions
       </a>
       @if (isAuthenticated() && userRole() === 'tutor') {
-        <a [routerLink]="['/tutors', tutorId()]" routerLinkActive="active" class="nav-item">
+        <a [routerLink]="tutorId() ? ['/tutors', tutorId()] : ['/profile']" routerLinkActive="active" class="nav-item">
           My Profile
         </a>
-        <a [routerLink]="['/tutors', tutorId(), 'availability']" routerLinkActive="active" class="nav-item">
+        <a [routerLink]="tutorId() ? ['/tutors', tutorId(), 'availability'] : ['/availability']" routerLinkActive="active" class="nav-item">
           Manage Availability
         </a>
-      } @else {
-        <a routerLink="/tutors/register" routerLinkActive="active" class="nav-item">
+      } @else if (!isAuthenticated()) {
+        <a routerLink="/register" routerLinkActive="active" class="nav-item">
           Become a Tutor
         </a>
       }

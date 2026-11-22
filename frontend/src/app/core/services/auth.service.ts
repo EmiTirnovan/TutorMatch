@@ -54,6 +54,7 @@ export class AuthService {
   logout(): void {
     try {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('tutor_match_my_tutor_id');
     } catch {
       // ignore
     }

@@ -104,6 +104,13 @@ public class GoogleAuthCommandHandler : ICommandHandler<GoogleAuthCommand, Resul
                 }
             }
         }
+        else if (user.Role.Equals("Tutor", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_tutorRepository is not null && _tutorRepository.GetById(user.Id) is null)
+            {
+                _tutorRepository.Add(new Tutor(user.FullName, user.Email, "Tutor on TutorMatch", 50m, user.Id));
+            }
+        }
 
         var token = _jwtTokenGenerator.GenerateToken(user);
         var response = new AuthResponse(token, user.Id, user.Email, user.FullName, user.Role);

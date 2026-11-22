@@ -1,5 +1,6 @@
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
+using TutorMatch.Api.Domain.Tutors;
 using TutorMatch.Api.Domain.Users;
 using TutorMatch.Api.Infrastructure.Security;
 
@@ -10,15 +11,18 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<AuthResp
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly ITutorRepository? _tutorRepository;
 
     public LoginCommandHandler(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
-        IJwtTokenGenerator jwtTokenGenerator)
+        IJwtTokenGenerator jwtTokenGenerator,
+        ITutorRepository? tutorRepository = null)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _jwtTokenGenerator = jwtTokenGenerator;
+        _tutorRepository = tutorRepository;
     }
 
     public Task<Result<AuthResponse>> HandleAsync(LoginCommand command, CancellationToken cancellationToken = default)
@@ -50,6 +54,14 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<AuthResp
         {
             return Task.FromResult(Result<AuthResponse>.Failure(
                 Error.Validation("Auth.InvalidCredentials", "Invalid email or password.")));
+        }
+
+        if (user.Role.Equals("Tutor", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_tutorRepository is not null && _tutorRepository.GetById(user.Id) is null)
+            {
+                _tutorRepository.Add(new Tutor(user.FullName, user.Email, "Tutor on TutorMatch", 50m, user.Id));
+            }
         }
 
         var token = _jwtTokenGenerator.GenerateToken(user);

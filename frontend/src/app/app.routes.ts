@@ -14,6 +14,12 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'tutors/search', component: SearchTutorsComponent },
+  { path: 'profile', component: TutorProfileComponent, canActivate: [authGuard] },
+  {
+    path: 'availability',
+    component: AvailabilityEditorComponent,
+    canActivate: [authGuard, roleGuard(['tutor'])]
+  },
   { path: 'tutors/register', component: TutorRegisterComponent, canActivate: [authGuard] },
   { path: 'tutors/:id', component: TutorProfileComponent },
   {
