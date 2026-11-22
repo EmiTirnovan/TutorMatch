@@ -116,10 +116,6 @@ export class MySessionsComponent implements OnInit {
     this.activeTab.set(tab);
   }
 
-  toggleRole(): void {
-    this.userContext.toggleRole();
-  }
-
   loadSessions(
     userId: string = this.userContext.currentUserId(),
     role: UserRole = this.currentRole(),

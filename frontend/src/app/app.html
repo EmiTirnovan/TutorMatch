@@ -12,48 +12,45 @@
     </div>
 
     <nav class="nav-links">
-      @if (userRole() === 'student') {
-        <a routerLink="/tutors/search" routerLinkActive="active" class="nav-item">
-          Discover tutors
-        </a>
-        <a routerLink="/sessions" routerLinkActive="active" class="nav-item">
-          My Sessions
-        </a>
-        <a routerLink="/tutors/register" routerLinkActive="active" class="nav-item">
-          Become a Tutor
-        </a>
-      } @else {
-        <a routerLink="/sessions" routerLinkActive="active" class="nav-item">
-          My Sessions
-        </a>
+      <a routerLink="/tutors/search" routerLinkActive="active" class="nav-item">
+        Discover tutors
+      </a>
+      <a routerLink="/sessions" routerLinkActive="active" class="nav-item">
+        My Sessions
+      </a>
+      @if (isAuthenticated() && userRole() === 'tutor') {
         <a [routerLink]="['/tutors', tutorId()]" routerLinkActive="active" class="nav-item">
           My Profile
         </a>
         <a [routerLink]="['/tutors', tutorId(), 'availability']" routerLinkActive="active" class="nav-item">
           Manage Availability
         </a>
+      } @else {
+        <a routerLink="/tutors/register" routerLinkActive="active" class="nav-item">
+          Become a Tutor
+        </a>
       }
     </nav>
 
     <div class="user-control">
-      <span class="admin-badge">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right: 0.35rem; vertical-align: -2px;">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-        Admin / Test Mode
-      </span>
-      <div class="role-identity">
-        <span class="role-indicator">
-          Mode: <strong>{{ userRole() === 'tutor' ? 'Tutor View' : 'Student View' }}</strong>
-        </span>
-        <span class="user-name">
-          ({{ activeUserName() }})
-        </span>
-      </div>
-      <button type="button" class="btn btn-secondary btn-sm" (click)="toggleRole()" data-testid="header-toggle-role-btn">
-        Switch to {{ userRole() === 'tutor' ? 'Student' : 'Tutor' }}
-      </button>
+      @if (isAuthenticated()) {
+        <div class="role-identity">
+          <span class="role-indicator">
+            Role: <strong class="user-role-badge" [class.tutor-badge]="userRole() === 'tutor'" data-testid="user-role-label">{{ userRole() === 'tutor' ? 'Tutor' : 'Student' }}</strong>
+          </span>
+          <span class="user-name" data-testid="user-name-display">
+            {{ activeUserName() }}
+          </span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="logout()" data-testid="header-logout-btn">
+          Log Out
+        </button>
+      } @else {
+        <div class="auth-actions">
+          <a routerLink="/login" class="btn btn-ghost btn-sm" data-testid="header-login-btn">Log In</a>
+          <a routerLink="/register" class="btn btn-primary btn-sm" data-testid="header-register-btn">Register</a>
+        </div>
+      }
     </div>
   </div>
 </header>

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
 using TutorMatch.Api.Common.Results;
@@ -12,6 +13,7 @@ public static class DeleteTutorEndpoint
     public static IEndpointRouteBuilder MapDeleteTutor(this IEndpointRouteBuilder group)
     {
         group.MapDelete("/{id:guid}", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("Delete a tutor")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesErrors(StatusCodes.Status404NotFound);

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
@@ -12,6 +13,7 @@ public static class UpdateTutorEndpoint
     public static IEndpointRouteBuilder MapUpdateTutor(this IEndpointRouteBuilder group)
     {
         group.MapPut("/{id:guid}", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("Update a tutor profile")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict);

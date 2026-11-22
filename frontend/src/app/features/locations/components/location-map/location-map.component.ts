@@ -80,7 +80,7 @@ export class LocationMapComponent implements OnDestroy {
     }).addTo(this.map);
 
     if (this.editable()) {
-      this.map.on('click', (e) => this.picked.emit({ lat: e.latlng.lat, lng: e.latlng.lng }));
+      this.map.on('click', (e: any) => this.picked.emit({ lat: e.latlng.lat, lng: e.latlng.lng }));
     }
     this.showPoint(this.latitude(), this.longitude());
   }

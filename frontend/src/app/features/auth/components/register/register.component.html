@@ -1,0 +1,144 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-icon-badge">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="8.5" cy="7" r="4"></circle>
+          <line x1="20" y1="8" x2="20" y2="14"></line>
+          <line x1="23" y1="11" x2="17" y2="11"></line>
+        </svg>
+      </div>
+      <h1 class="auth-title">Create an Account</h1>
+      <p class="auth-subtitle">Join the university peer tutoring community</p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="alert alert-danger" data-testid="register-error-alert" role="alert">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    }
+
+    <!-- Role Selection -->
+    <div class="role-selector-container">
+      <label class="form-label mb-2">I am registering as a:</label>
+      <div class="role-cards-grid">
+        <button
+          type="button"
+          class="role-card"
+          [class.active]="registerForm.get('role')?.value === 'Student'"
+          (click)="setRole('Student')"
+          data-testid="role-student-btn"
+        >
+          <span class="role-card-icon">🎓</span>
+          <strong class="role-card-title">Student</strong>
+          <span class="role-card-desc">Find tutors and book sessions</span>
+        </button>
+
+        <button
+          type="button"
+          class="role-card"
+          [class.active]="registerForm.get('role')?.value === 'Tutor'"
+          (click)="setRole('Tutor')"
+          data-testid="role-tutor-btn"
+        >
+          <span class="role-card-icon">👨‍🏫</span>
+          <strong class="role-card-title">Tutor</strong>
+          <span class="role-card-desc">Share knowledge and earn</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Google Sign Up -->
+    <div class="google-section">
+      <div #googleBtn class="google-btn-wrapper" data-testid="google-signup-btn-container"></div>
+    </div>
+
+    <div class="auth-divider">
+      <span>or register with email</span>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form" novalidate>
+      <div class="form-group">
+        <label for="fullName" class="form-label">Full Name</label>
+        <input
+          id="fullName"
+          type="text"
+          formControlName="fullName"
+          placeholder="Ion Popescu"
+          class="form-control"
+          [class.is-invalid]="registerForm.get('fullName')?.invalid && registerForm.get('fullName')?.touched"
+          data-testid="register-name-input"
+          autocomplete="name"
+        />
+        @if (registerForm.get('fullName')?.invalid && registerForm.get('fullName')?.touched) {
+          <div class="invalid-feedback">
+            Please enter your full name.
+          </div>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">Email address</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="name@university.ro"
+          class="form-control"
+          [class.is-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+          data-testid="register-email-input"
+          autocomplete="email"
+        />
+        @if (registerForm.get('email')?.invalid && registerForm.get('email')?.touched) {
+          <div class="invalid-feedback">
+            Please enter a valid university email address.
+          </div>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="At least 6 characters"
+          class="form-control"
+          [class.is-invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+          data-testid="register-password-input"
+          autocomplete="new-password"
+        />
+        @if (registerForm.get('password')?.invalid && registerForm.get('password')?.touched) {
+          <div class="invalid-feedback">
+            Password must be at least 6 characters long.
+          </div>
+        }
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn-primary btn-block submit-btn"
+        [disabled]="isLoading()"
+        data-testid="register-submit-btn"
+      >
+        @if (isLoading()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          Creating account...
+        } @else {
+          Create Account
+        }
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <span>Already have an account?</span>
+      <a routerLink="/login" class="auth-link" data-testid="go-to-login-link">Log in here</a>
+    </div>
+  </div>
+</div>

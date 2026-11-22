@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { UserContextService } from './core/services/user-context.service';
+import { AuthService } from './core/services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -12,12 +13,15 @@ import { UserContextService } from './core/services/user-context.service';
 })
 export class App implements OnInit {
   readonly userContext = inject(UserContextService);
+  readonly authService = inject(AuthService);
 
   readonly title = signal('TutorMatch');
   readonly userRole = this.userContext.currentRole;
   readonly tutorId = this.userContext.tutorId;
   readonly studentId = this.userContext.studentId;
   readonly activeUserName = this.userContext.currentUserName;
+  readonly isAuthenticated = this.authService.isAuthenticated;
+  readonly currentUser = this.authService.currentUser;
   readonly myTutorId = signal<string | null>(null);
 
   ngOnInit(): void {
@@ -35,7 +39,7 @@ export class App implements OnInit {
     }
   }
 
-  toggleRole(): void {
-    this.userContext.toggleRole();
+  logout(): void {
+    this.authService.logout();
   }
 }

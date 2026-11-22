@@ -2,9 +2,11 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 using TutorMatch.Api.Features.Auth.Google;
 using TutorMatch.Api.Features.Auth.Login;
 using TutorMatch.Api.Features.Auth.Register;
+using TutorMatch.Api.Infrastructure.Security;
 
 namespace TutorMatch.Api.Features.Auth;
 
@@ -18,6 +20,17 @@ public static class AuthEndpoints
         authGroup.MapRegister();
         authGroup.MapLogin();
         authGroup.MapGoogleAuth();
+
+        authGroup.MapGet("/config", (IOptions<GoogleAuthOptions> googleOptions) =>
+        {
+            return TypedResults.Ok(new
+            {
+                GoogleClientId = googleOptions.Value.ClientId ?? string.Empty
+            });
+        })
+        .AllowAnonymous()
+        .WithSummary("Get public client configuration")
+        .Produces(StatusCodes.Status200OK);
 
         authGroup.MapGet("/me", (ClaimsPrincipal principal) =>
         {

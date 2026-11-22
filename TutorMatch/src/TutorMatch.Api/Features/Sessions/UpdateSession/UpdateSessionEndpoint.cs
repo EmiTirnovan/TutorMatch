@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
@@ -12,6 +13,7 @@ public static class UpdateSessionEndpoint
     public static IEndpointRouteBuilder MapUpdateSession(this IEndpointRouteBuilder group)
     {
         group.MapPut("/{id:guid}", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("Reschedule a session")
             .WithDescription("Changes the start and end time of a booked session.")
             .Produces(StatusCodes.Status204NoContent)

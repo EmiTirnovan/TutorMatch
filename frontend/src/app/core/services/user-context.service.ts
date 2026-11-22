@@ -1,10 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
-import {
-  DEMO_STUDENT_ID,
-  DEMO_TUTOR_ID,
-  DEMO_STUDENT_NAME,
-  DEMO_TUTOR_NAME
-} from '../models/session.models';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { AuthService } from './auth.service';
 
 export type UserRole = 'student' | 'tutor';
 
@@ -12,11 +7,34 @@ export type UserRole = 'student' | 'tutor';
   providedIn: 'root'
 })
 export class UserContextService {
-  readonly currentRole = signal<UserRole>('student');
-  readonly studentId = signal<string>(DEMO_STUDENT_ID);
-  readonly tutorId = signal<string>(DEMO_TUTOR_ID);
-  readonly studentName = signal<string>(DEMO_STUDENT_NAME);
-  readonly tutorName = signal<string>(DEMO_TUTOR_NAME);
+  private readonly authService = inject(AuthService);
+
+  // Overrides for unit tests or manual switching
+  private readonly overrideRole = signal<UserRole | null>(null);
+  private readonly overrideStudentId = signal<string | null>(null);
+  private readonly overrideTutorId = signal<string | null>(null);
+
+  readonly currentRole = computed<UserRole>(() => {
+    if (this.overrideRole()) return this.overrideRole()!;
+    const userRole = this.authService.currentUser()?.role?.toLowerCase();
+    return userRole === 'tutor' ? 'tutor' : 'student';
+  });
+
+  readonly studentId = computed<string>(() => {
+    return this.overrideStudentId() ?? this.authService.currentUser()?.id ?? '';
+  });
+
+  readonly tutorId = computed<string>(() => {
+    return this.overrideTutorId() ?? this.authService.currentUser()?.id ?? '';
+  });
+
+  readonly studentName = computed<string>(() => {
+    return this.authService.currentUser()?.fullName ?? '';
+  });
+
+  readonly tutorName = computed<string>(() => {
+    return this.authService.currentUser()?.fullName ?? '';
+  });
 
   readonly currentUserId = computed(() =>
     this.currentRole() === 'student' ? this.studentId() : this.tutorId()
@@ -30,20 +48,21 @@ export class UserContextService {
     this.currentRole() === 'tutor' ? 'Tutor View' : 'Student View'
   );
 
-  toggleRole(): void {
-    this.currentRole.update(r => (r === 'tutor' ? 'student' : 'tutor'));
-  }
-
   setRole(role: UserRole): void {
-    this.currentRole.set(role);
+    this.overrideRole.set(role);
   }
 
   setStudentId(id: string): void {
-    this.studentId.set(id);
+    this.overrideStudentId.set(id);
   }
 
   setTutorId(id: string): void {
-    this.tutorId.set(id);
+    this.overrideTutorId.set(id);
+  }
+
+  clearOverrides(): void {
+    this.overrideRole.set(null);
+    this.overrideStudentId.set(null);
+    this.overrideTutorId.set(null);
   }
 }
-

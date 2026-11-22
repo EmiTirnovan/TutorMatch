@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -13,6 +14,7 @@ public static class CancelSessionEndpoint
     public static IEndpointRouteBuilder MapCancelSession(this IEndpointRouteBuilder group)
     {
         group.MapPost("/{id:guid}/cancel", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("Cancel a session")
             .WithDescription("The requester id can be sent in the body or as the requesterId query parameter.")
             .Produces(StatusCodes.Status204NoContent)

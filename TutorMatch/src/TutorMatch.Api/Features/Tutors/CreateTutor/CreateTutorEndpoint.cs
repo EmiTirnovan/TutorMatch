@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using TutorMatch.Api.Common.Cqrs;
@@ -12,6 +13,7 @@ public static class CreateTutorEndpoint
     public static IEndpointRouteBuilder MapCreateTutor(this IEndpointRouteBuilder group)
     {
         group.MapPost("/", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("Create a tutor")
             .Produces<CreateTutorResponse>(StatusCodes.Status201Created)
             .ProducesErrors(StatusCodes.Status400BadRequest, StatusCodes.Status409Conflict);

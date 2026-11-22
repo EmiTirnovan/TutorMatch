@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -13,6 +14,7 @@ public static class BookSessionEndpoint
     public static IEndpointRouteBuilder MapBookSession(this IEndpointRouteBuilder group)
     {
         group.MapPost("/", HandleAsync)
+            .RequireAuthorization()
             .WithSummary("Book a tutoring session")
             .WithDescription("Books a session for the student identified by the X-Student-Id header. Online sessions get a generated Google Meet link; physical sessions require LocationName, Latitude and Longitude. Returns 500 (Session.MeetingLinkFailed) when the meeting link cannot be created.")
             .Produces<BookSessionResponse>(StatusCodes.Status201Created)

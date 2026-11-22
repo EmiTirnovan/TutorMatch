@@ -4,12 +4,13 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { App } from '../src/app/app';
 import { routes } from '../src/app/app.routes';
+import { AuthService } from '../src/app/core/services/auth.service';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter([])]
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
   });
 
@@ -66,6 +67,15 @@ describe('App navigation', () => {
   });
 
   it('Given_SessionsRoute_When_Navigating_Then_RendersMySessionsPageAndMarksNavLinkActive', async () => {
+    const authService = TestBed.inject(AuthService);
+    authService.handleAuthSuccess({
+      token: 'fake-jwt',
+      userId: 'user-123',
+      email: 'alex@example.com',
+      fullName: 'Alex Ionescu',
+      role: 'student'
+    });
+
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
 
@@ -97,20 +107,33 @@ describe('App navigation', () => {
     expect(discover?.classList.contains('active')).toBe(false);
   });
 
-  it('Given_Header_When_Rendering_Then_ShowsAdminTestModeBadge', () => {
+  it('Given_UnauthenticatedUser_When_RenderingHeader_Then_ShowsLoginAndRegisterButtons', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.admin-badge')?.textContent).toContain('Admin / Test Mode');
-    expect(compiled.querySelector('.role-indicator')?.textContent).toContain('Student View');
 
-    (compiled.querySelector('.user-control button') as HTMLButtonElement).click();
+    expect(compiled.querySelector('[data-testid="header-login-btn"]')?.textContent).toContain('Log In');
+    expect(compiled.querySelector('[data-testid="header-register-btn"]')?.textContent).toContain('Register');
+    expect(compiled.querySelector('[data-testid="header-logout-btn"]')).toBeNull();
+  });
+
+  it('Given_AuthenticatedUser_When_RenderingHeader_Then_ShowsUserIdentityAndLogoutButton', () => {
+    const authService = TestBed.inject(AuthService);
+    authService.handleAuthSuccess({
+      token: 'fake-token',
+      userId: 'user-123',
+      email: 'alex@example.com',
+      fullName: 'Alex Ionescu',
+      role: 'student'
+    });
+
+    const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('.role-indicator')?.textContent).toContain('Tutor View');
-
-    const links = Array.from(compiled.querySelectorAll<HTMLAnchorElement>('nav.nav-links a'));
-    expect(links.map((link) => link.textContent?.trim())).toContain('My Profile');
-    expect(links.map((link) => link.textContent?.trim())).toContain('Manage Availability');
+    expect(compiled.querySelector('[data-testid="user-name-display"]')?.textContent).toContain('Alex Ionescu');
+    expect(compiled.querySelector('[data-testid="user-role-label"]')?.textContent).toContain('Student');
+    expect(compiled.querySelector('[data-testid="header-logout-btn"]')?.textContent).toContain('Log Out');
+    expect(compiled.querySelector('[data-testid="header-login-btn"]')).toBeNull();
   });
 });
